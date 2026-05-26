@@ -362,7 +362,7 @@
   {
     "slug": "video-generators",
     "fileName": "video-generators.txt",
-    "title": "Video Generators are Robot Policies",
+    "title": "VideoPolicy: Video Generators are Robot Policies",
     "lineCount": 1256,
     "headingCount": 25,
     "extractCount": 10,

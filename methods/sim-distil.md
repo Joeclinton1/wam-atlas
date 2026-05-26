@@ -1014,4 +1014,3 @@ Lines 989-1052
  1051:                                                                                       terminate either after 1000 simulation steps or upon failure,
  1052: standard deviation) over all trials at each speed. The Pre-
 ```
-

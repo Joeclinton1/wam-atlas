@@ -6,6 +6,7 @@ const state = {
   query: "",
   selectedId: null,
   hoveredId: null,
+  taxonomyHoveredFamily: null,
   zoom: { k: 0.68, x: 250, y: 78 },
   zoomBase: 0.68,
   dragging: null,
@@ -29,8 +30,8 @@ const familyColors = {
 };
 
 const familyLabels = {
-  pixel_idm: "Pixel future + IDM",
-  latent_idm: "Latent predictive state",
+  pixel_idm: "Pixel-space IDM",
+  latent_idm: "Latent-space IDM",
   encoder_only: "Encoder-only runtime",
   joint_latent: "Joint latent space",
   unified: "Unified action-observation",
@@ -90,9 +91,22 @@ const problemBranches = [
   }
 ];
 
+const taxonomyGroups = [
+  {
+    id: "architecture",
+    label: "Architecture",
+    families: ["pixel_idm", "latent_idm", "implicit_future", "unified", "joint_latent", "multi_stream", "encoder_only", "multimodal"]
+  },
+  {
+    id: "enhancement",
+    label: "Enhancement",
+    families: ["latent_action", "alignment", "online_adaptation", "speedup"]
+  }
+];
+
 const familyProblemQuestions = {
-  pixel_idm: "Can predicted pixels expose the needed action?",
-  latent_idm: "Can hidden future state replace full rollout?",
+  pixel_idm: "Can inverse dynamics infer actions from predicted pixels?",
+  latent_idm: "Can inverse dynamics infer actions from latent future state?",
   encoder_only: "Can training-time video pressure survive in a fast policy?",
   joint_latent: "Can actions and observations share one geometry?",
   unified: "Can one temporal model predict observations and controls?",
@@ -246,7 +260,6 @@ async function loadData() {
 
   $("#modelCount").textContent = state.models.length;
   $("#familyCount").textContent = new Set(state.models.map((m) => m.family)).size;
-  $("#sourceCount").textContent = state.models.filter((m) => m.localText).length;
   setDefaultZoomForMode(state.mode);
   renderLearn();
   renderSources();
@@ -255,6 +268,18 @@ async function loadData() {
 
 function familyOrder() {
   return [...new Set(state.models.map((model) => model.family))];
+}
+
+function problemBranchForFamily(family) {
+  return problemBranches.find((branch) => branch.families.includes(family));
+}
+
+function problemColorForFamily(family) {
+  return problemBranchForFamily(family)?.color || familyColors[family] || "#8aa0a7";
+}
+
+function problemColorForModel(model) {
+  return problemColorForFamily(model.family);
 }
 
 function modelIndexInFamily(model) {
@@ -282,15 +307,7 @@ function positionModel(model, index, models, bounds) {
   }
 
   if (state.mode === "taxonomy") {
-    const columns = Math.ceil(Math.sqrt(families.length));
-    const col = familyIndex % columns;
-    const row = Math.floor(familyIndex / columns);
-    const cx = 140 + col * ((w - 280) / Math.max(1, columns - 1));
-    const cy = 135 + row * ((h - 270) / Math.max(1, Math.ceil(families.length / columns) - 1));
-    const local = modelIndexInFamily(model);
-    const angle = (local * 1.75) % (Math.PI * 2);
-    const radius = 24 + local * 6;
-    return { x: cx + Math.cos(angle) * radius, y: cy + Math.sin(angle) * radius };
+    return taxonomyPaperPosition(model, bounds) || { x: w / 2, y: h / 2 };
   }
 
   return { x: bounds.width / 2, y: bounds.height / 2 };
@@ -995,15 +1012,26 @@ function drawSpeedBackdrop(group, bounds) {
 
 function drawTaxonomyBackdrop(group, bounds) {
   const layer = atlasAnnotationLayer("taxonomy-map");
-  const centers = taxonomyFamilyCenters(bounds);
-  familyOrder().forEach((family) => {
-    const center = centers.get(family);
-    if (!center) return;
-    const color = familyColors[family] || "#8aa0a7";
+  const layouts = taxonomyFamilyLayouts(bounds);
+  taxonomyContainers(bounds).forEach((container) => {
     layer.insertAdjacentHTML("beforeend", `
-      <g class="taxonomy-family">
-        <circle cx="${center.x}" cy="${center.y}" r="54" fill="${color}" opacity="0.08"></circle>
-        <text class="layout-label" x="${center.x}" y="${center.y - 66}" text-anchor="middle">${escapeHtml(familyLabels[family] || family)}</text>
+      <g class="taxonomy-container">
+        <rect x="${container.x}" y="${container.y}" width="${container.w}" height="${container.h}"></rect>
+        <text x="${container.x + 18}" y="${container.y - 12}">${escapeHtml(container.label)}</text>
+      </g>
+    `);
+  });
+  familyOrder().forEach((family) => {
+    const layout = layouts.get(family);
+    if (!layout) return;
+    const color = problemColorForFamily(family);
+    layer.insertAdjacentHTML("beforeend", `
+      <g class="taxonomy-family" data-family="${escapeHtml(family)}" data-x="${layout.x}" data-y="${layout.y}" transform="translate(${layout.x} ${layout.y})" style="--tax-color:${color}">
+        <rect class="taxonomy-family-hit" x="0" y="0" width="${layout.w}" height="${layout.h}"></rect>
+        <g class="taxonomy-family-visual">
+          <text class="layout-label taxonomy-family-label" x="${layout.w / 2}" y="16" text-anchor="middle">${escapeHtml(familyLabels[family] || family)}</text>
+          ${drawTaxonomyFamilyGlyph(family, layout, color)}
+        </g>
       </g>
     `);
   });
@@ -1011,19 +1039,354 @@ function drawTaxonomyBackdrop(group, bounds) {
 }
 
 function taxonomyFamilyCenters(bounds) {
-  const families = familyOrder();
-  const columns = Math.ceil(Math.sqrt(families.length));
-  const rows = Math.ceil(families.length / columns);
+  const layouts = taxonomyFamilyLayouts(bounds);
   const centers = new Map();
-  families.forEach((family, index) => {
-    const col = index % columns;
-    const row = Math.floor(index / columns);
-    centers.set(family, {
-      x: 140 + col * ((bounds.width - 280) / Math.max(1, columns - 1)),
-      y: 135 + row * ((bounds.height - 270) / Math.max(1, rows - 1))
+  layouts.forEach((layout, family) => {
+    centers.set(family, { x: layout.x + layout.w / 2, y: layout.y + layout.diagramY + layout.diagramH / 2 });
+  });
+  return centers;
+}
+
+function taxonomyFamilyLayouts(bounds) {
+  const centers = new Map();
+  const metrics = taxonomyMetrics(bounds);
+  taxonomyContainers(bounds).forEach((container) => {
+    const families = container.families.filter((family) => familyOrder().includes(family));
+    const columns = container.id === "enhancement"
+      ? Math.min(2, Math.max(1, families.length))
+      : clamp(Math.ceil(Math.sqrt(families.length * (container.w / Math.max(1, container.h)))), 2, 4);
+    const rows = Math.ceil(families.length / columns);
+    families.forEach((family, index) => {
+      const col = index % columns;
+      const row = Math.floor(index / columns);
+      const innerGap = metrics.cellGap;
+      const cellW = (container.w - innerGap) / columns;
+      const cellH = (container.h - innerGap - 4) / rows;
+      const x = container.x + innerGap / 2 + col * cellW;
+      const y = container.y + 22 + row * cellH;
+      const baseDiagramW = clamp(cellW - metrics.diagramSideInset * 2, 126, metrics.maxDiagramW);
+      centers.set(family, {
+        family,
+        x,
+        y,
+        w: Math.max(154, cellW - innerGap * 0.55),
+        h: Math.max(152, cellH - 10),
+        diagramX: metrics.diagramSideInset,
+        diagramY: 28,
+        diagramW: baseDiagramW,
+        diagramH: metrics.diagramH,
+        paperPitch: metrics.paperPitch,
+        paperRowGap: metrics.paperRowGap,
+        paperRadius: metrics.paperRadius,
+        paperLiteralRadius: metrics.paperLiteralRadius,
+        paperLabelSize: metrics.paperLabelSize,
+        paperLogoRadius: metrics.paperLogoRadius,
+        paperTopGap: metrics.paperTopGap
+      });
     });
   });
   return centers;
+}
+
+function taxonomyPaperPosition(model, bounds) {
+  const layout = taxonomyFamilyLayouts(bounds).get(model.family);
+  if (!layout) return null;
+  const familyModels = state.models.filter((item) => item.family === model.family);
+  const index = familyModels.findIndex((item) => item.id === model.id);
+  const pitchX = layout.paperPitch || 54;
+  const cols = Math.max(1, Math.floor((layout.w - 10) / pitchX));
+  const col = index % cols;
+  const row = Math.floor(index / cols);
+  const remaining = familyModels.length - row * cols;
+  const rowCount = Math.min(cols, remaining);
+  const rowWidth = (rowCount - 1) * pitchX;
+  const rowStart = (layout.w - rowWidth) / 2;
+  const startY = layout.y + layout.diagramY + layout.diagramH + (layout.paperTopGap || 22);
+  return {
+    x: layout.x + rowStart + col * pitchX,
+    y: startY + row * (layout.paperRowGap || 29)
+  };
+}
+
+function taxonomyMetrics(bounds) {
+  const width = bounds.width || 1200;
+  const large = width >= 1500;
+  const xl = width >= 1900;
+  return {
+    cellGap: xl ? 56 : large ? 48 : 42,
+    diagramSideInset: xl ? 10 : large ? 12 : 16,
+    maxDiagramW: xl ? 230 : large ? 198 : 154,
+    diagramH: xl ? 92 : large ? 80 : 66,
+    paperPitch: xl ? 76 : large ? 66 : 54,
+    paperRowGap: xl ? 40 : large ? 35 : 29,
+    paperRadius: xl ? 8 : large ? 7 : 6,
+    paperLiteralRadius: xl ? 10 : large ? 9 : 7.5,
+    paperLabelSize: xl ? 9.2 : large ? 8.4 : 7.2,
+    paperLogoRadius: xl ? 7.4 : large ? 6.6 : 5.8,
+    paperTopGap: xl ? 32 : large ? 28 : 24
+  };
+}
+
+function drawTaxonomyFamilyGlyph(family, layout, color) {
+  const x = layout.diagramX;
+  const y = layout.diagramY;
+  const w = layout.diagramW;
+  const h = layout.diagramH;
+  const scaleX = w / 154;
+  const scaleY = h / 70;
+  const sx = (value) => x + value * scaleX;
+  const sy = (value) => y + value * scaleY;
+  const ms = Math.min(scaleX, scaleY);
+  const rect = (bx, by, bw, bh, cls = "glyph-block", text = "") => `
+    <g>
+      <rect class="${cls}" x="${sx(bx)}" y="${sy(by)}" width="${bw * scaleX}" height="${bh * scaleY}"></rect>
+      ${text ? `<text class="glyph-mini-label" x="${sx(bx + bw / 2)}" y="${sy(by + bh / 2 + 3)}" text-anchor="middle">${escapeHtml(text)}</text>` : ""}
+    </g>
+  `;
+  const stack = (bx, by, bw, bh, cls = "glyph-core", text = "") => `
+    <g>
+      <rect class="${cls} glyph-stack-back" x="${sx(bx + 5)}" y="${sy(by - 3)}" width="${bw * scaleX}" height="${bh * scaleY}"></rect>
+      <rect class="${cls} glyph-stack-mid" x="${sx(bx + 2.5)}" y="${sy(by + 1.5)}" width="${bw * scaleX}" height="${bh * scaleY}"></rect>
+      <rect class="${cls}" x="${sx(bx)}" y="${sy(by + 6)}" width="${bw * scaleX}" height="${bh * scaleY}"></rect>
+      ${text ? `<text class="glyph-mini-label light" x="${sx(bx + bw / 2)}" y="${sy(by + 6 + bh / 2 + 3)}" text-anchor="middle">${escapeHtml(text)}</text>` : ""}
+    </g>
+  `;
+  const arrow = (x1, y1, x2, y2, cls = "glyph-line") =>
+    `<path class="${cls}" d="M ${sx(x1)} ${sy(y1)} C ${sx(x1 + (x2 - x1) * 0.48)} ${sy(y1)}, ${sx(x1 + (x2 - x1) * 0.52)} ${sy(y2)}, ${sx(x2)} ${sy(y2)}" marker-end="url(#atlasArrow)"></path>`;
+  const tokens = (tx, ty, count, cls = "glyph-token") => Array.from({ length: count }, (_, i) =>
+    `<rect class="${cls}" x="${sx(tx + i * 6.8)}" y="${sy(ty)}" width="${4.8 * scaleX}" height="${7.5 * scaleY}"></rect>`
+  ).join("");
+  const codebook = (tx, ty, cols, rows) => Array.from({ length: cols * rows }, (_, i) =>
+    `<rect class="glyph-code" x="${sx(tx + (i % cols) * 8.8)}" y="${sy(ty + Math.floor(i / cols) * 8.8)}" width="${6.2 * scaleX}" height="${6.2 * scaleY}"></rect>`
+  ).join("");
+  const dot = (cx, cy, cls = "glyph-dot", r = 4.7) =>
+    `<circle class="${cls}" cx="${sx(cx)}" cy="${sy(cy)}" r="${r * ms}"></circle>`;
+  const label = (text) => `<text class="taxonomy-glyph-caption" x="${x + w / 2}" y="${y + h + 12}" text-anchor="middle">${escapeHtml(text)}</text>`;
+
+  const diagrams = {
+    pixel_idm: () => `
+      ${rect(6, 18, 25, 32, "glyph-sensor", "obs")}
+      ${arrow(33, 34, 50, 34)}
+      ${stack(50, 12, 31, 34, "glyph-world", "video")}
+      <rect class="glyph-frame" x="${sx(86)}" y="${sy(13)}" width="${24 * scaleX}" height="${17 * scaleY}"></rect>
+      <rect class="glyph-frame" x="${sx(94)}" y="${sy(23)}" width="${24 * scaleX}" height="${17 * scaleY}"></rect>
+      <rect class="glyph-frame" x="${sx(102)}" y="${sy(33)}" width="${24 * scaleX}" height="${17 * scaleY}"></rect>
+      ${arrow(126, 41, 136, 41)}
+      ${rect(133, 22, 16, 28, "glyph-action", "IDM")}
+      ${label("decoded future -> IDM")}
+    `,
+    latent_idm: () => `
+      ${rect(6, 18, 25, 32, "glyph-sensor", "obs")}
+      ${arrow(33, 34, 52, 34)}
+      ${stack(52, 13, 32, 34, "glyph-world", "world")}
+      <ellipse class="glyph-latent-cloud" cx="${sx(102)}" cy="${sy(35)}" rx="${23 * scaleX}" ry="${18 * scaleY}"></ellipse>
+      ${dot(94, 30)}${dot(108, 35, "glyph-dot action")}${dot(99, 43, "glyph-dot state")}
+      ${arrow(125, 35, 137, 35)}
+      ${rect(134, 22, 16, 28, "glyph-action", "IDM")}
+      ${label("latent future -> IDM")}
+    `,
+    implicit_future: () => `
+      ${rect(6, 16, 25, 36, "glyph-sensor", "obs")}
+      ${arrow(33, 34, 56, 34)}
+      <g>
+        <rect class="glyph-implicit-region" x="${sx(56)}" y="${sy(12)}" width="${45 * scaleX}" height="${45 * scaleY}"></rect>
+        ${dot(70, 24)}${dot(84, 34, "glyph-dot state")}${dot(72, 47, "glyph-dot action")}
+        <path class="glyph-value-curve" d="M ${sx(62)} ${sy(51)} C ${sx(75)} ${sy(31)}, ${sx(88)} ${sy(58)}, ${sx(98)} ${sy(40)}"></path>
+      </g>
+      ${arrow(103, 35, 119, 35)}
+      ${stack(119, 14, 28, 34, "glyph-core", "policy")}
+      ${label("hidden future conditions policy")}
+    `,
+    unified: () => `
+      <g>
+        <rect class="glyph-sequence-shell" x="${sx(6)}" y="${sy(13)}" width="${48 * scaleX}" height="${44 * scaleY}"></rect>
+        ${tokens(13, 22, 5, "glyph-token")}
+        ${tokens(13, 35, 5, "glyph-token action")}
+      </g>
+      ${arrow(56, 35, 74, 35)}
+      ${stack(74, 8, 38, 45, "glyph-core", "Tr")}
+      ${arrow(113, 35, 132, 22)}
+      ${arrow(113, 35, 132, 49)}
+      ${rect(132, 14, 17, 16, "glyph-world", "o")}
+      ${rect(132, 42, 17, 16, "glyph-action", "a")}
+      ${label("one action-observation sequence")}
+    `,
+    joint_latent: () => `
+      ${rect(6, 12, 25, 18, "glyph-sensor", "obs")}
+      ${rect(6, 42, 25, 18, "glyph-action", "act")}
+      ${arrow(33, 21, 59, 30)}
+      ${arrow(33, 51, 59, 43)}
+      <ellipse class="glyph-latent" cx="${sx(79)}" cy="${sy(36)}" rx="${32 * scaleX}" ry="${24 * scaleY}"></ellipse>
+      ${dot(72, 29)}${dot(88, 39, "glyph-dot action")}${dot(76, 48, "glyph-dot state")}
+      ${arrow(108, 36, 132, 36)}
+      ${rect(130, 24, 19, 24, "glyph-core", "dec")}
+      ${label("shared obs-action geometry")}
+    `,
+    multi_stream: () => `
+      ${rect(7, 10, 78, 11, "glyph-world", "video stream")}
+      ${rect(7, 30, 78, 11, "glyph-action", "action stream")}
+      ${rect(7, 50, 78, 11, "glyph-state", "state/lang")}
+      ${arrow(87, 15, 119, 35)}
+      ${arrow(87, 35, 119, 35)}
+      ${arrow(87, 55, 119, 35)}
+      ${rect(117, 18, 30, 34, "glyph-core", "fuse")}
+      ${label("separate streams, shared fusion")}
+    `,
+    encoder_only: () => `
+      ${rect(6, 18, 28, 30, "glyph-sensor", "obs")}
+      ${arrow(36, 33, 61, 33, "glyph-line train")}
+      ${stack(61, 10, 34, 40, "glyph-world", "world")}
+      <path class="glyph-cut" d="M ${sx(99)} ${sy(12)} L ${sx(99)} ${sy(58)}"></path>
+      ${rect(105, 18, 28, 30, "glyph-core", "enc")}
+      ${arrow(134, 33, 148, 33)}
+      ${rect(144, 23, 8, 20, "glyph-action", "a")}
+      ${label("world loss removed at runtime")}
+    `,
+    multimodal: () => `
+      ${rect(6, 7, 48, 11, "glyph-world", "RGB")}
+      ${rect(6, 26, 48, 11, "glyph-state", "depth")}
+      ${rect(6, 45, 48, 11, "glyph-physical", "touch/force")}
+      ${arrow(56, 12, 84, 34)}
+      ${arrow(56, 31, 84, 34)}
+      ${arrow(56, 50, 84, 34)}
+      ${stack(84, 13, 38, 40, "glyph-core", "WAM")}
+      ${arrow(123, 34, 142, 34)}
+      ${rect(140, 23, 10, 22, "glyph-action", "a")}
+      ${label("physical state enters core")}
+    `,
+    latent_action: () => `
+      ${rect(6, 14, 27, 18, "glyph-sensor", "o_t")}
+      ${rect(6, 42, 27, 18, "glyph-sensor", "o_t+1")}
+      ${arrow(35, 24, 58, 34)}
+      ${arrow(35, 51, 58, 36)}
+      <rect class="glyph-codebook-shell" x="${sx(58)}" y="${sy(14)}" width="${44 * scaleX}" height="${43 * scaleY}"></rect>
+      ${codebook(64, 21, 4, 3)}
+      ${arrow(104, 35, 127, 35)}
+      ${rect(127, 17, 22, 36, "glyph-action", "policy")}
+      ${label("transition -> action code")}
+    `,
+    alignment: () => `
+      ${stack(10, 16, 36, 36, "glyph-core", "base")}
+      ${arrow(49, 35, 71, 35)}
+      <rect class="glyph-align-layer" x="${sx(70)}" y="${sy(16)}" width="${34 * scaleX}" height="${36 * scaleY}"></rect>
+      <path class="glyph-align-wave" d="M ${sx(76)} ${sy(42)} C ${sx(84)} ${sy(22)}, ${sx(94)} ${sy(50)}, ${sx(101)} ${sy(28)}"></path>
+      ${arrow(106, 35, 130, 35)}
+      ${rect(129, 22, 18, 26, "glyph-action", "a")}
+      ${label("align world features to actions")}
+    `,
+    online_adaptation: () => `
+      ${rect(8, 18, 28, 30, "glyph-sensor", "obs")}
+      ${arrow(38, 33, 66, 33)}
+      ${stack(66, 12, 34, 40, "glyph-core", "policy")}
+      ${arrow(102, 33, 131, 33)}
+      ${rect(130, 22, 18, 24, "glyph-action", "a")}
+      <path class="glyph-loop" d="M ${sx(133)} ${sy(51)} C ${sx(102)} ${sy(68)}, ${sx(68)} ${sy(68)}, ${sx(66)} ${sy(50)}" marker-end="url(#atlasArrow)"></path>
+      ${rect(72, 52, 28, 12, "glyph-state", "error")}
+      ${label("prediction error updates policy")}
+    `,
+    speedup: () => `
+      ${rect(7, 18, 27, 30, "glyph-sensor", "obs")}
+      ${arrow(36, 33, 61, 33)}
+      ${stack(61, 11, 36, 42, "glyph-world dim", "slow")}
+      <path class="glyph-bypass" d="M ${sx(37)} ${sy(50)} C ${sx(62)} ${sy(68)}, ${sx(105)} ${sy(66)}, ${sx(131)} ${sy(44)}" marker-end="url(#atlasArrow)"></path>
+      ${rect(104, 18, 24, 28, "glyph-state", "cache")}
+      ${rect(132, 22, 17, 24, "glyph-action", "a")}
+      ${label("cache, distill, or skip foresight")}
+    `
+  };
+
+  const svg = (diagrams[family] || diagrams.alignment)();
+  return `
+    <g class="taxonomy-glyph" style="--tax-color:${color}">
+      <rect class="taxonomy-glyph-bg" x="${x}" y="${y}" width="${w}" height="${h}"></rect>
+      ${svg}
+    </g>
+  `;
+}
+
+function bindTaxonomyFamilyHover(group) {
+  if (state.mode !== "taxonomy") return;
+  const setFamilyHover = (family, active) => {
+    state.taxonomyHoveredFamily = active ? family : null;
+    const item = Array.from(group.querySelectorAll(".taxonomy-family")).find((candidate) => candidate.dataset.family === family);
+    if (!item) return;
+    const box = item.getBBox();
+    const localCx = box.x + box.width / 2;
+    const localCy = box.y + box.height / 2;
+    const absCx = Number(item.dataset.x || 0) + localCx;
+    const absCy = Number(item.dataset.y || 0) + localCy;
+    const scale = 1.3;
+    group.querySelectorAll(".taxonomy-family").forEach((item) => {
+      if (item.dataset.family !== family) return;
+      item.classList.toggle("is-hovered", active);
+      if (!active) {
+        item.setAttribute("transform", item.dataset.baseTransform || item.getAttribute("transform") || "");
+        return;
+      }
+      item.dataset.baseTransform ||= item.getAttribute("transform") || "";
+      item.setAttribute("transform", `${item.dataset.baseTransform} translate(${localCx} ${localCy}) scale(${scale}) translate(${-localCx} ${-localCy})`);
+    });
+    group.querySelectorAll(".node").forEach((node) => {
+      if (node.dataset.family !== family) return;
+      node.classList.toggle("taxonomy-family-paper-hover", active);
+      if (!active) {
+        node.setAttribute("transform", node.dataset.baseTransform || node.getAttribute("transform") || "");
+        return;
+      }
+      node.dataset.baseTransform ||= node.getAttribute("transform") || "";
+      const x = Number(node.dataset.targetX || 0);
+      const y = Number(node.dataset.targetY || 0);
+      const sx = absCx + (x - absCx) * scale;
+      const sy = absCy + (y - absCy) * scale;
+      node.setAttribute("transform", `translate(${sx} ${sy}) scale(${scale})`);
+    });
+  };
+  group.querySelectorAll(".taxonomy-family").forEach((item) => {
+    item.addEventListener("mouseenter", () => {
+      setFamilyHover(item.dataset.family, true);
+    });
+    item.addEventListener("mouseleave", () => {
+      if (state.taxonomyHoveredFamily === item.dataset.family) {
+        setFamilyHover(item.dataset.family, false);
+      }
+    });
+  });
+  group.querySelectorAll(".node").forEach((node) => {
+    if (!node.dataset.family) return;
+    node.addEventListener("mouseenter", () => setFamilyHover(node.dataset.family, true));
+    node.addEventListener("mouseleave", () => {
+      if (state.taxonomyHoveredFamily === node.dataset.family) setFamilyHover(node.dataset.family, false);
+    });
+  });
+}
+
+function taxonomyContainers(bounds) {
+  const margin = clamp(bounds.width * 0.035, 34, 76);
+  const top = bounds.width >= 1500 ? 104 : 116;
+  const bottom = 28;
+  const gap = bounds.width >= 1500 ? 34 : 28;
+  const h = Math.max(390, bounds.height - top - bottom);
+  const available = Math.min(bounds.width - margin * 2, 1740);
+  const x0 = (bounds.width - available) / 2;
+  const stack = bounds.width < 900;
+  if (stack) {
+    const half = (h - gap) / 2;
+    return taxonomyGroups.map((group, index) => ({
+      ...group,
+      x: x0,
+      y: top + index * (half + gap),
+      w: available,
+      h: half
+    }));
+  }
+  const enhancementW = clamp(available * 0.34, 420, 540);
+  const architectureW = available - enhancementW - gap;
+  return taxonomyGroups.map((group) => {
+    if (group.id === "enhancement") {
+      return { ...group, x: x0 + architectureW + gap, y: top, w: enhancementW, h };
+    }
+    return { ...group, x: x0, y: top, w: architectureW, h };
+  });
 }
 
 function drawQuestionNode(point, text, cls, color, width, level, eyebrow = "") {
@@ -1037,11 +1400,13 @@ function drawQuestionNode(point, text, cls, color, width, level, eyebrow = "") {
   const groupId = level === "root" ? "root" : point.groupId || point.id || "";
   return `
     <g class="${cls} problem-pop" transform="translate(${point.x} ${point.y})" data-node-id="${escapeHtml(point.id || "")}" data-group-id="${escapeHtml(groupId)}" data-level="${level}" data-width="${collision.w}" data-height="${collision.h}" data-start-x="${startX}" data-start-y="${startY}" data-final-x="${point.x}" data-final-y="${point.y}">
-      ${boxed ? `<rect x="${-boxWidth / 2}" y="${-h / 2}" width="${boxWidth}" height="${h}" fill="${color}"></rect>` : ""}
-      ${boxed && eyebrow ? `<text class="problem-eyebrow" x="0" y="${-h / 2 + 13}" text-anchor="middle">${escapeHtml(eyebrow)}</text>` : ""}
-      <text class="problem-question" x="0" y="${boxed ? -h / 2 + top : top}" text-anchor="middle" style="fill:${escapeHtml(fill)};font-size:${fontSize}px;font-weight:${weight}">
-        ${lines.map((line, index) => `<tspan x="0" dy="${index ? lineHeight : 0}">${escapeHtml(line)}</tspan>`).join("")}
-      </text>
+      <g class="problem-scale-target">
+        ${boxed ? `<rect x="${-boxWidth / 2}" y="${-h / 2}" width="${boxWidth}" height="${h}" fill="${color}"></rect>` : ""}
+        ${boxed && eyebrow ? `<text class="problem-eyebrow" x="0" y="${-h / 2 + 13}" text-anchor="middle">${escapeHtml(eyebrow)}</text>` : ""}
+        <text class="problem-question" x="0" y="${boxed ? -h / 2 + top : top}" text-anchor="middle" style="fill:${escapeHtml(fill)};font-size:${fontSize}px;font-weight:${weight}">
+          ${lines.map((line, index) => `<tspan x="0" dy="${index ? lineHeight : 0}">${escapeHtml(line)}</tspan>`).join("")}
+        </text>
+      </g>
     </g>
   `;
 }
@@ -1209,8 +1574,9 @@ function atlasAnnotationLayer(name) {
 function drawPaperNode(model, radius, color, hasLiteral, labelSide = "right") {
   const inst = institutionFor(model);
   const logo = institutionLogoUrl(inst.domain);
-  const labelX = labelSide === "left" ? -(radius + 9) : radius + 9;
-  const labelAnchor = labelSide === "left" ? "end" : "start";
+  const labelX = labelSide === "left" ? -(radius + 9) : labelSide === "bottom" ? 0 : radius + 9;
+  const labelY = labelSide === "bottom" ? radius + 13 : 4;
+  const labelAnchor = labelSide === "left" ? "end" : labelSide === "bottom" ? "middle" : "start";
   return `
     <circle class="node-halo" r="${radius + 5}" fill="${color}" opacity=".16"></circle>
     <circle class="node-ring" r="${radius}" fill="${color}"></circle>
@@ -1218,7 +1584,7 @@ function drawPaperNode(model, radius, color, hasLiteral, labelSide = "right") {
     <text class="logo-initials" x="0" y="3" text-anchor="middle">${escapeHtml(inst.initials)}</text>
     <image class="node-logo-image" href="${escapeHtml(logo)}" x="-8" y="-8" width="16" height="16"></image>
     ${hasLiteral ? `<circle class="node-literal-dot" cx="${radius - 2}" cy="${-radius + 2}" r="3.3"></circle>` : ""}
-    <text class="node-name" x="${labelX}" y="4" text-anchor="${labelAnchor}">${escapeHtml(shortPaperName(model.name))}</text>
+    <text class="node-name" x="${labelX}" y="${labelY}" text-anchor="${labelAnchor}">${escapeHtml(shortPaperName(model.name))}</text>
     <title>${escapeHtml(`${model.name} - ${inst.label}`)}</title>
   `;
 }
@@ -1291,6 +1657,9 @@ function renderAtlas() {
     if (!visible.has(model.id)) node.classList.add("is-muted");
     if (state.selectedId === model.id || state.hoveredId === model.id) node.classList.add("is-active");
     node.dataset.id = model.id;
+    node.dataset.family = model.family;
+    node.dataset.targetX = String(target.x);
+    node.dataset.targetY = String(target.y);
     node.style.transition = useProblemIntro ? "none" : "transform 720ms cubic-bezier(.22,.61,.36,1), opacity 360ms ease";
     const start = previousPositions.get(model.id);
     if (useProblemIntro) {
@@ -1304,9 +1673,18 @@ function renderAtlas() {
       node.style.opacity = "0";
     }
 
-    const radius = hasLiteral ? 12 : 9;
-    const color = familyColors[model.family] || "#61717a";
-    node.innerHTML = `<g class="node-body">${drawPaperNode(model, radius, color, hasLiteral, target.x > width - 180 ? "left" : "right")}</g>`;
+    const radius = state.mode === "taxonomy" ? (hasLiteral ? 7.5 : 6) : hasLiteral ? 12 : 9;
+    const color = state.mode === "taxonomy" ? problemColorForModel(model) : familyColors[model.family] || "#61717a";
+    const labelSide = state.mode === "taxonomy" ? "bottom" : target.x > width - 180 ? "left" : "right";
+    let paperRadius = radius;
+    let taxonomyStyle = "";
+    if (state.mode === "taxonomy") {
+      const layout = taxonomyFamilyLayouts(bounds).get(model.family);
+      paperRadius = hasLiteral ? layout?.paperLiteralRadius || 7.5 : layout?.paperRadius || 6;
+      const logoRadius = layout?.paperLogoRadius || 5.8;
+      taxonomyStyle = `--taxonomy-label-size:${layout?.paperLabelSize || 7.2}px;--taxonomy-logo-radius:${logoRadius}px;--taxonomy-logo-size:${logoRadius * 1.65}px;`;
+    }
+    node.innerHTML = `<g class="node-body ${state.mode === "taxonomy" ? "taxonomy-node-body" : ""}" style="${taxonomyStyle}">${drawPaperNode(model, paperRadius, color, hasLiteral, labelSide)}</g>`;
     node.addEventListener("mouseenter", (event) => showPreview(model.id, event));
     node.addEventListener("mousemove", positionPreview);
     node.addEventListener("mouseleave", hidePreview);
@@ -1318,6 +1696,8 @@ function renderAtlas() {
     animatedNodes.push({ node, target, visible: visible.has(model.id), leafId: leaf?.id || "", groupId: leaf?.groupId || "" });
   });
 
+  if (state.mode === "taxonomy") bindTaxonomyFamilyHover(group);
+
   $("#modeDescription").textContent = modeDescriptions[state.mode];
   bindZoom(svg, group);
   requestAnimationFrame(() => {
@@ -1327,6 +1707,7 @@ function renderAtlas() {
     } else {
       animatedNodes.forEach(({ node, target, visible: isVisible }) => {
         node.setAttribute("transform", `translate(${target.x} ${target.y})`);
+        node.dataset.baseTransform = `translate(${target.x} ${target.y})`;
         node.style.opacity = isVisible ? "1" : "0.18";
       });
     }
@@ -1548,6 +1929,7 @@ function showPreview(id, event) {
   const spec = getArchitectureSpec(model);
   state.hoveredId = id;
   $("#previewPanel").hidden = false;
+  $("#previewPanel").style.setProperty("--preview-outline", problemColorForModel(model));
   $("#previewEmpty").hidden = true;
   $("#previewContent").hidden = false;
   $("#previewFamily").textContent = `${model.category}${spec ? " / source-backed diagram" : " / survey-level diagram"}`;
@@ -1683,7 +2065,7 @@ function renderModelCard(id) {
   const spec = getArchitectureSpec(model);
   state.selectedId = model.id;
   $("#modelFamily").textContent = `${model.category}${spec ? " / source-backed literal architecture" : " / survey-level placeholder"}`;
-  $("#modelName").textContent = `${model.name}: ${model.title}`;
+  $("#modelName").textContent = model.title;
   $("#modelOneLine").textContent = model.oneLine;
   $("#modelPaperLink").href = model.paperUrl;
   $("#modelYear").textContent = `${model.month ? `${model.month}/` : ""}${model.year}`;
@@ -1720,11 +2102,7 @@ function renderDiagram(container, model, options = {}) {
   const view = { w: 1160, h: options.mini ? 452 : 720 };
   const diagram = buildArchitectureDiagram(model, spec, options);
   const ids = diagramIds(model, options);
-  const title = spec ? "Literal method-section architecture" : "Survey-level scaffold";
-  const header = options.mini ? "" : `
-      <text x="34" y="32" class="diagram-kicker">${escapeHtml(title)}</text>
-      <text x="34" y="56" class="diagram-title">${escapeHtml(model.name)}</text>
-      <text x="34" y="78" class="diagram-subtitle">${escapeHtml(diagram.thesis)}</text>`;
+  const header = "";
 
   container.innerHTML = `
     <svg class="wam-diagram" viewBox="0 0 ${view.w} ${view.h}" preserveAspectRatio="xMidYMin meet" role="img" aria-label="${escapeHtml(model.name)} architecture diagram">
@@ -1763,6 +2141,8 @@ function buildArchitectureDiagram(model, spec, options = {}) {
   ].join(" ").toLowerCase();
 
   return {
+    pattern: model.diagram?.pattern || model.family,
+    family: model.family,
     thesis: model.oneLine || model.insights?.method || model.category,
     inputs: inferTokenGroups(model, arch, allText, options),
     encoders: inferEncoders(arch, allText, options),
@@ -1779,6 +2159,15 @@ function buildArchitectureDiagram(model, spec, options = {}) {
 }
 
 function drawArchitectureDiagram(diagram, view, options = {}, ids) {
+  const pattern = diagram.pattern || diagram.family;
+  if (pattern === "unified") return drawUnifiedArchitecture(diagram, view, options, ids);
+  if (pattern === "multi_stream") return drawMultiStreamArchitecture(diagram, view, options, ids);
+  if (pattern === "joint_latent") return drawJointLatentArchitecture(diagram, view, options, ids);
+  if (pattern === "latent_action") return drawLatentActionArchitecture(diagram, view, options, ids);
+  if (pattern === "implicit_future") return drawImplicitFutureArchitecture(diagram, view, options, ids);
+  if (["pixel_idm", "latent_idm"].includes(pattern)) return drawFutureIdmArchitecture(diagram, view, options, ids);
+  if (["alignment", "multimodal", "online_adaptation", "speedup", "encoder_only"].includes(pattern)) return drawEnhancementArchitecture(diagram, view, options, ids);
+
   const mini = Boolean(options.mini);
   const y0 = mini ? 22 : 118;
   const coreBox = { x: 455, y: y0, w: 380, h: mini ? 270 : 330 };
@@ -1798,6 +2187,428 @@ function drawArchitectureDiagram(diagram, view, options = {}, ids) {
     drawTrainingBand(diagram, trainBox, coreBox, headBox, mini, ids),
     mini ? "" : drawRuntimeStrip(diagram.runtime, coreBox, outputBox, trainBox)
   ].join("");
+}
+
+function diagramLayoutY(options) {
+  return options.mini ? 22 : 34;
+}
+
+function diagramMainHeight(options) {
+  return options.mini ? 270 : 330;
+}
+
+function drawUnifiedArchitecture(diagram, view, options = {}, ids) {
+  const mini = Boolean(options.mini);
+  const y0 = diagramLayoutY(options);
+  const h = diagramMainHeight(options);
+  const inputBox = { x: 34, y: y0, w: 218, h };
+  const sequenceBox = { x: 286, y: y0 + 20, w: 208, h: h - 40 };
+  const coreBox = { x: 532, y: y0, w: 308, h };
+  const outputBox = { x: 880, y: y0, w: 246, h };
+  const trainBox = { x: 34, y: y0 + h + 36, w: 1092, h: mini ? 108 : 142 };
+  return [
+    drawColumnPanel(inputBox, "typed input streams", drawTokenGroups(diagram.inputs, inputBox, mini)),
+    drawUnifiedSequence(sequenceBox, diagram, mini),
+    drawUnifiedCore(coreBox, diagram, mini, ids),
+    drawUnifiedOutputs(outputBox, diagram, mini),
+    drawConnector(inputBox.x + inputBox.w, inputBox.y + h * 0.5, sequenceBox.x, sequenceBox.y + sequenceBox.h * 0.5, "pack tokens", false, ids),
+    drawConnector(sequenceBox.x + sequenceBox.w, sequenceBox.y + sequenceBox.h * 0.5, coreBox.x, coreBox.y + h * 0.5, "single sequence", false, ids),
+    drawConnector(coreBox.x + coreBox.w, coreBox.y + h * 0.45, outputBox.x, outputBox.y + h * 0.45, "parallel decode", false, ids),
+    drawTrainingBand(diagram, trainBox, coreBox, outputBox, mini, ids),
+    mini ? "" : drawRuntimeStrip(diagram.runtime, coreBox, outputBox, trainBox)
+  ].join("");
+}
+
+function drawUnifiedSequence(box, diagram, mini) {
+  const groups = diagram.inputs.slice(0, mini ? 4 : 5);
+  const tokenKinds = groups.length ? groups : [
+    { kind: "visual", label: "obs" },
+    { kind: "action", label: "act" },
+    { kind: "noise", label: "future" }
+  ];
+  const colors = { visual: "#5d8fc5", language: "#9874b8", state: "#72a36e", action: "#d49a3d", noise: "#a9b1b8" };
+  const rows = tokenKinds.map((group, row) => {
+    const y = box.y + 54 + row * (mini ? 36 : 42);
+    const cells = Array.from({ length: 8 }, (_, i) => `
+      <rect class="sequence-token" x="${box.x + 28 + i * 19}" y="${y}" width="14" height="18" fill="${colors[group.kind] || colors.visual}"></rect>
+    `).join("");
+    return `
+      <g>
+        <text class="stream-label" x="${box.x + 18}" y="${y - 8}">${escapeHtml(shortText(group.label, 18))}</text>
+        ${cells}
+      </g>
+    `;
+  }).join("");
+  return `
+    <g>
+      <rect class="sequence-panel" x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}"></rect>
+      <text class="panel-title" x="${box.x + 14}" y="${box.y + 24}">one interleaved token sequence</text>
+      ${rows}
+    </g>
+  `;
+}
+
+function drawUnifiedCore(box, diagram, mini, ids) {
+  const layerH = mini ? 28 : 34;
+  const layers = diagram.core.layerBadges.slice(0, mini ? 5 : 6).map((label, index) => `
+    <g>
+      <rect class="unified-layer" x="${box.x + 34 + index * 18}" y="${box.y + 76 + index * (layerH - 12)}" width="${box.w - 68}" height="${layerH}"></rect>
+      <text class="layer-text" x="${box.x + box.w / 2 + index * 18}" y="${box.y + 94 + index * (layerH - 12)}" text-anchor="middle">${escapeHtml(label)}</text>
+    </g>
+  `).join("");
+  return `
+    <g filter="url(#${ids.softShadow})">
+      <rect class="core-panel unified-core" x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" fill="url(#${ids.coreGrad})"></rect>
+      <text class="core-title" x="${box.x + 22}" y="${box.y + 30}">${escapeHtml(diagram.core.label)}</text>
+      ${drawWrappedText(diagram.core.details.join(" / "), box.x + 22, box.y + 50, 32, 2, "core-detail", 11)}
+      ${layers}
+      ${drawAttentionBadges(diagram.attention, box, mini)}
+    </g>
+  `;
+}
+
+function drawUnifiedOutputs(box, diagram, mini) {
+  const outputs = uniqueByText([
+    ...diagram.outputs,
+    { label: "Observation Tokens", detail: "future/current visual tokens" },
+    { label: "Action Tokens", detail: "control chunk tokens" }
+  ], "label").slice(0, mini ? 4 : 5);
+  const itemH = mini ? 48 : 54;
+  return `
+    <g>
+      <rect class="diagram-panel" x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}"></rect>
+      <text class="panel-title" x="${box.x + 14}" y="${box.y + 24}">decoded token heads</text>
+      ${outputs.map((output, index) => {
+        const y = box.y + 48 + index * (itemH + 10);
+        return `
+          <g class="diagram-node">
+            <rect class="${/action/i.test(output.label) ? "action-output" : "output-block"}" x="${box.x + 18}" y="${y}" width="${box.w - 36}" height="${itemH}"></rect>
+            <text class="output-label" x="${box.x + 30}" y="${y + 18}">${escapeHtml(shortText(output.label, 25))}</text>
+            ${drawWrappedText(output.detail, box.x + 30, y + 35, 26, 1, "output-detail", 10)}
+          </g>
+        `;
+      }).join("")}
+    </g>
+  `;
+}
+
+function drawMultiStreamArchitecture(diagram, view, options = {}, ids) {
+  const mini = Boolean(options.mini);
+  const y0 = diagramLayoutY(options);
+  const h = diagramMainHeight(options);
+  const inputBox = { x: 34, y: y0, w: 190, h };
+  const streamBox = { x: 272, y: y0, w: 536, h };
+  const headBox = { x: 858, y: y0, w: 268, h };
+  const trainBox = { x: 34, y: y0 + h + 36, w: 1092, h: mini ? 108 : 142 };
+  return [
+    drawColumnPanel(inputBox, "stream inputs", drawTokenGroups(diagram.inputs, inputBox, mini)),
+    drawParallelStreams(streamBox, diagram, mini, ids),
+    drawColumnPanel(headBox, "expert / fused outputs", drawHeadStack([...diagram.heads, ...diagram.outputs].slice(0, mini ? 4 : 5), headBox, mini)),
+    drawConnector(inputBox.x + inputBox.w, inputBox.y + h * 0.5, streamBox.x, streamBox.y + h * 0.5, "route", false, ids),
+    drawConnector(streamBox.x + streamBox.w, streamBox.y + h * 0.5, headBox.x, headBox.y + h * 0.5, "fuse", false, ids),
+    drawTrainingBand(diagram, trainBox, streamBox, headBox, mini, ids),
+    mini ? "" : drawRuntimeStrip(diagram.runtime, streamBox, headBox, trainBox)
+  ].join("");
+}
+
+function drawParallelStreams(box, diagram, mini, ids) {
+  const streams = diagram.streams.length ? diagram.streams : [
+    { label: "Video stream", detail: "world tokens", color: "#4c78a8" },
+    { label: "Action stream", detail: "policy tokens", color: "#d08a2e" }
+  ];
+  const visible = streams.slice(0, mini ? 4 : 5);
+  const laneH = Math.min(mini ? 48 : 56, (box.h - 76) / Math.max(visible.length, 1) - 8);
+  const lanes = visible.map((stream, index) => {
+    const y = box.y + 58 + index * (laneH + 12);
+    return `
+      <g>
+        <rect class="stream-lane" x="${box.x + 22}" y="${y}" width="${box.w - 86}" height="${laneH}" style="--stream:${stream.color}"></rect>
+        <text class="stream-label" x="${box.x + 38}" y="${y + 18}">${escapeHtml(stream.label)}</text>
+        ${drawWrappedText(stream.detail, box.x + 38, y + 35, 36, 1, "stream-detail", 9.5)}
+        <path class="diagram-flow stream-to-hub" d="M ${box.x + box.w - 64} ${y + laneH / 2} L ${box.x + box.w - 24} ${box.y + box.h / 2}" marker-end="url(#${ids.arrow})"></path>
+      </g>
+    `;
+  }).join("");
+  return `
+    <g filter="url(#${ids.softShadow})">
+      <rect class="core-panel" x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" fill="url(#${ids.coreGrad})"></rect>
+      <text class="core-title" x="${box.x + 22}" y="${box.y + 30}">${escapeHtml(diagram.core.label)}</text>
+      <rect class="attention-hub" x="${box.x + box.w - 70}" y="${box.y + box.h / 2 - 46}" width="58" height="92"></rect>
+      <text class="attention-hub-label" x="${box.x + box.w - 41}" y="${box.y + box.h / 2 - 10}" text-anchor="middle">shared</text>
+      <text class="attention-hub-label" x="${box.x + box.w - 41}" y="${box.y + box.h / 2 + 7}" text-anchor="middle">attention</text>
+      ${lanes}
+    </g>
+  `;
+}
+
+function drawJointLatentArchitecture(diagram, view, options = {}, ids) {
+  const mini = Boolean(options.mini);
+  const y0 = diagramLayoutY(options);
+  const h = diagramMainHeight(options);
+  const latent = { x: 456, y: y0 + 38, w: 286, h: h - 76 };
+  const leftBox = { x: 34, y: y0, w: 258, h };
+  const rightBox = { x: 886, y: y0, w: 240, h };
+  const trainBox = { x: 34, y: y0 + h + 36, w: 1092, h: mini ? 108 : 142 };
+  return [
+    drawColumnPanel(leftBox, "encoders into shared space", drawTokenGroups(diagram.inputs, leftBox, mini)),
+    drawLatentManifold(latent, diagram, mini, ids),
+    drawColumnPanel(rightBox, "decoders from latent space", drawOutputStack([...diagram.outputs, ...diagram.heads].slice(0, mini ? 4 : 5), rightBox, mini)),
+    drawConnector(leftBox.x + leftBox.w, leftBox.y + h * 0.42, latent.x, latent.y + latent.h * 0.44, "embed", false, ids),
+    drawConnector(latent.x + latent.w, latent.y + latent.h * 0.44, rightBox.x, rightBox.y + h * 0.42, "decode", false, ids),
+    drawConnector(rightBox.x, rightBox.y + h * 0.66, latent.x + latent.w, latent.y + latent.h * 0.66, "align", true, ids),
+    drawTrainingBand(diagram, trainBox, latent, rightBox, mini, ids),
+    mini ? "" : drawRuntimeStrip(diagram.runtime, latent, rightBox, trainBox)
+  ].join("");
+}
+
+function drawLatentManifold(box, diagram, mini, ids) {
+  const nodes = [
+    ["obs z", box.x + box.w * 0.35, box.y + box.h * 0.26, "#5d8fc5"],
+    ["action z", box.x + box.w * 0.66, box.y + box.h * 0.32, "#d49a3d"],
+    ["future z", box.x + box.w * 0.50, box.y + box.h * 0.58, "#72a36e"],
+    ["goal z", box.x + box.w * 0.35, box.y + box.h * 0.76, "#9874b8"]
+  ].slice(0, mini ? 3 : 4);
+  return `
+    <g filter="url(#${ids.softShadow})">
+      <ellipse class="latent-space" cx="${box.x + box.w / 2}" cy="${box.y + box.h / 2}" rx="${box.w / 2}" ry="${box.h / 2}"></ellipse>
+      <text class="core-title" x="${box.x + box.w / 2}" y="${box.y + 30}" text-anchor="middle">shared action-observation latent space</text>
+      ${drawWrappedText(diagram.core.details.join(" / "), box.x + 40, box.y + 52, 32, 2, "core-detail", 11)}
+      ${nodes.map(([label, x, y, color], index) => `
+        <g>
+          <circle class="latent-node" cx="${x}" cy="${y}" r="${mini ? 20 : 24}" fill="${color}"></circle>
+          <text class="latent-label" x="${x}" y="${y + 4}" text-anchor="middle">${escapeHtml(label)}</text>
+          ${index ? `<path class="dashed-flow" d="M ${nodes[0][1]} ${nodes[0][2]} C ${box.x + box.w / 2} ${box.y + box.h / 2}, ${box.x + box.w / 2} ${box.y + box.h / 2}, ${x} ${y}" marker-end="url(#${ids.arrow})"></path>` : ""}
+        </g>
+      `).join("")}
+    </g>
+  `;
+}
+
+function drawLatentActionArchitecture(diagram, view, options = {}, ids) {
+  const mini = Boolean(options.mini);
+  const y0 = diagramLayoutY(options);
+  const h = diagramMainHeight(options);
+  const videoBox = { x: 34, y: y0, w: 240, h };
+  const codeBox = { x: 330, y: y0 + 18, w: 250, h: h - 36 };
+  const policyBox = { x: 642, y: y0, w: 250, h };
+  const outputBox = { x: 940, y: y0, w: 186, h };
+  const trainBox = { x: 34, y: y0 + h + 36, w: 1092, h: mini ? 108 : 142 };
+  return [
+    drawColumnPanel(videoBox, "video transition evidence", drawTokenGroups(diagram.inputs, videoBox, mini)),
+    drawLatentActionCodebook(codeBox, diagram, mini),
+    drawPolicyGrounding(policyBox, diagram, mini, ids),
+    drawColumnPanel(outputBox, "grounded controls", drawOutputStack(diagram.outputs, outputBox, mini)),
+    drawConnector(videoBox.x + videoBox.w, videoBox.y + h * 0.42, codeBox.x, codeBox.y + codeBox.h * 0.42, "infer code", false, ids),
+    drawConnector(codeBox.x + codeBox.w, codeBox.y + codeBox.h * 0.5, policyBox.x, policyBox.y + h * 0.5, "condition", false, ids),
+    drawConnector(policyBox.x + policyBox.w, policyBox.y + h * 0.48, outputBox.x, outputBox.y + h * 0.48, "decode", false, ids),
+    drawTrainingBand(diagram, trainBox, codeBox, policyBox, mini, ids),
+    mini ? "" : drawRuntimeStrip(diagram.runtime, policyBox, outputBox, trainBox)
+  ].join("");
+}
+
+function drawLatentActionCodebook(box, diagram, mini) {
+  const cells = Array.from({ length: mini ? 18 : 28 }, (_, index) => {
+    const col = index % 7;
+    const row = Math.floor(index / 7);
+    return `<rect class="codebook-cell" x="${box.x + 36 + col * 24}" y="${box.y + 82 + row * 24}" width="17" height="17"></rect>`;
+  }).join("");
+  return `
+    <g>
+      <rect class="codebook-panel" x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}"></rect>
+      <text class="core-title" x="${box.x + 22}" y="${box.y + 30}">latent action interface</text>
+      ${drawWrappedText(diagram.core.details.join(" / "), box.x + 22, box.y + 52, 28, 2, "core-detail", 11)}
+      ${cells}
+      <text class="core-note" x="${box.x + 32}" y="${box.y + box.h - 24}">discrete / continuous action code</text>
+    </g>
+  `;
+}
+
+function drawPolicyGrounding(box, diagram, mini, ids) {
+  return `
+    <g filter="url(#${ids.softShadow})">
+      <rect class="core-panel" x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" fill="url(#${ids.coreGrad})"></rect>
+      <text class="core-title" x="${box.x + 22}" y="${box.y + 30}">${escapeHtml(diagram.core.label)}</text>
+      ${drawEncoderStack(diagram.encoders.slice(0, mini ? 3 : 4), { x: box.x + 8, y: box.y + 26, w: box.w - 16, h: box.h - 40 }, mini)}
+      <rect class="action-head-large" x="${box.x + 34}" y="${box.y + box.h - 82}" width="${box.w - 68}" height="48"></rect>
+      <text class="output-label" x="${box.x + box.w / 2}" y="${box.y + box.h - 53}" text-anchor="middle">policy grounding head</text>
+    </g>
+  `;
+}
+
+function drawFutureIdmArchitecture(diagram, view, options = {}, ids) {
+  const mini = Boolean(options.mini);
+  const y0 = diagramLayoutY(options);
+  const h = diagramMainHeight(options);
+  const inputBox = { x: 34, y: y0, w: 224, h };
+  const futureBox = { x: 318, y: y0, w: 310, h };
+  const idmBox = { x: 700, y: y0 + 36, w: 196, h: h - 72 };
+  const outputBox = { x: 960, y: y0, w: 166, h };
+  const trainBox = { x: 34, y: y0 + h + 36, w: 1092, h: mini ? 108 : 142 };
+  return [
+    drawColumnPanel(inputBox, "observation / goal", drawTokenGroups(diagram.inputs, inputBox, mini)),
+    drawFuturePredictor(futureBox, diagram, mini, ids),
+    drawInverseDynamics(idmBox, diagram, mini),
+    drawColumnPanel(outputBox, "action result", drawOutputStack(diagram.outputs, outputBox, mini)),
+    drawConnector(inputBox.x + inputBox.w, inputBox.y + h * 0.44, futureBox.x, futureBox.y + h * 0.44, "predict", false, ids),
+    drawConnector(futureBox.x + futureBox.w, futureBox.y + h * 0.5, idmBox.x, idmBox.y + idmBox.h * 0.5, "future state", false, ids),
+    drawConnector(idmBox.x + idmBox.w, idmBox.y + idmBox.h * 0.5, outputBox.x, outputBox.y + h * 0.5, "inverse dynamics", false, ids),
+    drawTrainingBand(diagram, trainBox, futureBox, idmBox, mini, ids),
+    mini ? "" : drawRuntimeStrip(diagram.runtime, idmBox, outputBox, trainBox)
+  ].join("");
+}
+
+function drawImplicitFutureArchitecture(diagram, view, options = {}, ids) {
+  const mini = Boolean(options.mini);
+  const y0 = diagramLayoutY(options);
+  const h = diagramMainHeight(options);
+  const inputBox = { x: 34, y: y0, w: 226, h };
+  const repBox = { x: 324, y: y0 + 18, w: 286, h: h - 36 };
+  const policyBox = { x: 682, y: y0, w: 276, h };
+  const outputBox = { x: 1002, y: y0, w: 124, h };
+  const trainBox = { x: 34, y: y0 + h + 36, w: 1092, h: mini ? 108 : 142 };
+  return [
+    drawColumnPanel(inputBox, "observation / goal context", drawTokenGroups(diagram.inputs, inputBox, mini)),
+    drawImplicitFutureRepresentation(repBox, diagram, mini, ids),
+    drawConditionedPolicy(policyBox, diagram, mini, ids),
+    drawColumnPanel(outputBox, "policy outputs", drawOutputStack(diagram.outputs, outputBox, mini)),
+    drawConnector(inputBox.x + inputBox.w, inputBox.y + h * 0.44, repBox.x, repBox.y + repBox.h * 0.44, "predict hidden future", false, ids),
+    drawConnector(inputBox.x + inputBox.w, inputBox.y + h * 0.67, policyBox.x, policyBox.y + h * 0.66, "current obs", false, ids),
+    drawConnector(repBox.x + repBox.w, repBox.y + repBox.h * 0.43, policyBox.x, policyBox.y + h * 0.38, "condition / prefix", false, ids),
+    drawConnector(policyBox.x + policyBox.w, policyBox.y + h * 0.5, outputBox.x, outputBox.y + h * 0.5, "act", false, ids),
+    drawTrainingBand(diagram, trainBox, repBox, policyBox, mini, ids),
+    mini ? "" : drawRuntimeStrip(diagram.runtime, policyBox, outputBox, trainBox)
+  ].join("");
+}
+
+function drawImplicitFutureRepresentation(box, diagram, mini, ids) {
+  const hasValue = diagram.outputs.some((item) => /value|intent|trajectory/i.test(item.label || item)) || diagram.streams.some((item) => /value|reward/i.test(item.label));
+  const slots = Array.from({ length: mini ? 5 : 7 }, (_, index) => {
+    const x = box.x + 38 + (index % 4) * 48;
+    const y = box.y + 88 + Math.floor(index / 4) * 54;
+    return `
+      <g>
+        <rect class="implicit-slot" x="${x}" y="${y}" width="34" height="34"></rect>
+        <text class="implicit-slot-label" x="${x + 17}" y="${y + 22}" text-anchor="middle">z${index + 1}</text>
+      </g>
+    `;
+  }).join("");
+  return `
+    <g filter="url(#${ids.softShadow})">
+      <rect class="implicit-panel" x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}"></rect>
+      <text class="core-title" x="${box.x + 22}" y="${box.y + 30}">implicit future representation</text>
+      ${drawWrappedText(diagram.core.details.join(" / "), box.x + 22, box.y + 52, 31, 2, "core-detail", 11)}
+      ${slots}
+      ${hasValue ? `<path class="value-contour" d="M ${box.x + 52} ${box.y + box.h - 64} C ${box.x + 105} ${box.y + box.h - 108}, ${box.x + 176} ${box.y + box.h - 18}, ${box.x + 232} ${box.y + box.h - 62}"></path>
+        <text class="core-note" x="${box.x + 48}" y="${box.y + box.h - 28}">value / intent field</text>` : `<text class="core-note" x="${box.x + 36}" y="${box.y + box.h - 28}">no decoded future video or IDM bottleneck</text>`}
+    </g>
+  `;
+}
+
+function drawConditionedPolicy(box, diagram, mini, ids) {
+  const streamItems = uniqueByText([
+    { label: "Current observation", detail: "runtime sensor tokens", color: "#5d8fc5" },
+    { label: "Future condition", detail: "prefix / slots / value latent", color: "#2f8793" },
+    ...diagram.streams
+  ], "label").slice(0, mini ? 4 : 5);
+  const laneH = mini ? 34 : 39;
+  return `
+    <g filter="url(#${ids.softShadow})">
+      <rect class="core-panel conditioned-policy" x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" fill="url(#${ids.coreGrad})"></rect>
+      <text class="core-title" x="${box.x + 22}" y="${box.y + 30}">${escapeHtml(diagram.core.label)}</text>
+      ${streamItems.map((stream, index) => {
+        const y = box.y + 66 + index * (laneH + 9);
+        return `
+          <g>
+            <rect class="condition-row" x="${box.x + 24}" y="${y}" width="${box.w - 48}" height="${laneH}" style="--stream:${stream.color || "#2f8793"}"></rect>
+            <text class="stream-label" x="${box.x + 38}" y="${y + 16}">${escapeHtml(shortText(stream.label, 24))}</text>
+            ${drawWrappedText(stream.detail, box.x + 38, y + 31, 28, 1, "stream-detail", 9.5)}
+          </g>
+        `;
+      }).join("")}
+      ${drawAttentionBadges(diagram.attention, box, mini)}
+    </g>
+  `;
+}
+
+function drawFuturePredictor(box, diagram, mini, ids) {
+  const rendered = diagram.pattern === "pixel_idm";
+  const latent = diagram.pattern === "latent_idm";
+  const frames = Array.from({ length: 4 }, (_, index) => `
+    <rect class="${rendered ? "future-frame" : "latent-frame"}" x="${box.x + 34 + index * 54}" y="${box.y + 98 + index * 8}" width="74" height="52"></rect>
+  `).join("");
+  return `
+    <g filter="url(#${ids.softShadow})">
+      <rect class="core-panel future-core" x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" fill="url(#${ids.coreGrad})"></rect>
+      <text class="core-title" x="${box.x + 22}" y="${box.y + 30}">${latent ? "latent future model" : "pixel future generator"}</text>
+      ${drawWrappedText(diagram.core.details.join(" / "), box.x + 22, box.y + 52, 31, 2, "core-detail", 11)}
+      ${frames}
+      ${diagram.motifs.diffusion ? drawNoiseSchedule({ ...box, h: box.h - 12 }, mini, ids) : ""}
+      <text class="core-note" x="${box.x + 28}" y="${box.y + box.h - 24}">${rendered ? "decoded future frames are action evidence" : "hidden future features stay compressed"}</text>
+    </g>
+  `;
+}
+
+function drawInverseDynamics(box, diagram, mini) {
+  return `
+    <g>
+      <rect class="idm-panel" x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}"></rect>
+      <text class="core-title" x="${box.x + 20}" y="${box.y + 30}">inverse dynamics / action head</text>
+      ${drawHeadStack(diagram.heads, { x: box.x + 6, y: box.y + 28, w: box.w - 12, h: box.h - 42 }, mini)}
+    </g>
+  `;
+}
+
+function drawEnhancementArchitecture(diagram, view, options = {}, ids) {
+  const mini = Boolean(options.mini);
+  const y0 = diagramLayoutY(options);
+  const h = diagramMainHeight(options);
+  const baseBox = { x: 334, y: y0, w: 360, h };
+  const inputBox = { x: 34, y: y0, w: 220, h };
+  const enhanceBox = { x: 748, y: y0, w: 184, h };
+  const outputBox = { x: 984, y: y0, w: 142, h };
+  const trainBox = { x: 34, y: y0 + h + 36, w: 1092, h: mini ? 108 : 142 };
+  return [
+    drawColumnPanel(inputBox, "policy inputs", drawTokenGroups(diagram.inputs, inputBox, mini)),
+    drawCorePanel(diagram, baseBox, mini, ids),
+    drawEnhancementOverlay(enhanceBox, diagram, mini),
+    drawColumnPanel(outputBox, "outputs", drawOutputStack(diagram.outputs, outputBox, mini)),
+    drawConnector(inputBox.x + inputBox.w, inputBox.y + h * 0.5, baseBox.x, baseBox.y + h * 0.5, "embed", false, ids),
+    drawConnector(baseBox.x + baseBox.w, baseBox.y + h * 0.45, enhanceBox.x, enhanceBox.y + h * 0.45, "adapt / align", true, ids),
+    drawConnector(enhanceBox.x + enhanceBox.w, enhanceBox.y + h * 0.5, outputBox.x, outputBox.y + h * 0.5, "deploy", false, ids),
+    drawTrainingBand(diagram, trainBox, baseBox, enhanceBox, mini, ids),
+    mini ? "" : drawRuntimeStrip(diagram.runtime, baseBox, outputBox, trainBox)
+  ].join("");
+}
+
+function drawEnhancementOverlay(box, diagram, mini) {
+  const family = diagram.family || diagram.pattern;
+  const title = {
+    encoder_only: "train-time world signal",
+    alignment: "alignment layer",
+    multimodal: "physical state branch",
+    online_adaptation: "online memory / update",
+    speedup: "shortcut / cache"
+  }[family] || "enhancement";
+  const items = [
+    ...diagram.attention.map((label) => ({ label, detail: "attention constraint" })),
+    ...diagram.training.slice(0, 3)
+  ].slice(0, mini ? 4 : 5);
+  return `
+    <g>
+      <rect class="enhancement-shell" x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}"></rect>
+      <text class="panel-title" x="${box.x + 14}" y="${box.y + 24}">${escapeHtml(title)}</text>
+      ${(items.length ? items : [{ label: "auxiliary signal", detail: "changes training or runtime path" }]).map((item, index) => {
+        const y = box.y + 50 + index * (mini ? 42 : 48);
+        return `
+          <g>
+            <rect class="enhancement-chip" x="${box.x + 16}" y="${y}" width="${box.w - 32}" height="${mini ? 34 : 40}"></rect>
+            <text class="training-label" x="${box.x + 26}" y="${y + 16}">${escapeHtml(shortText(item.label, 20))}</text>
+            ${drawWrappedText(item.detail, box.x + 26, y + 31, 18, 1, "training-detail", 9.5)}
+          </g>
+        `;
+      }).join("")}
+    </g>
+  `;
 }
 
 function diagramDefs(model, ids) {

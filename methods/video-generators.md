@@ -1,4 +1,4 @@
-# Video Generators are Robot Policies
+# VideoPolicy: Video Generators are Robot Policies
 
 Source text: `video-generators.txt`
 
@@ -1038,4 +1038,3 @@ Lines 1046-1256
  1255:                                                 23
  1256: 
 ```
-

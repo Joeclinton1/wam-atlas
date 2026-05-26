@@ -391,7 +391,7 @@
       "paperUrl": "https://arxiv.org/abs/2412.14803",
       "localText": "vpp.txt",
       "family": "latent_idm",
-      "category": "Latent predictive state plus action head",
+      "category": "Latent-space IDM",
       "problem": "Full video rollout is too expensive, but hidden predictive features may be action-useful.",
       "oneLine": "Uses a pretrained video predictor for one denoising step, aggregates predictive features, and feeds a diffusion action head.",
       "insights": {
@@ -399,7 +399,7 @@
         "method": "A video model exposes one-step denoising features, Video Former compresses them, and a diffusion policy predicts actions.",
         "novelty": "It established partial denoising plus feature aggregation as a practical video-to-action interface.",
         "limitation": "The feature interface is sensitive to aggregation and layer choice.",
-        "related": "Video Generators are Robot Policies, S-VAM, TriVLA"
+        "related": "VideoPolicy, S-VAM, TriVLA"
       },
       "metrics": {
         "runtimeCost": 2,
@@ -772,7 +772,7 @@
       "paperUrl": "https://arxiv.org/abs/2505.12705",
       "localText": "dreamgen.txt",
       "family": "pixel_idm",
-      "category": "Pixel future plus inverse dynamics",
+      "category": "Pixel-space IDM",
       "problem": "Low-coverage robot datasets limit downstream policy generalization.",
       "oneLine": "Uses LoRA-adapted image-to-video models as an offline synthetic trajectory engine, then relabels generated videos with actions.",
       "insights": {
@@ -1522,7 +1522,7 @@
       "paperUrl": "https://arxiv.org/abs/2507.01424",
       "localText": "TriVLA.txt",
       "family": "latent_idm",
-      "category": "Latent predictive state plus action head",
+      "category": "Latent-space IDM",
       "problem": "VLAs need both semantic grounding and predictive temporal context.",
       "oneLine": "Combines a VLM grounding system, a video diffusion feature system, and a flow-matching policy.",
       "insights": {
@@ -1530,7 +1530,7 @@
         "method": "A VLM extracts semantic tokens, a video model supplies predictive dynamics features, and a policy cross-attends to both.",
         "novelty": "It packages predictive video features as an episodic world-model branch beside VLM grounding.",
         "limitation": "The triple-system framing is broader than the actual mechanism; it is still a large VLM plus video diffusion plus policy stack.",
-        "related": "VPP, Say-Dream-Act, Video Generators are Robot Policies"
+        "related": "VPP, Say-Dream-Act, VideoPolicy"
       },
       "metrics": {
         "runtimeCost": 2,
@@ -1646,14 +1646,14 @@
     },
     {
       "id": "video-generators-robot-policies",
-      "name": "Video Generators Are Robot Policies",
-      "title": "Video Generators are Robot Policies",
+      "name": "VideoPolicy",
+      "title": "VideoPolicy: Video Generators are Robot Policies",
       "year": 2025,
       "month": "08",
       "paperUrl": "https://arxiv.org/abs/2508.00795",
       "localText": "video-generators.txt",
       "family": "latent_idm",
-      "category": "Latent predictive state plus action head",
+      "category": "Latent-space IDM",
       "problem": "Can hidden states of a video generator directly condition robot actions?",
       "oneLine": "Extracts intermediate SVD decoder features and feeds them to a diffusion-policy style action U-Net.",
       "insights": {
@@ -2686,7 +2686,7 @@
       "paperUrl": "https://arxiv.org/abs/2512.23541",
       "localText": "Act2Goal.txt",
       "family": "pixel_idm",
-      "category": "Pixel future plus inverse dynamics",
+      "category": "Pixel-space IDM",
       "problem": "Goal images are underspecified static endpoints for long-horizon control.",
       "oneLine": "Imagines intermediate visual states toward a goal and controls over a multi-scale abstraction of that trajectory.",
       "insights": {
@@ -2820,7 +2820,7 @@
       "paperUrl": "https://arxiv.org/abs/2512.15692",
       "localText": "mimic-video.txt",
       "family": "latent_idm",
-      "category": "Latent predictive state plus action head",
+      "category": "Latent-space IDM",
       "problem": "Large video generators contain useful dynamics but are too slow if fully decoded.",
       "oneLine": "Taps a middle activation of Cosmos Predict and conditions a reduced flow-matching action DiT on it.",
       "insights": {
@@ -2828,7 +2828,7 @@
         "method": "LoRA-adapt the video model, run partial denoising, and cross-attend an action DiT to a chosen hidden layer.",
         "novelty": "Makes layer selection and partial denoising explicit in the action interface.",
         "limitation": "Still depends on a large generator path and careful proprioception masking.",
-        "related": "VPP, DiT4DiT, Video Generators are Robot Policies"
+        "related": "VPP, DiT4DiT, VideoPolicy"
       },
       "metrics": {
         "runtimeCost": 3,
@@ -3378,7 +3378,7 @@
       "paperUrl": "https://arxiv.org/abs/2602.10098",
       "localText": "VLA-JEPA.txt",
       "family": "latent_idm",
-      "category": "Latent predictive state plus action head",
+      "category": "Latent-space IDM",
       "problem": "Future representation learning should avoid leakage from future frames at inference.",
       "oneLine": "Predicts V-JEPA-style future latents from current observations, then finetunes an action head.",
       "insights": {
@@ -3946,7 +3946,7 @@
       "paperUrl": "https://arxiv.org/abs/2602.10717",
       "localText": "Say-Dream-Act.txt",
       "family": "pixel_idm",
-      "category": "Pixel future plus inverse dynamics",
+      "category": "Pixel-space IDM",
       "problem": "Dreamed video can help, but the policy must correct imagined errors.",
       "oneLine": "Distills a video generator for few-step rollout and trains the action policy to use but correct predicted futures.",
       "insights": {
@@ -4514,7 +4514,7 @@
     },
     {
       "id": "sim-distill",
-      "name": "Simulation Distillation",
+      "name": "SimDist",
       "title": "Simulation Distillation: Pretraining World Models in Simulation for Rapid Real-World Adaptation",
       "year": 2026,
       "month": "03",

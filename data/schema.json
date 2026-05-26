@@ -77,13 +77,13 @@
   "families": [
     {
       "id": "pixel_idm",
-      "label": "Pixel future plus inverse dynamics",
-      "diagramThesis": "Predict or synthesize visual futures, then infer actions from decoded or inspectable video."
+      "label": "Pixel-space IDM",
+      "diagramThesis": "Predict or synthesize visual futures, then infer actions from decoded or inspectable pixel-space video."
     },
     {
       "id": "latent_idm",
-      "label": "Latent predictive state plus action head",
-      "diagramThesis": "Tap hidden video-model features or semantic future embeddings instead of waiting for full video."
+      "label": "Latent-space IDM",
+      "diagramThesis": "Infer actions from hidden video-model features or semantic future embeddings instead of decoded pixel-space rollout."
     },
     {
       "id": "encoder_only",

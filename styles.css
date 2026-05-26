@@ -303,10 +303,260 @@ p {
 }
 
 .layout-label {
-  fill: rgba(23, 32, 36, 0.58);
+  fill: rgba(23, 32, 36, 0.68);
   font-size: 13px;
   font-weight: 800;
 }
+
+.taxonomy-container rect {
+  fill: none;
+  fill-opacity: 0;
+  stroke: rgba(23, 32, 36, 0.2);
+  stroke-width: 1.6;
+  stroke-dasharray: 7 7;
+  rx: 18px;
+  ry: 18px;
+  vector-effect: non-scaling-stroke;
+}
+
+.taxonomy-container text {
+  fill: rgba(23, 32, 36, 0.62);
+  font-size: 14px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  paint-order: stroke;
+  stroke: #fbfcfa;
+  stroke-width: 5px;
+  pointer-events: none;
+}
+
+.taxonomy-family {
+  cursor: default;
+}
+
+.taxonomy-family-hit {
+  fill: transparent;
+  pointer-events: all;
+}
+
+.taxonomy-family-label {
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.taxonomy-glyph-bg {
+  fill: rgba(255, 255, 255, 0.66);
+  stroke: color-mix(in srgb, var(--tax-color) 62%, rgba(23, 32, 36, 0.18));
+  stroke-width: 1.6;
+  rx: 9px;
+  ry: 9px;
+  vector-effect: non-scaling-stroke;
+}
+
+.taxonomy-family,
+.node {
+  transition: transform 180ms cubic-bezier(.22,.61,.36,1), filter 180ms ease;
+}
+
+.taxonomy-family-paper-hover .taxonomy-node-body {
+  transform: none;
+}
+
+.taxonomy-family.is-hovered .taxonomy-family-visual {
+  filter: drop-shadow(0 12px 18px rgba(23, 32, 36, 0.14));
+}
+
+.taxonomy-node-body {
+  transition: filter 180ms ease;
+}
+
+.taxonomy-glyph-caption {
+  fill: rgba(23, 32, 36, 0.68);
+  font-size: 8px;
+  font-weight: 850;
+}
+
+.glyph-block,
+.glyph-sensor,
+.glyph-world,
+.glyph-core,
+.glyph-action,
+.glyph-state,
+.glyph-physical,
+.glyph-frame,
+.glyph-latent-frame,
+.glyph-code,
+.glyph-codebook-shell,
+.glyph-implicit-region,
+.glyph-align-layer {
+  vector-effect: non-scaling-stroke;
+  rx: 5px;
+  ry: 5px;
+}
+
+.glyph-sensor,
+.glyph-block {
+  fill: #ffffff;
+  stroke: #9eb6df;
+}
+
+.glyph-world {
+  fill: #e8f2ff;
+  stroke: #5d8fc5;
+}
+
+.glyph-core {
+  fill: color-mix(in srgb, var(--tax-color) 22%, #ffffff);
+  stroke: color-mix(in srgb, var(--tax-color) 78%, #172024);
+}
+
+.glyph-core.dim {
+  opacity: 0.46;
+  stroke-dasharray: 4 3;
+}
+
+.glyph-action {
+  fill: #fff2dc;
+  stroke: #d49a3d;
+}
+
+.glyph-state {
+  fill: #edf7ed;
+  stroke: #72a36e;
+}
+
+.glyph-physical {
+  fill: #f8eeee;
+  stroke: #cf978f;
+}
+
+.glyph-frame {
+  fill: #edf6ff;
+  stroke: #5d8fc5;
+}
+
+.glyph-latent-frame {
+  fill: #eef4f1;
+  stroke: #72a36e;
+  stroke-dasharray: 4 3;
+}
+
+.glyph-stack-back,
+.glyph-stack-mid {
+  opacity: 0.5;
+}
+
+.glyph-line,
+.glyph-loop,
+.glyph-bypass {
+  fill: none;
+  stroke: rgba(23, 32, 36, 0.44);
+  stroke-width: 1.45;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.glyph-line.train {
+  stroke-dasharray: 4 3;
+  stroke: rgba(23, 32, 36, 0.32);
+}
+
+.glyph-bypass {
+  stroke: #2d7c59;
+  stroke-width: 1.7;
+}
+
+.glyph-loop {
+  stroke: #a4493f;
+  stroke-width: 1.55;
+}
+
+.glyph-cut {
+  fill: none;
+  stroke: rgba(23, 32, 36, 0.36);
+  stroke-width: 1.4;
+  stroke-dasharray: 3 3;
+  vector-effect: non-scaling-stroke;
+}
+
+.glyph-token {
+  fill: #5d8fc5;
+  stroke: rgba(23, 32, 36, 0.14);
+  rx: 2px;
+  ry: 2px;
+  vector-effect: non-scaling-stroke;
+}
+
+.glyph-token.action {
+  fill: #d49a3d;
+}
+
+.glyph-sequence-shell {
+  fill: #ffffff;
+  stroke: rgba(23, 32, 36, 0.18);
+  stroke-width: 1.1;
+  rx: 6px;
+  ry: 6px;
+  vector-effect: non-scaling-stroke;
+}
+
+.glyph-mini-label {
+  fill: var(--ink);
+  font-size: 7px;
+  font-weight: 900;
+}
+
+.glyph-mini-label.light {
+  fill: #172024;
+}
+
+.glyph-latent,
+.glyph-latent-cloud {
+  fill: rgba(255, 255, 255, 0.72);
+  stroke: color-mix(in srgb, var(--tax-color) 70%, #3569b7);
+  stroke-width: 1.4;
+  vector-effect: non-scaling-stroke;
+}
+
+.glyph-dot {
+  fill: #5d8fc5;
+  stroke: #ffffff;
+  stroke-width: 1.2;
+  vector-effect: non-scaling-stroke;
+}
+
+.glyph-dot.action {
+  fill: #d49a3d;
+}
+
+.glyph-dot.state {
+  fill: #72a36e;
+}
+
+.glyph-codebook-shell,
+.glyph-implicit-region,
+.glyph-align-layer {
+  fill: rgba(255, 255, 255, 0.7);
+  stroke: color-mix(in srgb, var(--tax-color) 74%, #172024);
+}
+
+.glyph-code {
+  fill: #efb156;
+  stroke: #b8751f;
+  rx: 2px;
+  ry: 2px;
+}
+
+.glyph-value-curve,
+.glyph-align-wave {
+  fill: none;
+  stroke: #ad7b16;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
 
 .atlas-annotation {
   opacity: 1;
@@ -368,6 +618,40 @@ p {
   stroke-width: 3;
 }
 
+.taxonomy-node-body .node-halo {
+  opacity: 0.1;
+}
+
+.taxonomy-node-body .node-ring {
+  stroke-width: 1.7;
+  filter: drop-shadow(0 3px 5px rgba(23, 32, 36, 0.14));
+}
+
+.taxonomy-node-body .node-logo-bg {
+  r: var(--taxonomy-logo-radius, 5.8px);
+}
+
+.taxonomy-node-body .node-logo-image {
+  x: calc(var(--taxonomy-logo-size, 9.6px) / -2);
+  y: calc(var(--taxonomy-logo-size, 9.6px) / -2);
+  width: var(--taxonomy-logo-size, 9.6px);
+  height: var(--taxonomy-logo-size, 9.6px);
+}
+
+.taxonomy-node-body .logo-initials {
+  font-size: calc(var(--taxonomy-logo-radius, 5.8px) * 0.78);
+  stroke-width: 1px;
+}
+
+.taxonomy-node-body .node-literal-dot {
+  r: 2px;
+}
+
+.taxonomy-node-body .node-name {
+  font-size: var(--taxonomy-label-size, 7.2px);
+  stroke-width: 2.2px;
+}
+
 .problem-link {
   fill: none;
   stroke-width: 7;
@@ -389,6 +673,25 @@ p {
   ry: 16px;
   stroke: rgba(23, 32, 36, 0.09);
   vector-effect: non-scaling-stroke;
+}
+
+.problem-scale-target {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 180ms cubic-bezier(.22,.61,.36,1), filter 180ms ease;
+}
+
+.problem-pop:hover .problem-scale-target {
+  transform: scale(1.16);
+  filter: drop-shadow(0 10px 16px rgba(23, 32, 36, 0.12));
+}
+
+.problem-root:hover .problem-scale-target {
+  transform: scale(1.09);
+}
+
+.problem-leaf-question:hover .problem-scale-target {
+  transform: scale(1.24);
 }
 
 .problem-root rect {
@@ -574,6 +877,7 @@ p {
   right: 16px;
   bottom: 16px;
   padding: 8px 10px;
+  border-radius: var(--radius);
 }
 
 .page-atlas .atlas-layout {
@@ -600,14 +904,17 @@ p {
   position: fixed;
   z-index: 30;
   width: min(720px, 48vw);
-  height: 420px;
-  min-height: 420px;
+  height: calc((min(720px, 48vw) * 452 / 1160) + 31px);
+  min-height: 0;
   padding: 0;
-  border: 0;
+  border: 2.5px solid var(--preview-outline, rgba(23, 32, 36, 0.24));
   border-radius: var(--radius);
-  opacity: 0.86;
+  opacity: 1;
   pointer-events: none;
-  box-shadow: 0 16px 38px rgba(25, 34, 37, 0.12);
+  overflow: hidden;
+  box-shadow:
+    0 0 0 5px color-mix(in srgb, var(--preview-outline, rgba(23, 32, 36, 0.24)) 18%, transparent),
+    0 16px 38px rgba(25, 34, 37, 0.12);
   transition: opacity 160ms ease, transform 160ms ease;
 }
 
@@ -652,7 +959,7 @@ p {
 
 .hover-preview .diagram.mini {
   position: absolute;
-  inset: 28px 0 0;
+  inset: 31px 0 0;
   display: block;
   width: auto;
   height: auto;
@@ -660,7 +967,7 @@ p {
   border: 0;
   border-radius: 0;
   overflow: hidden;
-  background: rgba(251, 252, 249, 0.82);
+  background: #fbfcfa;
 }
 
 .hover-preview .wam-diagram {
@@ -669,7 +976,7 @@ p {
   display: block;
   width: 100%;
   height: 100%;
-  opacity: 0.94;
+  opacity: 1;
 }
 
 .diagram {
@@ -884,6 +1191,200 @@ p {
 
 .core-token {
   stroke: rgba(23, 32, 36, 0.18);
+}
+
+.sequence-panel,
+.codebook-panel,
+.idm-panel,
+.enhancement-shell,
+.latent-space {
+  vector-effect: non-scaling-stroke;
+}
+
+.sequence-panel {
+  fill: #ffffff;
+  stroke: rgba(23, 32, 36, 0.16);
+  rx: 8px;
+  ry: 8px;
+}
+
+.sequence-token {
+  rx: 4px;
+  ry: 4px;
+  stroke: rgba(23, 32, 36, 0.16);
+  stroke-width: 0.8px;
+  vector-effect: non-scaling-stroke;
+}
+
+.unified-core {
+  stroke-width: 1.8px;
+}
+
+.unified-layer {
+  fill: rgba(23, 32, 36, 0.84);
+  stroke: rgba(255, 255, 255, 0.72);
+  rx: 7px;
+  ry: 7px;
+  vector-effect: non-scaling-stroke;
+}
+
+.stream-lane {
+  fill: rgba(255, 255, 255, 0.82);
+  stroke: var(--stream);
+  stroke-width: 2px;
+  rx: 10px;
+  ry: 10px;
+  vector-effect: non-scaling-stroke;
+}
+
+.attention-hub {
+  fill: #172024;
+  opacity: 0.92;
+  rx: 14px;
+  ry: 14px;
+}
+
+.attention-hub-label,
+.latent-label {
+  fill: #ffffff;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.stream-to-hub {
+  opacity: 0.5;
+}
+
+.latent-space {
+  fill: rgba(255, 255, 255, 0.76);
+  stroke: rgba(53, 105, 183, 0.5);
+  stroke-width: 2px;
+}
+
+.latent-node {
+  stroke: #ffffff;
+  stroke-width: 3px;
+  filter: drop-shadow(0 6px 8px rgba(23, 32, 36, 0.16));
+}
+
+.codebook-panel {
+  fill: #fffaf0;
+  stroke: #d8b16f;
+  stroke-width: 1.5px;
+  rx: 10px;
+  ry: 10px;
+}
+
+.codebook-cell {
+  fill: #f2bd63;
+  stroke: #b8751f;
+  stroke-width: 1px;
+  rx: 4px;
+  ry: 4px;
+  vector-effect: non-scaling-stroke;
+}
+
+.action-head-large {
+  fill: #fff2dd;
+  stroke: #cf8c2d;
+  stroke-width: 1.4px;
+  rx: 10px;
+  ry: 10px;
+  vector-effect: non-scaling-stroke;
+}
+
+.future-core {
+  stroke-width: 1.8px;
+}
+
+.implicit-panel {
+  fill: #f2fbfa;
+  stroke: #86bfc0;
+  stroke-width: 1.6px;
+  rx: 10px;
+  ry: 10px;
+  vector-effect: non-scaling-stroke;
+}
+
+.implicit-slot {
+  fill: #ffffff;
+  stroke: #2f8793;
+  stroke-width: 1.4px;
+  rx: 10px;
+  ry: 10px;
+  vector-effect: non-scaling-stroke;
+}
+
+.implicit-slot-label {
+  fill: #2f6970;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.conditioned-policy {
+  stroke-width: 1.8px;
+}
+
+.condition-row {
+  fill: rgba(255, 255, 255, 0.82);
+  stroke: var(--stream);
+  stroke-width: 1.5px;
+  rx: 8px;
+  ry: 8px;
+  vector-effect: non-scaling-stroke;
+}
+
+.value-contour {
+  fill: none;
+  stroke: #ad7b16;
+  stroke-width: 3px;
+  stroke-linecap: round;
+  opacity: 0.72;
+  vector-effect: non-scaling-stroke;
+}
+
+.future-frame,
+.latent-frame {
+  rx: 9px;
+  ry: 9px;
+  vector-effect: non-scaling-stroke;
+}
+
+.future-frame {
+  fill: #e8f2ff;
+  stroke: #5d8fc5;
+}
+
+.latent-frame {
+  fill: #eef4f1;
+  stroke: #72a36e;
+  stroke-dasharray: 5 4;
+}
+
+.idm-panel {
+  fill: #ffffff;
+  stroke: #d9ad67;
+  stroke-width: 1.5px;
+  rx: 10px;
+  ry: 10px;
+}
+
+.enhancement-shell {
+  fill: none;
+  fill-opacity: 0;
+  stroke: rgba(23, 32, 36, 0.34);
+  stroke-width: 1.8px;
+  stroke-dasharray: 8 7;
+  rx: 12px;
+  ry: 12px;
+}
+
+.enhancement-chip {
+  fill: rgba(255, 255, 255, 0.7);
+  stroke: rgba(23, 32, 36, 0.18);
+  rx: 8px;
+  ry: 8px;
+  vector-effect: non-scaling-stroke;
 }
 
 .layer-chip {
