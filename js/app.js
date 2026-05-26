@@ -16,8 +16,8 @@ import {
   scoreLabel,
   wrapText,
   shortText
-} from './shared.js?v=logo-metadata-4';
-import { renderDiagram, getArchitectureSpec } from './diagrams.js?v=logo-metadata-4';
+} from './shared.js?v=timeline-legend-4';
+import { renderDiagram, getArchitectureSpec } from './diagrams.js?v=timeline-legend-4';
 function filteredModels() {
   const q = state.query.trim().toLowerCase();
   if (!q) return state.models;
@@ -714,7 +714,7 @@ function timelineGeometry(models, bounds) {
       y: nodeY,
       nodeX,
       centerY,
-      color: familyColors[model.family] || "#8aa0a7"
+      color: problemColorForModel(model)
     });
   });
 
@@ -882,6 +882,26 @@ function drawTimelineBackdrop(group, geometry) {
     ${lines}
   `;
   group.appendChild(layer);
+}
+
+function renderTimelineLegend() {
+  const legend = $("#timelineLegend");
+  if (!legend) return;
+  legend.hidden = state.mode !== "timeline";
+  if (legend.hidden) return;
+  const labels = {
+    futures: "Imagined futures",
+    coupling: "World-action coupling",
+    speed: "Fast control",
+    grounding: "Video grounding",
+    physics: "Physical robustness"
+  };
+  legend.innerHTML = problemBranches.map((branch) => `
+    <span class="timeline-legend-item">
+      <span class="timeline-legend-dot" style="background:${branch.color}"></span>
+      ${escapeHtml(labels[branch.id] || branch.question)}
+    </span>
+  `).join("");
 }
 
 function drawSpeedBackdrop(group, bounds) {
@@ -1576,7 +1596,9 @@ function renderAtlas() {
     }
 
     const radius = state.mode === "taxonomy" ? (hasLiteral ? 7.5 : 6) : hasLiteral ? 12 : 9;
-    const color = state.mode === "taxonomy" ? problemColorForModel(model) : familyColors[model.family] || "#61717a";
+    const color = state.mode === "taxonomy" || state.mode === "timeline"
+      ? problemColorForModel(model)
+      : familyColors[model.family] || "#61717a";
     const labelSide = state.mode === "taxonomy" || state.mode === "timeline" ? "bottom" : target.x > width - 180 ? "left" : "right";
     let paperRadius = radius;
     let taxonomyStyle = "";
@@ -1897,6 +1919,7 @@ function showPage(name) {
 
 function syncModeButtons() {
   $$(".mode-button").forEach((item) => item.classList.toggle("is-active", item.dataset.mode === state.mode));
+  renderTimelineLegend();
 }
 
 function setAtlasMode(mode, render = true) {
@@ -1984,6 +2007,7 @@ function renderModelCard(id) {
   const spec = getArchitectureSpec(model);
   state.selectedId = model.id;
   $("#modelFamily").textContent = `${model.category}${spec ? " / source-backed literal architecture" : " / survey-level placeholder"}`;
+  $("#modelFamily").style.setProperty("--family-color", problemColorForModel(model));
   $("#modelName").textContent = model.title;
   $("#modelOneLine").textContent = model.oneLine;
   $("#modelPaperLink").href = model.paperUrl;

@@ -84,7 +84,7 @@ export const problemBranches = [
   },
   {
     id: "physics",
-    question: "How do models handle contact, geometry, and drift?",
+    question: "Physical robustness",
     color: "#efb8b1",
     angle: 156,
     families: ["multimodal", "online_adaptation"]
@@ -165,7 +165,7 @@ export const institutionMeta = {
   mowm: ["Tsinghua", "tsinghua.edu.cn", { logoUrl: "https://www.tsinghua.edu.cn/favicon.ico" }],
   dust: ["KAIST", "kaist.ac.kr"],
   "ud-vla": ["Monash", "monash.edu"],
-  "rynnvla-002": ["Alibaba DAMO", "damo.alibaba.com", { logoUrl: "https://damo.alibaba.com/favicon.ico" }],
+  "rynnvla-002": ["Alibaba DAMO", "damo.alibaba.com", { logoUrl: "https://img.alicdn.com/tfs/TB11wf2XwDqK1RjSZSyXXaxEVXa-64-64.png" }],
   motus: ["Tsinghua", "tsinghua.edu.cn", { logoUrl: "https://www.tsinghua.edu.cn/favicon.ico" }],
   videovla: ["Microsoft Research Asia", "microsoft.com"],
   act2goal: ["AgiBot", "agibot.com"],
