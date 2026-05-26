@@ -17,8 +17,8 @@ import {
   scoreLabel,
   wrapText,
   shortText
-} from './shared.js?v=diagram-core-glyphs-25';
-import { renderDiagram, getArchitectureSpec } from './diagrams.js?v=diagram-core-glyphs-25';
+} from './shared.js?v=diagram-core-glyphs-26';
+import { renderDiagram, getArchitectureSpec } from './diagrams.js?v=diagram-core-glyphs-26';
 
 function hasMetricsTargetBenchmark(model) {
   return Boolean(model.metrics?.comparative?.metricsEligible);
@@ -2622,9 +2622,7 @@ function renderModelCard(id) {
   $("#modelCompute").textContent = model.metrics?.comparative?.computeCost?.pretrainingGpuHours
     ? `${formatMetricValue(model.metrics.comparative.computeCost.pretrainingGpuHours, { unit: "GPUh" })} GPUh`
     : scoreLabel(model.metrics?.computeScale);
-  const params = modelParameterSummary(model, state.arch[model.id]);
-  $("#modelDitParams").textContent = params.dit || "not stated";
-  $("#modelTotalParams").textContent = params.total || "not stated";
+  $("#modelParams").innerHTML = renderParameterSummary(model, state.arch[model.id]);
   $("#modelEvidence").textContent = model.metrics?.comparative?.confidence || scoreLabel(model.metrics?.evidence);
   renderDiagram($("#modelDiagram"), model, { mini: false });
 
@@ -2652,6 +2650,7 @@ function renderModelCard(id) {
 }
 
 function modelParameterSummary(model, arch = {}) {
+  const reviewed = MODEL_PARAMETER_OVERRIDES[model.id];
   const pools = [
     model.name,
     model.title,
@@ -2684,10 +2683,77 @@ function modelParameterSummary(model, arch = {}) {
   const assumptions = model.metrics?.comparative?.inferenceCost?.assumptions?.parameterB || [];
   const plausible = assumptions.filter((value) => Number.isFinite(Number(value)) && Number(value) > 0 && Number(value) <= 20);
   const total = explicitTotal || (plausible.length ? Math.max(...plausible) : null);
+  const resolvedDit = reviewed?.centralB ?? reviewed?.ditB ?? dit;
+  const resolvedTotal = reviewed?.totalB ?? total;
   return {
-    dit: dit ? `${formatParamB(dit)}B` : "",
-    total: total ? `${formatParamB(total)}B` : ""
+    dit: resolvedDit ? `${formatParamB(resolvedDit)}B` : "",
+    total: resolvedTotal ? `${formatParamB(resolvedTotal)}B` : ""
   };
+}
+
+const MODEL_PARAMETER_OVERRIDES = {
+  "gr-1": { centralB: 0.195, totalB: 0.195 },
+  "gr-2": { centralB: 0.719, totalB: 0.719 },
+  lapa: { centralB: 7, totalB: 7.3 },
+  vpp: { centralB: 1.5, totalB: 1.5 },
+  uva: { centralB: 0.5, totalB: 0.5 },
+  uwm: { centralB: 0.086, totalB: 0.18 },
+  dreamgen: { centralB: 14, totalB: 14 },
+  flare: { centralB: 0.3, totalB: 2 },
+  clam: { centralB: 0.0122, totalB: 0.0146 },
+  videorepa: { centralB: 5, totalB: 5 },
+  univla: { centralB: 7, totalB: 7 },
+  "geometry-forcing": { centralB: 1.3, totalB: 1.3 },
+  trivla: { centralB: 1.5, totalB: 3.39 },
+  "video-generators-robot-policies": { centralB: 1.5, totalB: 1.6 },
+  "villa-x": { centralB: 3, totalB: 3.6 },
+  mowm: { centralB: 0.4, totalB: 0.4 },
+  dust: { centralB: 1, totalB: 3.1 },
+  "ud-vla": { centralB: 8, totalB: 8 },
+  "rynnvla-002": { centralB: 7, totalB: 7 },
+  motus: { centralB: 5, totalB: 7 },
+  videovla: { centralB: 5, totalB: 5 },
+  act2goal: { centralB: 1.6, totalB: 1.76 },
+  "mimic-video": { centralB: 2, totalB: 2 },
+  clap: { centralB: 4, totalB: 5 },
+  "cosmos-policy": { centralB: 2, totalB: 2 },
+  wog: { centralB: 7.54, totalB: 7.54 },
+  "vla-jepa": { centralB: 0.6, totalB: 3.1 },
+  frappe: { centralB: 1, totalB: 1 },
+  ldamodel: { centralB: 1, totalB: 1.6 },
+  adaworldpolicy: { centralB: 2, totalB: 2.8 },
+  "say-dream-act": { centralB: 2, totalB: 2 },
+  cowvla: { centralB: 8.5, totalB: 8.5 },
+  "fast-wam": { centralB: 5, totalB: 6 },
+  svam: { centralB: 1.5, totalB: 1.5 },
+  "sim-distill": { centralB: 0.00015, totalB: 0.012 },
+  vampo: { centralB: 1.53, totalB: 1.6 },
+  eva: { centralB: 14, totalB: 14 },
+  vtam: { centralB: 2, totalB: 2.16 },
+  "gigaworld-policy": { centralB: 5, totalB: 5 },
+  aim: { centralB: 5, totalB: 5 },
+  wav: { centralB: 2.2, totalB: 2.2 },
+  dexworldmodel: { centralB: 5, totalB: 5.09 },
+  "x-wam": { centralB: 5, totalB: 5 },
+  motubrain: { centralB: 1, totalB: 1 },
+  vidar: { centralB: 5, totalB: 5.092 },
+  "genie-envisioner": { centralB: 2, totalB: 2.16 },
+  "xr-1": { centralB: 4, totalB: 4 },
+  vipra: { centralB: 7, totalB: 7 },
+  "lingbot-va": { centralB: 5.3, totalB: 5.3 },
+  dreamzero: { centralB: 14, totalB: 14 },
+  "rhoda-dva": { centralB: 1.5, totalB: 1.55 },
+  dit4dit: { centralB: 2.2, totalB: 2.2 }
+};
+
+function renderParameterSummary(model, arch = {}) {
+  const params = modelParameterSummary(model, arch);
+  if (!params.dit && !params.total) return "not stated";
+  if (!params.dit) return `${escapeHtml(params.total)} <span class="param-total">total</span>`;
+  if (params.total && params.total !== params.dit) {
+    return `${escapeHtml(params.dit)} <span class="param-total">(${escapeHtml(params.total)} total)</span>`;
+  }
+  return escapeHtml(params.dit);
 }
 
 function firstParamMatch(text, patterns, options = {}) {
@@ -2705,7 +2771,9 @@ function firstParamMatch(text, patterns, options = {}) {
 }
 
 function formatParamB(value) {
-  return Number(value).toLocaleString(undefined, { maximumFractionDigits: Number(value) < 10 ? 1 : 0 });
+  const numeric = Number(value);
+  const maximumFractionDigits = numeric < 0.01 ? 4 : numeric < 0.1 ? 3 : numeric < 10 ? 1 : 0;
+  return numeric.toLocaleString(undefined, { maximumFractionDigits });
 }
 
 function renderInsightValue(model, key) {

@@ -1,4 +1,4 @@
-import { state, familyColors, typeColors, escapeHtml, wrapText, shortText } from './shared.js?v=diagram-core-glyphs-25';
+import { state, familyColors, typeColors, escapeHtml, wrapText, shortText } from './shared.js?v=diagram-core-glyphs-26';
 
 export function renderDiagram(container, model, options = {}) {
   const spec = getArchitectureSpec(model);
@@ -267,16 +267,16 @@ function drawJointLatentSequenceCore(box, diagram, mini, ids) {
 function drawUnifiedStreamCore(x, y, w, h, diagram, mini) {
   const ar = isAutoregressiveDiagram(diagram);
   const diffusion = !ar && (diagram.motifs?.diffusion || /diffusion|denois|flow|dit/i.test(`${diagram.core?.label || ""} ${diagram.core?.details?.join(" ") || ""}`));
-  const block = { x: x + w * 0.2, y: y + h * 0.16, w: w * 0.6, h: h * 0.66 };
-  const topY = y + 10;
-  const bottomY = y + h - 24;
+  const block = { x: x + w * 0.2, y: y + h * 0.25, w: w * 0.6, h: h * 0.5 };
+  const topY = y + 8;
+  const bottomY = y + h - 28;
   const vocab = unifiedStreamVocabulary(diagram);
   const arTokens = ["o", "p", "a", "o", "p", "a", "f"];
   const denoiseTokens = vocab.some(([letter]) => letter === "v") ? ["o", "p", "n", "f", "a", "v"] : ["o", "p", "n", "f", "a"];
   const denoiseTargets = vocab.some(([letter]) => letter === "v") ? ["f", "a", "f", "a", "v"] : ["f", "a", "f", "a"];
   const top = unifiedStreamTokens(x + 10, topY, w - 20, ar ? arTokens : denoiseTokens, "context");
   const bottom = unifiedStreamTokens(x + 18, bottomY, w - 36, ar ? arTokens : denoiseTargets, "target");
-  const causal = ar ? `<path class="unified-causal-sweep" d="M ${x + 24} ${topY + 31} C ${x + w * 0.26} ${topY + 54}, ${x + w * 0.52} ${topY + 53}, ${x + w - 26} ${topY + 24}"></path>` : "";
+  const causal = ar ? `<path class="unified-causal-sweep" d="M ${x + 24} ${topY + 27} C ${x + w * 0.26} ${topY + 46}, ${x + w * 0.52} ${topY + 46}, ${x + w - 26} ${topY + 22}"></path>` : "";
   const loop = diffusion && !["dit", "diffusion"].includes(diagram.core?.kind)
     ? drawDiffusionLoop(block.x + block.w + 26, block.y + block.h * 0.5, 42, 34)
     : "";
@@ -480,35 +480,48 @@ function drawParallelStreams(box, diagram, mini, ids) {
   ];
   const visible = streams.slice(0, mini ? 4 : 5);
   const laneH = Math.min(mini ? 58 : 68, (box.h - 76) / Math.max(visible.length, 1) - 8);
+  const laneGap = 12;
   const lanes = visible.map((stream, index) => {
-    const y = box.y + 58 + index * (laneH + 12);
+    const y = box.y + 58 + index * (laneH + laneGap);
     const kind = streamCoreKind(stream, diagram);
     return `
       <g>
-        <rect class="stream-lane" x="${box.x + 22}" y="${y}" width="${box.w - 86}" height="${laneH}" style="--stream:${stream.color}"></rect>
-        ${drawCoreVisual(kind, box.x + 36, y + 9, box.w - 124, laneH - 18, { autoregressive: isAutoregressiveDiagram(diagram) })}
+        <rect class="stream-lane" x="${box.x + 22}" y="${y}" width="${box.w - 46}" height="${laneH}" style="--stream:${stream.color}"></rect>
+        ${drawCoreVisual(kind, box.x + 36, y + 9, box.w - 92, laneH - 18, { autoregressive: isAutoregressiveDiagram(diagram) })}
         <text class="stream-label" x="${box.x + 46}" y="${y + laneH - 8}">${escapeHtml(shortText(stream.label, 24))}</text>
-        <path class="stream-flow stream-to-hub" stroke="${streamGradientForLabel(stream.label, ids)}" d="M ${box.x + 44} ${y + laneH / 2} C ${box.x + box.w * 0.45} ${y + laneH / 2}, ${box.x + box.w - 86} ${y + laneH / 2}, ${box.x + box.w - 28} ${box.y + box.h / 2}"></path>
       </g>
     `;
   }).join("");
-  const attentionLinks = visible.length > 1 ? visible.slice(1).map((stream, index) => {
-    const y1 = box.y + 58 + index * (laneH + 12) + laneH / 2;
-    const y2 = box.y + 58 + (index + 1) * (laneH + 12) + laneH / 2;
-    const x = box.x + box.w - 96;
-    return `<path class="stream-attention-link" d="M ${x} ${y1} C ${x + 34} ${y1}, ${x + 34} ${y2}, ${x} ${y2}"></path>`;
-  }).join("") : "";
+  const sharedMarkers = drawSharedAttentionMarkers(box, visible, laneH, laneGap, mini);
   return `
     <g filter="url(#${ids.softShadow})">
       <rect class="core-panel" x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" fill="url(#${ids.coreGrad})"></rect>
       <text class="core-title" x="${box.x + 22}" y="${box.y + 30}">${escapeHtml(diagram.core.label)}</text>
-      <rect class="attention-hub" x="${box.x + box.w - 70}" y="${box.y + box.h / 2 - 46}" width="58" height="92"></rect>
-      <text class="attention-hub-label" x="${box.x + box.w - 41}" y="${box.y + box.h / 2 - 10}" text-anchor="middle">shared</text>
-      <text class="attention-hub-label" x="${box.x + box.w - 41}" y="${box.y + box.h / 2 + 7}" text-anchor="middle">attention</text>
       ${lanes}
-      ${attentionLinks}
+      ${sharedMarkers}
     </g>
   `;
+}
+
+function drawSharedAttentionMarkers(box, visible, laneH, laneGap, mini) {
+  if (visible.length < 2) return "";
+  const groups = sharedAttentionGroups(visible);
+  return groups.map((group, groupIndex) => {
+    const x = box.x + box.w - 56 - groupIndex * 22;
+    const firstY = box.y + 58 + group.start * (laneH + laneGap) + 8;
+    const lastY = box.y + 58 + group.end * (laneH + laneGap) + laneH - 8;
+    const labelY = Math.min(box.y + box.h - 18, lastY + (mini ? 15 : 18) + groupIndex * 3);
+    return `
+      <g class="shared-attention-marker">
+        <path d="M ${x} ${firstY} L ${x} ${lastY}"></path>
+        <text x="${x - 8}" y="${labelY}" text-anchor="middle">shared attention</text>
+      </g>
+    `;
+  }).join("");
+}
+
+function sharedAttentionGroups(visible) {
+  return [{ start: 0, end: visible.length - 1 }];
 }
 
 function streamCoreKind(stream, diagram) {
@@ -2052,6 +2065,8 @@ function drawSankeyRibbons(diagram, boxes, ids, mini, rows = {}) {
 
 function drawInputGlyph(kind, text, x, y, w, h) {
   const resolved = ioKind(kind, text);
+  if (/tactile|gelsight|touch|finger/.test(String(text || "").toLowerCase())) return drawTactileGlyph(x, y, w, h);
+  if (/wrist|hand|end-effector|end effector|gripper/.test(String(text || "").toLowerCase())) return drawHandGlyph(x, y, w, h);
   if (resolved === "language") return drawLanguageGlyph(text, x, y, w, h);
   if (resolved === "state") return drawStateGlyph(x, y, w, h);
   if (resolved === "action") return drawActionGlyph(x, y, w, h);
@@ -2061,6 +2076,8 @@ function drawInputGlyph(kind, text, x, y, w, h) {
 
 function drawOutputGlyph(kind, text, x, y, w, h) {
   const resolved = ioKind(kind, text);
+  if (/tactile|gelsight|touch|finger/.test(String(text || "").toLowerCase())) return drawTactileGlyph(x, y, w, h);
+  if (/wrist|hand|end-effector|end effector|gripper/.test(String(text || "").toLowerCase())) return drawHandGlyph(x, y, w, h);
   if (resolved === "action") return drawActionGlyph(x, y, w, h);
   if (resolved === "state") return drawStateGlyph(x, y, w, h);
   if (resolved === "noise") return drawNoisyFrameGlyph(x, y, w, h);
@@ -2336,6 +2353,37 @@ function drawActionGlyph(x, y, w, h) {
     <path class="io-action-path io-action-c" d="M ${sx} ${sy + 8} C ${sx + width * 0.32} ${sy - 2}, ${sx + width * 0.63} ${sy + 18}, ${sx + width} ${sy + 8}"></path>
     <path class="io-action-path io-action-d" d="M ${sx} ${sy + 14} C ${sx + width * 0.22} ${sy + 2}, ${sx + width * 0.62} ${sy - 4}, ${sx + width} ${sy + 15}"></path>
     <circle class="io-action-point" cx="${sx}" cy="${sy - 8}" r="2"></circle>
+  `;
+}
+
+function drawHandGlyph(x, y, w, h) {
+  const cx = x + w / 2;
+  const cy = y + h / 2;
+  const scale = Math.min(w, h) / 42;
+  const tx = cx - 21 * scale;
+  const ty = cy - 21 * scale;
+  return `
+    <g class="io-hand-glyph" transform="translate(${tx} ${ty}) scale(${scale})">
+      <path d="M 12 22 C 8 18, 8 13, 12 12 C 14 11.5, 16 13, 17 15 L 17 6 C 17 4.6, 18.1 3.5, 19.5 3.5 C 20.9 3.5, 22 4.6, 22 6 L 22 17 L 23 8 C 23.2 6.7, 24.3 5.8, 25.6 6 C 26.9 6.2, 27.7 7.3, 27.5 8.6 L 26.4 18 L 29 11 C 29.5 9.8, 30.8 9.2, 32 9.7 C 33.2 10.2, 33.8 11.5, 33.3 12.7 L 30.8 20.2 L 33.3 16.4 C 34.1 15.4, 35.5 15.1, 36.5 15.9 C 37.5 16.7, 37.7 18.1, 37 19.1 L 30.5 29 C 28.5 32, 25.4 34, 21.8 34 L 18 34 C 15.4 34, 13.1 32.6, 11.9 30.3 L 8.9 24.5 C 8.1 23.1, 9.1 21.4, 10.7 21.4 C 11.2 21.4, 11.6 21.6, 12 22 Z"></path>
+      <path d="M 17 15 L 17 23 M 22 17 L 22 24 M 26.4 18 L 25.4 24"></path>
+    </g>
+  `;
+}
+
+function drawTactileGlyph(x, y, w, h) {
+  const cx = x + w / 2;
+  const cy = y + h / 2;
+  const scale = Math.min(w, h) / 42;
+  const tx = cx - 21 * scale;
+  const ty = cy - 21 * scale;
+  return `
+    <g class="io-tactile-glyph" transform="translate(${tx} ${ty}) scale(${scale})">
+      <path class="finger-body" d="M 15 28 C 13 20, 13 13, 17 8 C 20.4 3.8, 27 6.3, 27.2 11.7 C 27.5 18.6, 25.3 23.2, 22.5 29.3 C 21.5 31.6, 16 32, 15 28 Z"></path>
+      <path class="fingerprint-line" d="M 18.8 13.5 C 21.2 11.6, 24.8 13.1, 24.8 16.3"></path>
+      <path class="fingerprint-line" d="M 17.4 17.2 C 19.3 14.2, 23.4 14.7, 24.2 18.2 C 24.8 20.7, 23.5 23.2, 22.4 25.3"></path>
+      <path class="fingerprint-line" d="M 16.8 21 C 18.2 18.2, 21.5 18, 22.3 20.6 C 22.9 22.3, 21.8 24.8, 20.8 26.5"></path>
+      <path class="fingerprint-line" d="M 18.5 26.5 C 19.5 24.8, 20.4 22.8, 20 21.4"></path>
+    </g>
   `;
 }
 
