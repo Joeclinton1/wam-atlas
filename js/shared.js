@@ -152,6 +152,81 @@ export const familyProblemSplits = {
   ]
 };
 
+export const familyInsights = {
+  pixel_idm: {
+    thesis: "Pixel futures are interpretable but expensive: they expose contact and scene change, then rely on an inverse-dynamics step to recover action.",
+    signal: "Useful when the survey question is whether video generation can be turned into an action-labelled rollout.",
+    caution: "The controller inherits every weakness of decoded video: blur, object drift, camera mismatch, and slow sampling.",
+    direction: "Can pixel futures be evaluated only where they matter for contact and affordances, instead of rendering full frames?"
+  },
+  latent_idm: {
+    thesis: "Latent futures keep the future-prediction idea but move the action bridge into compact semantic or dynamics features.",
+    signal: "The family tests whether the video model's hidden state contains enough controllable information for action recovery.",
+    caution: "Latents can hide failure modes: a feature may be predictive for video while being weakly grounded in robot geometry.",
+    direction: "Which latent spaces preserve intervention-relevant state rather than just semantic appearance?"
+  },
+  implicit_future: {
+    thesis: "Implicit-future methods keep foresight as a conditioning variable, value trajectory, or future embedding without decoding video.",
+    signal: "The survey treats this as the strongest route when future prediction helps but rendered pixels are a bottleneck.",
+    caution: "The future can become a private auxiliary loss unless the policy actually consumes the same variable at runtime.",
+    direction: "How can we prove the hidden future is causally used by the action head?"
+  },
+  unified: {
+    thesis: "Unified models put observation and action prediction into one temporal system so world learning and control share parameters.",
+    signal: "This is the family closest to a generalist VLA backbone: actions, state, and future observations become one sequence or denoising target.",
+    caution: "Joint training can let the easy visual objective dominate, or let action tokens shortcut the world model.",
+    direction: "What masking or weighting keeps action learning coupled to useful future state without drowning in video loss?"
+  },
+  joint_latent: {
+    thesis: "Joint-latent methods explicitly force actions, motion, proprioception, or future state into a shared predictive geometry.",
+    signal: "They are useful when the core problem is representation alignment rather than video generation quality.",
+    caution: "A shared space is only valuable if distances correspond to executable differences, not dataset or embodiment artifacts.",
+    direction: "Can shared latent spaces support cross-embodiment transfer without erasing embodiment-specific constraints?"
+  },
+  multi_stream: {
+    thesis: "Multi-stream models keep specialised video, action, language, or modality paths while exchanging enough state for policy learning.",
+    signal: "The family is a compromise between monolithic generalists and brittle separate modules.",
+    caution: "Stream fusion can become opaque: the model may look modular while the useful signal is concentrated in one expert.",
+    direction: "When should video, action, and language be fused early, late, or through sparse expert routing?"
+  },
+  encoder_only: {
+    thesis: "Encoder-only runtime methods use video prediction as training pressure, then discard the slow predictive branch for deployment.",
+    signal: "The survey frames this as the practical deployment answer when video foresight improves representation but cannot run in the control loop.",
+    caution: "The key risk is representation amnesia: the runtime policy may not retain the future variable that helped during training.",
+    direction: "Which distillation tests show that future-prediction knowledge survives in the deployed action path?"
+  },
+  multimodal: {
+    thesis: "Multimodal-state models add depth, touch, force, 3D, or 4D state so prediction is grounded in physical variables beyond RGB.",
+    signal: "They address the survey concern that video-only WAMs under-specify contact geometry and state uncertainty.",
+    caution: "Extra sensors improve grounding but can narrow deployment settings or hide the actual contribution of the video model.",
+    direction: "How should tactile, depth, and force supervision be fused so it generalizes when a sensor is missing or noisy?"
+  },
+  latent_action: {
+    thesis: "Latent-action methods learn mid-level action codes from video transitions, then ground those codes into robot commands.",
+    signal: "They attack the missing-action-label problem directly: unlabeled video becomes useful because transitions imply possible actions.",
+    caution: "A discovered code is not automatically executable; it needs grounding, embodiment adaptation, and temporal calibration.",
+    direction: "Can latent actions learned from human or web video become reusable robot options rather than dataset-specific tokens?"
+  },
+  alignment: {
+    thesis: "Alignment methods retrofit world/video representations so they better match physics, rewards, geometry, or executable action.",
+    signal: "This is the survey bucket for methods that do not replace the backbone but make its features more robot-usable.",
+    caution: "Alignment gains can be benchmark-local unless the aligned variable is tied to a clear physical invariant.",
+    direction: "Which alignment targets transfer across tasks: rewards, contact geometry, inverse dynamics, or future feature consistency?"
+  },
+  online_adaptation: {
+    thesis: "Online-adaptation methods use prediction error during deployment as a self-supervised signal for correcting drift.",
+    signal: "They matter when the survey shifts from offline benchmark accuracy to changing real-world environments.",
+    caution: "Fast updates can fix distribution shift or destabilize the policy if the prediction error is ambiguous.",
+    direction: "How can online updates distinguish correctable perception drift from unsafe action-model drift?"
+  },
+  speedup: {
+    thesis: "Speedup methods cache, distill, skip, or asynchronously schedule foresight so world-model benefits fit real-time control.",
+    signal: "The family asks whether WAMs can be more than an offline teacher or slow planner.",
+    caution: "Engineering speedups can obscure the model's intrinsic cost; comparisons need a shared action-level latency estimate.",
+    direction: "What is the best accuracy/latency frontier when video prediction is optional, cached, or distilled?"
+  }
+};
+
 export const institutionMeta = {
   "gr-1": ["ByteDance Research", "bytedance.com", { logoUrl: "https://lf3-static.bytednsdoc.com/obj/eden-cn/lapzild-tss/ljhwZthlaukjlkulzlp/favicon_1/favicon.ico" }],
   "gr-2": ["ByteDance Research", "bytedance.com", { logoUrl: "https://lf3-static.bytednsdoc.com/obj/eden-cn/lapzild-tss/ljhwZthlaukjlkulzlp/favicon_1/favicon.ico" }],

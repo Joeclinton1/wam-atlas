@@ -8,6 +8,7 @@ import {
   taxonomyGroups,
   familyProblemQuestions,
   familyProblemSplits,
+  familyInsights,
   institutionMeta,
   $,
   $$,
@@ -16,8 +17,8 @@ import {
   scoreLabel,
   wrapText,
   shortText
-} from './shared.js?v=metrics-anchor-1';
-import { renderDiagram, getArchitectureSpec } from './diagrams.js?v=metrics-anchor-1';
+} from './shared.js?v=diagram-core-glyphs-17';
+import { renderDiagram, getArchitectureSpec } from './diagrams.js?v=diagram-core-glyphs-17';
 
 function hasMetricsTargetBenchmark(model) {
   return Boolean(model.metrics?.comparative?.metricsEligible);
@@ -1082,7 +1083,7 @@ function metricsBounds(bounds) {
   return {
     left: 96,
     right: bounds.width - 92,
-    top: 148,
+    top: 168,
     bottom: bounds.height - 86
   };
 }
@@ -1594,8 +1595,10 @@ function drawTaxonomyFamilyGlyph(family, layout, color) {
 
 function bindTaxonomyFamilyHover(group) {
   if (state.mode !== "taxonomy") return;
-  const setFamilyHover = (family, active) => {
+  const setFamilyHover = (family, active, event = null) => {
     state.taxonomyHoveredFamily = active ? family : null;
+    if (active && event) showFamilyHoverCard(family, event);
+    else hideFamilyHoverCard();
     const item = Array.from(group.querySelectorAll(".taxonomy-family")).find((candidate) => candidate.dataset.family === family);
     if (!item) return;
     const box = item.getBBox();
@@ -1630,9 +1633,10 @@ function bindTaxonomyFamilyHover(group) {
     });
   };
   group.querySelectorAll(".taxonomy-family").forEach((item) => {
-    item.addEventListener("mouseenter", () => {
-      setFamilyHover(item.dataset.family, true);
+    item.addEventListener("mouseenter", (event) => {
+      setFamilyHover(item.dataset.family, true, event);
     });
+    item.addEventListener("mousemove", positionFamilyHoverCard);
     item.addEventListener("mouseleave", () => {
       if (state.taxonomyHoveredFamily === item.dataset.family) {
         setFamilyHover(item.dataset.family, false);
@@ -1646,6 +1650,51 @@ function bindTaxonomyFamilyHover(group) {
       if (state.taxonomyHoveredFamily === node.dataset.family) setFamilyHover(node.dataset.family, false);
     });
   });
+}
+
+function showFamilyHoverCard(family, event) {
+  const card = $("#familyHoverCard");
+  if (!card) return;
+  const insight = familyInsights[family];
+  const models = state.models.filter((model) => model.family === family);
+  const color = problemColorForFamily(family);
+  card.hidden = false;
+  card.style.setProperty("--family-card-color", color);
+  card.innerHTML = `
+    <div class="family-card-kicker">${escapeHtml(taxonomyGroupForFamily(family)?.label || "Family")}</div>
+    <h3>${escapeHtml(familyLabels[family] || family)}</h3>
+    <p>${escapeHtml(insight?.thesis || familyProblemQuestions[family] || "")}</p>
+    <dl>
+      <div><dt>Signal</dt><dd>${escapeHtml(insight?.signal || "Survey family defined by recurring architecture and training pattern.")}</dd></div>
+      <div><dt>Watch</dt><dd>${escapeHtml(insight?.caution || "Compare claims against runtime path, benchmark scope, and source evidence.")}</dd></div>
+      <div><dt>Question</dt><dd>${escapeHtml(insight?.direction || familyProblemQuestions[family] || "")}</dd></div>
+    </dl>
+    <div class="family-card-examples">${models.slice(0, 5).map((model) => `<span>${escapeHtml(model.name)}</span>`).join("")}</div>
+  `;
+  positionFamilyHoverCard(event);
+}
+
+function hideFamilyHoverCard() {
+  const card = $("#familyHoverCard");
+  if (card) card.hidden = true;
+}
+
+function positionFamilyHoverCard(event) {
+  if (!event) return;
+  const card = $("#familyHoverCard");
+  if (!card || card.hidden) return;
+  const rect = card.getBoundingClientRect();
+  const gap = 16;
+  let left = event.clientX + gap;
+  let top = event.clientY + gap;
+  if (left + rect.width > window.innerWidth - 12) left = event.clientX - rect.width - gap;
+  if (top + rect.height > window.innerHeight - 12) top = event.clientY - rect.height - gap;
+  card.style.left = `${Math.max(12, left)}px`;
+  card.style.top = `${Math.max(78, top)}px`;
+}
+
+function taxonomyGroupForFamily(family) {
+  return taxonomyGroups.find((group) => group.families.includes(family));
 }
 
 function taxonomyContainers(bounds) {
@@ -2561,7 +2610,7 @@ function renderModelCard(id) {
   $("#modelInsights").innerHTML = insightLabels.map((key) => `
     <div>
       <dt>${key}</dt>
-      <dd>${escapeHtml(model.insights?.[key] || "")}</dd>
+      <dd>${renderInsightValue(model, key)}</dd>
     </div>
   `).join("");
 
@@ -2580,26 +2629,105 @@ function renderModelCard(id) {
   updateActiveNodes();
 }
 
+function renderInsightValue(model, key) {
+  const value = model.insights?.[key] || "";
+  if (key !== "related") return escapeHtml(value);
+  return renderRelatedLinks(value, model.id);
+}
+
+function renderRelatedLinks(value, currentId) {
+  const parts = String(value || "").split(/\s*,\s*/).filter(Boolean);
+  if (!parts.length) return "";
+  return `<span class="related-link-list">${parts.map((part) => {
+    const related = findModelByLooseName(part);
+    if (!related || related.id === currentId) return `<span>${escapeHtml(part)}</span>`;
+    return `<a href="#model/${escapeHtml(related.id)}">${escapeHtml(part)}</a>`;
+  }).join("")}</span>`;
+}
+
+function findModelByLooseName(name) {
+  const target = normalizeRelatedName(name);
+  return state.models.find((model) => {
+    const aliases = [
+      model.id,
+      model.name,
+      model.title,
+      model.name?.replace(/\s+/g, "-"),
+      model.name?.replace(/-/g, " ")
+    ].filter(Boolean).map(normalizeRelatedName);
+    return aliases.includes(target);
+  });
+}
+
+function normalizeRelatedName(value) {
+  return String(value || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+}
+
 function renderLearn() {
   const grammar = [
-    ["Inputs", "Language, RGB, multiview RGB-D, proprioception, tactile images, force, goal images, or action history."],
-    ["Tokenizers", "VAE/VQ encoders, DINO/SigLIP features, MLP action projections, FAST/action codebooks, and latent action quantizers."],
-    ["Backbone", "The core temporal model: GPT, DiT, MMDiT, MoT, shared Transformer, video diffusion model, or VLA backbone."],
-    ["Attention", "The part that determines leakage and coupling: causal masks, cross-attention, stream fusion, bidirectional blocks, and unilateral depth attention."],
-    ["Heads", "Action denoisers, cVAE decoders, IDM heads, future latent heads, value heads, depth/tactile/force branches."],
-    ["Objectives", "Flow matching, diffusion denoising, future latent alignment, VQ reconstruction, contrastive codebook alignment, depth MSE, or RL-style post-training rewards."]
+    ["Inputs", "Language, RGB, multiview RGB-D, proprioception, tactile images, force, goal images, or action history.", "input"],
+    ["Tokenizers", "VAE/VQ encoders, DINO/SigLIP features, MLP action projections, FAST/action codebooks, and latent action quantizers.", "tokenizer"],
+    ["Backbone", "The core temporal model: GPT, DiT, MMDiT, MoT, shared Transformer, video diffusion model, or VLA backbone.", "backbone"],
+    ["Attention", "The part that determines leakage and coupling: causal masks, cross-attention, stream fusion, bidirectional blocks, and unilateral depth attention.", "attention"],
+    ["Heads", "Action denoisers, cVAE decoders, IDM heads, future latent heads, value heads, depth/tactile/force branches.", "head"],
+    ["Objectives", "Flow matching, diffusion denoising, future latent alignment, VQ reconstruction, contrastive codebook alignment, depth MSE, or RL-style post-training rewards.", "objective"]
   ];
-  $("#grammarGrid").innerHTML = grammar.map(([title, body]) => `
-    <div class="grammar-item"><strong>${escapeHtml(title)}</strong><p>${escapeHtml(body)}</p></div>
-  `).join("");
-
-  const families = state.schema?.families || [];
-  $("#familyGrid").innerHTML = families.map((family) => `
-    <div class="family-item">
-      <strong>${escapeHtml(family.label)}</strong>
-      <p>${escapeHtml(family.diagramThesis)}</p>
+  $("#learnFlow").innerHTML = `
+    <div class="learn-flow-step is-input">observations</div>
+    <div class="learn-flow-arrow"></div>
+    <div class="learn-flow-step is-core">video / world model</div>
+    <div class="learn-flow-arrow"></div>
+    <div class="learn-flow-step is-action">action head</div>
+    <div class="learn-flow-note">the survey question is which future variable survives into this path</div>
+  `;
+  $("#grammarGrid").innerHTML = grammar.map(([title, body, type], index) => `
+    <div class="grammar-item grammar-${escapeHtml(type)}">
+      <div class="grammar-spark" aria-hidden="true">${learnGrammarSpark(type, index)}</div>
+      <strong>${escapeHtml(title)}</strong>
+      <p>${escapeHtml(body)}</p>
     </div>
   `).join("");
+
+  const families = taxonomyGroups.flatMap((group) => group.families).map((id) => ({
+    id,
+    label: familyLabels[id] || id,
+    diagramThesis: familyInsights[id]?.thesis || familyProblemQuestions[id] || ""
+  }));
+  $("#familyGrid").innerHTML = families.map((family) => `
+    <div class="family-item" style="--family-color:${problemColorForFamily(family.id)}">
+      <svg class="learn-family-diagram" viewBox="0 0 160 88" aria-hidden="true">
+        <defs>${atlasArrowDef()}</defs>
+        ${drawTaxonomyFamilyGlyph(family.id, { diagramX: 8, diagramY: 7, diagramW: 144, diagramH: 60 }, problemColorForFamily(family.id))}
+      </svg>
+      <strong>${escapeHtml(family.label)}</strong>
+      <p>${escapeHtml(family.diagramThesis)}</p>
+      <span>${escapeHtml(familyInsights[family.id]?.direction || familyProblemQuestions[family.id] || "")}</span>
+    </div>
+  `).join("");
+
+  const researchDirections = [
+    ["Causal use of future state", "Show that the action head uses the predicted future variable, not merely a correlated auxiliary loss."],
+    ["Benchmark transfer", "Separate saturated simulated scores from harder SimplerEnv, RoboCasa, RoboTwin, and real unseen-task transfer."],
+    ["Contact and drift", "Measure whether world models preserve contact geometry, calibration, and object permanence through long-horizon control."],
+    ["Action-code grounding", "Test whether video-derived latent actions remain executable across embodiments rather than becoming dataset-local tokens."],
+    ["Runtime frontier", "Map the accuracy/latency frontier when foresight is rendered, latent, cached, distilled, or skipped entirely."],
+    ["Sensor robustness", "Understand how depth, touch, and force help when they are noisy, missing, or unavailable at deployment."]
+  ];
+  $("#researchGrid").innerHTML = researchDirections.map(([title, body], index) => `
+    <div class="research-item" style="--research-accent:${problemBranches[index % problemBranches.length].color}">
+      <strong>${escapeHtml(title)}</strong>
+      <p>${escapeHtml(body)}</p>
+    </div>
+  `).join("");
+}
+
+function atlasArrowDef() {
+  return `<marker id="atlasArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="rgba(23,32,36,0.42)"></path></marker>`;
+}
+
+function learnGrammarSpark(type, index) {
+  const dots = Array.from({ length: 4 }, (_, i) => `<span style="--i:${i}"></span>`).join("");
+  return `<i class="spark-core spark-${escapeHtml(type)}">${dots}</i><em>${index + 1}</em>`;
 }
 
 function renderSources() {

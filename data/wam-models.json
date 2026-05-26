@@ -16302,7 +16302,9 @@
         "tokenization": [
           "inverse dynamics encoder predicts N_latent discrete tokens per timestep",
           "each latent action component uses a shared codebook of size 8",
+          "DINOv2 spatial encoder initializes visual feature extraction for the policy side",
           "LWM VQ-VAE tokenizes frames into visual tokens",
+          "LWM-Chat-1M instruction-tuned video-language model supplies the language/visual backbone",
           "latent action embedding maps discrete latents into transformer token space",
           "action encoder embeds noisy continuous action chunks and flow timestep"
         ],

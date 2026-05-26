@@ -1,4 +1,4 @@
-import { state, familyColors, typeColors, escapeHtml, wrapText, shortText } from './shared.js?v=timeline-layout-4';
+import { state, familyColors, typeColors, escapeHtml, wrapText, shortText } from './shared.js?v=diagram-core-glyphs-17';
 
 export function renderDiagram(container, model, options = {}) {
   const spec = getArchitectureSpec(model);
@@ -23,7 +23,12 @@ function diagramIds(model, options = {}) {
   return {
     coreGrad: `${safeId}-${size}-coreGrad`,
     softShadow: `${safeId}-${size}-softShadow`,
-    arrow: `${safeId}-${size}-diagramArrow`
+    arrow: `${safeId}-${size}-diagramArrow`,
+    visualFlow: `${safeId}-${size}-visualFlow`,
+    languageFlow: `${safeId}-${size}-languageFlow`,
+    stateFlow: `${safeId}-${size}-stateFlow`,
+    actionFlow: `${safeId}-${size}-actionFlow`,
+    futureFlow: `${safeId}-${size}-futureFlow`
   };
 }
 
@@ -32,6 +37,8 @@ function buildArchitectureDiagram(model, spec, options = {}) {
   const allText = [
     model.family,
     model.category,
+    ...(model.diagram?.inputs || []),
+    ...(model.diagram?.runtimePath || []),
     ...(arch.inputTokens || []),
     ...(arch.tokenization || []),
     ...(arch.backbone || []),
@@ -54,6 +61,7 @@ function buildArchitectureDiagram(model, spec, options = {}) {
     attention: inferAttentionBadges(allText, options),
     heads: inferHeads(model, arch, allText, options),
     outputs: inferOutputs(model, arch, allText, options),
+    components: inferComponents(model, arch, options),
     data: (model.diagram?.data || []).slice(0, options.mini ? 2 : 4),
     training: inferTraining(arch, allText, options),
     runtime: inferRuntime(arch, options),
@@ -63,13 +71,19 @@ function buildArchitectureDiagram(model, spec, options = {}) {
 
 function drawArchitectureDiagram(diagram, view, options = {}, ids) {
   const pattern = diagram.pattern || diagram.family;
-  if (pattern === "unified") return drawUnifiedArchitecture(diagram, view, options, ids);
-  if (pattern === "multi_stream") return drawMultiStreamArchitecture(diagram, view, options, ids);
-  if (pattern === "joint_latent") return drawJointLatentArchitecture(diagram, view, options, ids);
-  if (pattern === "latent_action") return drawLatentActionArchitecture(diagram, view, options, ids);
-  if (pattern === "implicit_future") return drawImplicitFutureArchitecture(diagram, view, options, ids);
+  if ([
+    "unified",
+    "multi_stream",
+    "joint_latent",
+    "latent_action",
+    "implicit_future",
+    "encoder_only",
+    "alignment",
+    "multimodal",
+    "online_adaptation",
+    "speedup"
+  ].includes(pattern)) return drawStandardArchitecture(diagram, view, options, ids);
   if (["pixel_idm", "latent_idm"].includes(pattern)) return drawFutureIdmArchitecture(diagram, view, options, ids);
-  if (["alignment", "multimodal", "online_adaptation", "speedup", "encoder_only"].includes(pattern)) return drawEnhancementArchitecture(diagram, view, options, ids);
 
   const mini = Boolean(options.mini);
   const y0 = mini ? 22 : 118;
@@ -92,6 +106,47 @@ function drawArchitectureDiagram(diagram, view, options = {}, ids) {
   ].join("");
 }
 
+function drawStandardArchitecture(diagram, view, options = {}, ids) {
+  const mini = Boolean(options.mini);
+  const y0 = diagramLayoutY(options);
+  const h = diagramMainHeight(options);
+  const inputBox = { x: 34, y: y0, w: 132, h };
+  const encoderBox = { x: 200, y: y0, w: 184, h };
+  const coreBox = { x: 432, y: y0, w: 304, h };
+  const headBox = { x: 782, y: y0, w: 184, h };
+  const outputBox = { x: 1020, y: y0, w: 106, h };
+  const trainBox = { x: 34, y: y0 + h + 36, w: 1092, h: mini ? 108 : 142 };
+  const inputs = denseTokenRows(diagram.inputs, inputBox, mini);
+  const outputs = denseOutputRows(diagram.outputs, outputBox, mini);
+  const encoders = denseEncoderRows(diagram.encoders, encoderBox, mini, inputs);
+  const heads = denseHeadRows(diagram.heads, headBox, mini, outputs);
+  return [
+    drawFittedColumnShell(inputBox, inputs),
+    drawColumnLabel(encoderBox, "encoders"),
+    drawStandardCorePanel(diagram, coreBox, mini, ids),
+    heads.length ? drawColumnLabel(headBox, "heads") : "",
+    drawFittedColumnShell(outputBox, outputs),
+    drawSankeyRibbons(diagram, [inputBox, encoderBox, coreBox, headBox, outputBox], ids, mini, { inputs, encoders, heads, outputs }),
+    drawDenseTokenRows(inputs, mini),
+    drawDenseEncoderRows(encoders, mini),
+    drawDenseHeadRows(heads, mini),
+    drawDenseOutputRows(outputs, mini),
+    drawTrainingBand(diagram, trainBox, coreBox, headBox, mini, ids),
+    mini ? "" : drawRuntimeStrip(diagram.runtime, coreBox, outputBox, trainBox)
+  ].join("");
+}
+
+function drawStandardCorePanel(diagram, box, mini, ids) {
+  if (diagram.pattern === "encoder_only") return drawEncoderOnlyCore(box, diagram, mini, ids);
+  if (diagram.pattern === "unified") return drawUnifiedCore(box, diagram, mini, ids);
+  if (diagram.pattern === "multi_stream") return drawParallelStreams(box, diagram, mini, ids);
+  if (diagram.pattern === "joint_latent") return drawLatentManifold(box, diagram, mini, ids);
+  if (diagram.pattern === "latent_action") return drawLatentActionCodebook(box, diagram, mini);
+  if (["pixel_idm", "latent_idm"].includes(diagram.pattern)) return drawFuturePredictor(box, diagram, mini, ids);
+  if (diagram.pattern === "implicit_future") return drawImplicitFutureRepresentation(box, diagram, mini, ids);
+  return drawCorePanel(diagram, box, mini, ids);
+}
+
 function diagramLayoutY(options) {
   return options.mini ? 22 : 34;
 }
@@ -104,19 +159,26 @@ function drawUnifiedArchitecture(diagram, view, options = {}, ids) {
   const mini = Boolean(options.mini);
   const y0 = diagramLayoutY(options);
   const h = diagramMainHeight(options);
-  const inputBox = { x: 34, y: y0, w: 218, h };
-  const sequenceBox = { x: 286, y: y0 + 20, w: 208, h: h - 40 };
-  const coreBox = { x: 532, y: y0, w: 308, h };
-  const outputBox = { x: 880, y: y0, w: 246, h };
+  const inputBox = { x: 34, y: y0, w: 188, h };
+  const encoderBox = { x: 250, y: y0, w: 160, h };
+  const sequenceBox = { x: 438, y: y0 + 18, w: 178, h: h - 36 };
+  const coreBox = { x: 650, y: y0, w: 256, h };
+  const outputBox = { x: 948, y: y0, w: 178, h };
   const trainBox = { x: 34, y: y0 + h + 36, w: 1092, h: mini ? 108 : 142 };
   return [
     drawColumnPanel(inputBox, "typed input streams", drawTokenGroups(diagram.inputs, inputBox, mini)),
+    drawColumnPanel(encoderBox, "vision / text encoders", drawEncoderStack(diagram.encoders, encoderBox, mini)),
     drawUnifiedSequence(sequenceBox, diagram, mini),
     drawUnifiedCore(coreBox, diagram, mini, ids),
-    drawUnifiedOutputs(outputBox, diagram, mini),
-    drawConnector(inputBox.x + inputBox.w, inputBox.y + h * 0.5, sequenceBox.x, sequenceBox.y + sequenceBox.h * 0.5, "pack tokens", false, ids),
-    drawConnector(sequenceBox.x + sequenceBox.w, sequenceBox.y + sequenceBox.h * 0.5, coreBox.x, coreBox.y + h * 0.5, "single sequence", false, ids),
-    drawConnector(coreBox.x + coreBox.w, coreBox.y + h * 0.45, outputBox.x, outputBox.y + h * 0.45, "parallel decode", false, ids),
+    drawUnifiedOutputs(outputBox, diagram, mini, ids),
+    drawTypedFlow(inputBox, encoderBox, "visual", ids, 0.34, 0.34, "encode"),
+    drawTypedFlow(inputBox, encoderBox, "language", ids, 0.5, 0.5, ""),
+    drawTypedFlow(inputBox, encoderBox, "action", ids, 0.66, 0.66, ""),
+    drawTypedFlow(encoderBox, sequenceBox, "visual", ids, 0.36, 0.36, "pack"),
+    drawTypedFlow(encoderBox, sequenceBox, "action", ids, 0.62, 0.62, ""),
+    drawTypedFlow(sequenceBox, coreBox, "future", ids, 0.5, 0.5, "shared sequence"),
+    drawTypedFlow(coreBox, outputBox, "future", ids, 0.36, 0.32, "obs head"),
+    drawTypedFlow(coreBox, outputBox, "action", ids, 0.64, 0.68, "action head"),
     drawTrainingBand(diagram, trainBox, coreBox, outputBox, mini, ids),
     mini ? "" : drawRuntimeStrip(diagram.runtime, coreBox, outputBox, trainBox)
   ].join("");
@@ -142,52 +204,55 @@ function drawUnifiedSequence(box, diagram, mini) {
       </g>
     `;
   }).join("");
+  const attentionLink = tokenKinds.length > 1 ? `
+    <path class="stream-attention-link" d="M ${box.x + box.w - 28} ${box.y + 64} C ${box.x + box.w + 12} ${box.y + box.h * 0.36}, ${box.x + box.w + 12} ${box.y + box.h * 0.66}, ${box.x + box.w - 28} ${box.y + box.h - 42}"></path>
+    <text class="attention-text" x="${box.x + box.w - 78}" y="${box.y + box.h - 18}">joint attention</text>
+  ` : "";
   return `
     <g>
       <rect class="sequence-panel" x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}"></rect>
       <text class="panel-title" x="${box.x + 14}" y="${box.y + 24}">one interleaved token sequence</text>
       ${rows}
+      ${attentionLink}
     </g>
   `;
 }
 
 function drawUnifiedCore(box, diagram, mini, ids) {
-  const layerH = mini ? 28 : 34;
-  const layers = diagram.core.layerBadges.slice(0, mini ? 5 : 6).map((label, index) => `
-    <g>
-      <rect class="unified-layer" x="${box.x + 34 + index * 18}" y="${box.y + 76 + index * (layerH - 12)}" width="${box.w - 68}" height="${layerH}"></rect>
-      <text class="layer-text" x="${box.x + box.w / 2 + index * 18}" y="${box.y + 94 + index * (layerH - 12)}" text-anchor="middle">${escapeHtml(label)}</text>
-    </g>
-  `).join("");
   return `
     <g filter="url(#${ids.softShadow})">
       <rect class="core-panel unified-core" x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" fill="url(#${ids.coreGrad})"></rect>
       <text class="core-title" x="${box.x + 22}" y="${box.y + 30}">${escapeHtml(diagram.core.label)}</text>
       ${drawWrappedText(diagram.core.details.join(" / "), box.x + 22, box.y + 50, 32, 2, "core-detail", 11)}
-      ${layers}
+      ${drawCoreVisual(diagram.core.kind, box.x + 42, box.y + 88, box.w - 84, mini ? 122 : 150, { autoregressive: isAutoregressiveDiagram(diagram) })}
       ${drawAttentionBadges(diagram.attention, box, mini)}
     </g>
   `;
 }
 
-function drawUnifiedOutputs(box, diagram, mini) {
-  const outputs = uniqueByText([
-    ...diagram.outputs,
-    { label: "Observation Tokens", detail: "future/current visual tokens" },
-    { label: "Action Tokens", detail: "control chunk tokens" }
-  ], "label").slice(0, mini ? 4 : 5);
-  const itemH = mini ? 48 : 54;
+function drawUnifiedOutputs(box, diagram, mini, ids) {
+  const headMode = unifiedHeadMode(diagram);
+  const outputs = headMode === "unified"
+    ? uniqueByText([{ label: "Unified Token Head", detail: "one decoder emits obs/action tokens" }, ...diagram.outputs], "label").slice(0, mini ? 3 : 4)
+    : uniqueByText([
+      { label: "Observation / Future Head", detail: "visual, latent or video tokens" },
+      { label: "Action Head", detail: "control chunk tokens" },
+      ...diagram.outputs
+    ], "label").slice(0, mini ? 3 : 4);
+  const itemH = mini ? 44 : 50;
   return `
     <g>
       <rect class="diagram-panel" x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}"></rect>
-      <text class="panel-title" x="${box.x + 14}" y="${box.y + 24}">decoded token heads</text>
+      <text class="panel-title" x="${box.x + 14}" y="${box.y + 24}">heads</text>
+      <rect class="head-split-badge" x="${box.x + 18}" y="${box.y + 36}" width="${box.w - 36}" height="24"></rect>
+      <text class="head-split-text" x="${box.x + box.w / 2}" y="${box.y + 52}" text-anchor="middle">${headMode === "unified" ? "obs + action emitted together" : "observation and action split"}</text>
       ${outputs.map((output, index) => {
-        const y = box.y + 48 + index * (itemH + 10);
+        const y = box.y + 72 + index * (itemH + 8);
         return `
           <g class="diagram-node">
             <rect class="${/action/i.test(output.label) ? "action-output" : "output-block"}" x="${box.x + 18}" y="${y}" width="${box.w - 36}" height="${itemH}"></rect>
-            <text class="output-label" x="${box.x + 30}" y="${y + 18}">${escapeHtml(shortText(output.label, 25))}</text>
-            ${drawWrappedText(output.detail, box.x + 30, y + 35, 26, 1, "output-detail", 10)}
+            <text class="output-label" x="${box.x + 30}" y="${y + 18}">${escapeHtml(shortText(output.label, 19))}</text>
+            ${drawWrappedText(output.detail, box.x + 30, y + 35, 18, 1, "output-detail", 10)}
           </g>
         `;
       }).join("")}
@@ -199,16 +264,22 @@ function drawMultiStreamArchitecture(diagram, view, options = {}, ids) {
   const mini = Boolean(options.mini);
   const y0 = diagramLayoutY(options);
   const h = diagramMainHeight(options);
-  const inputBox = { x: 34, y: y0, w: 190, h };
-  const streamBox = { x: 272, y: y0, w: 536, h };
-  const headBox = { x: 858, y: y0, w: 268, h };
+  const inputBox = { x: 34, y: y0, w: 178, h };
+  const encoderBox = { x: 238, y: y0, w: 160, h };
+  const streamBox = { x: 426, y: y0, w: 418, h };
+  const headBox = { x: 892, y: y0, w: 234, h };
   const trainBox = { x: 34, y: y0 + h + 36, w: 1092, h: mini ? 108 : 142 };
   return [
     drawColumnPanel(inputBox, "stream inputs", drawTokenGroups(diagram.inputs, inputBox, mini)),
+    drawColumnPanel(encoderBox, "per-modality encoders", drawEncoderStack(diagram.encoders, encoderBox, mini)),
     drawParallelStreams(streamBox, diagram, mini, ids),
-    drawColumnPanel(headBox, "expert / fused outputs", drawHeadStack([...diagram.heads, ...diagram.outputs].slice(0, mini ? 4 : 5), headBox, mini)),
-    drawConnector(inputBox.x + inputBox.w, inputBox.y + h * 0.5, streamBox.x, streamBox.y + h * 0.5, "route", false, ids),
-    drawConnector(streamBox.x + streamBox.w, streamBox.y + h * 0.5, headBox.x, headBox.y + h * 0.5, "fuse", false, ids),
+    drawColumnPanel(headBox, "heads", drawHeadStack([...diagram.heads, ...diagram.outputs].slice(0, mini ? 4 : 5), headBox, mini)),
+    drawTypedFlow(inputBox, encoderBox, "visual", ids, 0.34, 0.34, "encode"),
+    drawTypedFlow(inputBox, encoderBox, "language", ids, 0.5, 0.5, ""),
+    drawTypedFlow(inputBox, encoderBox, "action", ids, 0.66, 0.66, ""),
+    drawTypedFlow(encoderBox, streamBox, "visual", ids, 0.36, 0.35, "route"),
+    drawTypedFlow(encoderBox, streamBox, "action", ids, 0.64, 0.65, ""),
+    drawTypedFlow(streamBox, headBox, "future", ids, 0.5, 0.5, "fuse"),
     drawTrainingBand(diagram, trainBox, streamBox, headBox, mini, ids),
     mini ? "" : drawRuntimeStrip(diagram.runtime, streamBox, headBox, trainBox)
   ].join("");
@@ -220,18 +291,25 @@ function drawParallelStreams(box, diagram, mini, ids) {
     { label: "Action stream", detail: "policy tokens", color: "#d08a2e" }
   ];
   const visible = streams.slice(0, mini ? 4 : 5);
-  const laneH = Math.min(mini ? 48 : 56, (box.h - 76) / Math.max(visible.length, 1) - 8);
+  const laneH = Math.min(mini ? 58 : 68, (box.h - 76) / Math.max(visible.length, 1) - 8);
   const lanes = visible.map((stream, index) => {
     const y = box.y + 58 + index * (laneH + 12);
+    const kind = streamCoreKind(stream, diagram);
     return `
       <g>
         <rect class="stream-lane" x="${box.x + 22}" y="${y}" width="${box.w - 86}" height="${laneH}" style="--stream:${stream.color}"></rect>
-        <text class="stream-label" x="${box.x + 38}" y="${y + 18}">${escapeHtml(stream.label)}</text>
-        ${drawWrappedText(stream.detail, box.x + 38, y + 35, 36, 1, "stream-detail", 9.5)}
-        <path class="diagram-flow stream-to-hub" d="M ${box.x + box.w - 64} ${y + laneH / 2} L ${box.x + box.w - 24} ${box.y + box.h / 2}" marker-end="url(#${ids.arrow})"></path>
+        ${drawCoreVisual(kind, box.x + 36, y + 9, box.w - 124, laneH - 18, { autoregressive: isAutoregressiveDiagram(diagram) })}
+        <text class="stream-label" x="${box.x + 46}" y="${y + laneH - 8}">${escapeHtml(shortText(stream.label, 24))}</text>
+        <path class="stream-flow stream-to-hub" stroke="${streamGradientForLabel(stream.label, ids)}" d="M ${box.x + 44} ${y + laneH / 2} C ${box.x + box.w * 0.45} ${y + laneH / 2}, ${box.x + box.w - 86} ${y + laneH / 2}, ${box.x + box.w - 28} ${box.y + box.h / 2}"></path>
       </g>
     `;
   }).join("");
+  const attentionLinks = visible.length > 1 ? visible.slice(1).map((stream, index) => {
+    const y1 = box.y + 58 + index * (laneH + 12) + laneH / 2;
+    const y2 = box.y + 58 + (index + 1) * (laneH + 12) + laneH / 2;
+    const x = box.x + box.w - 96;
+    return `<path class="stream-attention-link" d="M ${x} ${y1} C ${x + 34} ${y1}, ${x + 34} ${y2}, ${x} ${y2}"></path>`;
+  }).join("") : "";
   return `
     <g filter="url(#${ids.softShadow})">
       <rect class="core-panel" x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" fill="url(#${ids.coreGrad})"></rect>
@@ -240,8 +318,19 @@ function drawParallelStreams(box, diagram, mini, ids) {
       <text class="attention-hub-label" x="${box.x + box.w - 41}" y="${box.y + box.h / 2 - 10}" text-anchor="middle">shared</text>
       <text class="attention-hub-label" x="${box.x + box.w - 41}" y="${box.y + box.h / 2 + 7}" text-anchor="middle">attention</text>
       ${lanes}
+      ${attentionLinks}
     </g>
   `;
+}
+
+function streamCoreKind(stream, diagram) {
+  const text = `${stream.label || ""} ${stream.detail || ""} ${diagram.core.label || ""} ${diagram.core.details.join(" ")}`.toLowerCase();
+  if (/action/.test(text) && /\bact\b|action transformer/.test(text)) return "act";
+  if (/\bdit\b|diffusion transformer|mm-dit/.test(text)) return "dit";
+  if (/diffusion|denois|flow/.test(text)) return "diffusion";
+  if (/cnn|u-net|unet/.test(text)) return "cnn";
+  if (/mlp|linear/.test(text)) return "mlp";
+  return /action/.test(text) ? "act" : "transformer";
 }
 
 function drawJointLatentArchitecture(diagram, view, options = {}, ids) {
@@ -253,9 +342,9 @@ function drawJointLatentArchitecture(diagram, view, options = {}, ids) {
   const rightBox = { x: 886, y: y0, w: 240, h };
   const trainBox = { x: 34, y: y0 + h + 36, w: 1092, h: mini ? 108 : 142 };
   return [
-    drawColumnPanel(leftBox, "encoders into shared space", drawTokenGroups(diagram.inputs, leftBox, mini)),
+    drawColumnPanel(leftBox, "inputs + encoders", drawInputEncoderStack(diagram, leftBox, mini)),
     drawLatentManifold(latent, diagram, mini, ids),
-    drawColumnPanel(rightBox, "decoders from latent space", drawOutputStack([...diagram.outputs, ...diagram.heads].slice(0, mini ? 4 : 5), rightBox, mini)),
+    drawColumnPanel(rightBox, "heads", drawOutputStack([...diagram.outputs, ...diagram.heads].slice(0, mini ? 4 : 5), rightBox, mini)),
     drawConnector(leftBox.x + leftBox.w, leftBox.y + h * 0.42, latent.x, latent.y + latent.h * 0.44, "embed", false, ids),
     drawConnector(latent.x + latent.w, latent.y + latent.h * 0.44, rightBox.x, rightBox.y + h * 0.42, "decode", false, ids),
     drawConnector(rightBox.x, rightBox.y + h * 0.66, latent.x + latent.w, latent.y + latent.h * 0.66, "align", true, ids),
@@ -297,10 +386,10 @@ function drawLatentActionArchitecture(diagram, view, options = {}, ids) {
   const outputBox = { x: 940, y: y0, w: 186, h };
   const trainBox = { x: 34, y: y0 + h + 36, w: 1092, h: mini ? 108 : 142 };
   return [
-    drawColumnPanel(videoBox, "video transition evidence", drawTokenGroups(diagram.inputs, videoBox, mini)),
+    drawColumnPanel(videoBox, "evidence + encoders", drawInputEncoderStack(diagram, videoBox, mini)),
     drawLatentActionCodebook(codeBox, diagram, mini),
     drawPolicyGrounding(policyBox, diagram, mini, ids),
-    drawColumnPanel(outputBox, "grounded controls", drawOutputStack(diagram.outputs, outputBox, mini)),
+    drawColumnPanel(outputBox, "outputs", drawOutputStack(diagram.outputs, outputBox, mini)),
     drawConnector(videoBox.x + videoBox.w, videoBox.y + h * 0.42, codeBox.x, codeBox.y + codeBox.h * 0.42, "infer code", false, ids),
     drawConnector(codeBox.x + codeBox.w, codeBox.y + codeBox.h * 0.5, policyBox.x, policyBox.y + h * 0.5, "condition", false, ids),
     drawConnector(policyBox.x + policyBox.w, policyBox.y + h * 0.48, outputBox.x, outputBox.y + h * 0.48, "decode", false, ids),
@@ -342,22 +431,76 @@ function drawFutureIdmArchitecture(diagram, view, options = {}, ids) {
   const mini = Boolean(options.mini);
   const y0 = diagramLayoutY(options);
   const h = diagramMainHeight(options);
-  const inputBox = { x: 34, y: y0, w: 224, h };
-  const futureBox = { x: 318, y: y0, w: 310, h };
-  const idmBox = { x: 700, y: y0 + 36, w: 196, h: h - 72 };
-  const outputBox = { x: 960, y: y0, w: 166, h };
+  const inputBox = { x: 34, y: y0, w: 132, h };
+  const encoderBox = { x: 194, y: y0, w: 166, h };
+  const futureBox = { x: 396, y: y0, w: 292, h };
+  const idmBox = { x: 724, y: y0, w: 174, h };
+  const outputBox = { x: 934, y: y0, w: 130, h };
   const trainBox = { x: 34, y: y0 + h + 36, w: 1092, h: mini ? 108 : 142 };
+  const inputs = denseTokenRows(diagram.inputs, inputBox, mini);
+  const outputs = denseOutputRows(idmActionOutputs(diagram), outputBox, mini);
+  const encoders = denseEncoderRows(diagram.encoders, encoderBox, mini, inputs);
+  const idmHeads = denseHeadRows(idmHeadRows(diagram), idmBox, mini, outputs);
   return [
-    drawColumnPanel(inputBox, "observation / goal", drawTokenGroups(diagram.inputs, inputBox, mini)),
+    drawFittedColumnShell(inputBox, inputs),
+    drawColumnLabel(encoderBox, "encoders"),
     drawFuturePredictor(futureBox, diagram, mini, ids),
-    drawInverseDynamics(idmBox, diagram, mini),
-    drawColumnPanel(outputBox, "action result", drawOutputStack(diagram.outputs, outputBox, mini)),
-    drawConnector(inputBox.x + inputBox.w, inputBox.y + h * 0.44, futureBox.x, futureBox.y + h * 0.44, "predict", false, ids),
-    drawConnector(futureBox.x + futureBox.w, futureBox.y + h * 0.5, idmBox.x, idmBox.y + idmBox.h * 0.5, "future state", false, ids),
-    drawConnector(idmBox.x + idmBox.w, idmBox.y + idmBox.h * 0.5, outputBox.x, outputBox.y + h * 0.5, "inverse dynamics", false, ids),
+    drawColumnLabel(idmBox, "heads"),
+    drawFittedColumnShell(outputBox, outputs),
+    drawFutureIdmSankey(diagram, inputBox, encoderBox, futureBox, idmBox, outputBox, ids, mini, { inputs, encoders, idmHeads, outputs }),
+    drawDenseTokenRows(inputs, mini),
+    drawDenseEncoderRows(encoders, mini),
+    drawDenseHeadRows(idmHeads, mini),
+    drawDenseOutputRows(outputs, mini),
     drawTrainingBand(diagram, trainBox, futureBox, idmBox, mini, ids),
     mini ? "" : drawRuntimeStrip(diagram.runtime, idmBox, outputBox, trainBox)
   ].join("");
+}
+
+function drawFutureIdmSankey(diagram, inputBox, encoderBox, futureBox, idmBox, outputBox, ids, mini, rows = {}) {
+  const visualTrack = { kind: "visual" };
+  const languageTrack = { kind: "language" };
+  const futureTrack = { kind: "future" };
+  const actionTrack = { kind: "action" };
+  const inputRoutes = buildInputEncoderRoutes(rows.inputs || [], rows.encoders || []);
+  const visualEncoderY = routeYForKind(rows.encoders || [], "visual") ?? futureBox.y + futureBox.h * 0.36;
+  const languageEncoderY = routeYForKind(rows.encoders || [], "language") ?? futureBox.y + futureBox.h * 0.49;
+  const idmY = rows.idmHeads?.[0]?.centerY ?? idmBox.y + idmBox.h * 0.5;
+  const outputAnchor = routeAnchorForKind(rows.outputs || [], "action", "left") || { x: outputBox.x + outputBox.w - 8, y: outputBox.y + outputBox.h * 0.5 };
+  const futureIn = futureBox.x - 10;
+  const futureOut = futureBox.x + futureBox.w + 10;
+  const idmIn = idmBox.x - 10;
+  const idmOut = idmBox.x + idmBox.w + 10;
+  return `
+    <g class="sankey-layer idm-sankey-layer">
+      ${inputRoutes.map((route) => drawSankeyRibbon(route.track, [
+        [route.input.rightAnchor.x, route.input.rightAnchor.y],
+        [route.input.rightAnchor.x + 14, route.input.rightAnchor.y],
+        [route.encoder.x - 10, route.encoder.centerY],
+        [route.encoder.x + route.encoder.w * 0.42, route.encoder.centerY]
+      ], ids, "input-to-encoder", route.width)).join("")}
+      ${drawSankeyRibbon(visualTrack, [
+        [encoderBox.x + encoderBox.w - 10, visualEncoderY],
+        [encoderBox.x + encoderBox.w + 22, visualEncoderY],
+        [futureIn, futureBox.y + futureBox.h * 0.38]
+      ], ids, "encoder-to-future", mini ? 13 : 16)}
+      ${streamPresent("language", diagram) ? drawSankeyRibbon(languageTrack, [
+        [encoderBox.x + encoderBox.w - 10, languageEncoderY],
+        [encoderBox.x + encoderBox.w + 22, languageEncoderY],
+        [futureIn, futureBox.y + futureBox.h * 0.5]
+      ], ids, "encoder-to-future", mini ? 10 : 13) : ""}
+      ${drawSankeyRibbon(futureTrack, [
+        [futureOut, futureBox.y + futureBox.h * 0.5],
+        [futureOut + 36, futureBox.y + futureBox.h * 0.5],
+        [idmIn, idmY]
+      ], ids, "future-to-idm", mini ? 18 : 22)}
+      ${drawSankeyRibbon(actionTrack, [
+        [idmOut, idmY],
+        [idmOut + 32, idmY],
+        [outputAnchor.x, outputAnchor.y]
+      ], ids, "idm-to-action", mini ? 16 : 20)}
+    </g>
+  `;
 }
 
 function drawImplicitFutureArchitecture(diagram, view, options = {}, ids) {
@@ -370,10 +513,10 @@ function drawImplicitFutureArchitecture(diagram, view, options = {}, ids) {
   const outputBox = { x: 1002, y: y0, w: 124, h };
   const trainBox = { x: 34, y: y0 + h + 36, w: 1092, h: mini ? 108 : 142 };
   return [
-    drawColumnPanel(inputBox, "observation / goal context", drawTokenGroups(diagram.inputs, inputBox, mini)),
+    drawColumnPanel(inputBox, "context + encoders", drawInputEncoderStack(diagram, inputBox, mini)),
     drawImplicitFutureRepresentation(repBox, diagram, mini, ids),
     drawConditionedPolicy(policyBox, diagram, mini, ids),
-    drawColumnPanel(outputBox, "policy outputs", drawOutputStack(diagram.outputs, outputBox, mini)),
+    drawColumnPanel(outputBox, "outputs", drawOutputStack(diagram.outputs, outputBox, mini)),
     drawConnector(inputBox.x + inputBox.w, inputBox.y + h * 0.44, repBox.x, repBox.y + repBox.h * 0.44, "predict hidden future", false, ids),
     drawConnector(inputBox.x + inputBox.w, inputBox.y + h * 0.67, policyBox.x, policyBox.y + h * 0.66, "current obs", false, ids),
     drawConnector(repBox.x + repBox.w, repBox.y + repBox.h * 0.43, policyBox.x, policyBox.y + h * 0.38, "condition / prefix", false, ids),
@@ -433,11 +576,116 @@ function drawConditionedPolicy(box, diagram, mini, ids) {
   `;
 }
 
+function drawCoreVisual(kind, x, y, w, h, options = {}) {
+  if (kind === "dit") return drawTransformerGlyph(x, y, w, h, { ...options, diffusion: true, cls: "core-visual-dit" });
+  if (kind === "diffusion") return drawCnnDiffusionGlyph(x, y, w, h, "core-visual-diffusion");
+  if (kind === "cnn") return drawCnnGlyph(x, y, w, h, "core-visual-cnn");
+  if (kind === "mlp") return drawMlpGlyph(x, y, w, h, "core-visual-mlp");
+  if (kind === "act") return drawTransformerGlyph(x, y, w, h, { ...options, label: "ACT", cls: "core-visual-act" });
+  return drawTransformerGlyph(x, y, w, h, { ...options, cls: "core-visual-transformer" });
+}
+
+function drawTransformerGlyph(x, y, w, h, options = {}) {
+  const seqN = 5;
+  const tokenW = Math.min(16, (w - 18) / seqN);
+  const blockX = x + w * 0.23;
+  const blockY = y + h * 0.28;
+  const blockW = w * 0.54;
+  const blockH = h * 0.42;
+  const tokenGap = 5;
+  const seqW = seqN * tokenW + (seqN - 1) * tokenGap;
+  const seqX = blockX + (blockW - seqW) / 2;
+  const topY = blockY - 14;
+  const bottomY = blockY + blockH + 7;
+  const tokens = (yy, cls) => Array.from({ length: seqN }, (_, i) => {
+    const tx = seqX + i * (tokenW + tokenGap);
+    return `<rect class="core-seq-token ${cls}" x="${tx}" y="${yy}" width="${tokenW}" height="7"></rect>`;
+  }).join("");
+  const layers = Array.from({ length: 5 }, (_, i) => {
+    const lx = blockX + 9 + i * ((blockW - 18) / 4);
+    return `<path class="core-layer-line" d="M ${lx} ${blockY + 7} L ${lx} ${blockY + blockH - 7}"></path>`;
+  }).join("");
+  const loop = options.diffusion ? drawDiffusionLoop(x + w * 0.9, y + h * 0.46, Math.min(62, w * 0.28), Math.min(50, h * 0.4)) : "";
+  const label = options.label && !options.autoregressive ? `<text class="core-glyph-label" x="${blockX + blockW / 2}" y="${blockY + blockH / 2 + 4}" text-anchor="middle">${escapeHtml(options.label)}</text>` : "";
+  const causalMask = options.autoregressive ? drawCausalMaskGlyph(blockX + blockW / 2, blockY + blockH / 2, Math.min(36, blockW * 0.42)) : "";
+  return `
+    <g class="core-visual ${options.cls || "core-visual-transformer"}">
+      ${tokens(topY, "top")}
+      <rect class="core-transformer-block" x="${blockX}" y="${blockY}" width="${blockW}" height="${blockH}"></rect>
+      ${layers}
+      ${label}
+      ${causalMask}
+      ${tokens(bottomY, "bottom")}
+      ${loop}
+    </g>
+  `;
+}
+
+function drawCausalMaskGlyph(cx, cy, size) {
+  const gap = 2.2;
+  const cell = (size - gap * 2) / 3;
+  const x0 = cx - size / 2;
+  const y0 = cy - size / 2;
+  const cells = [];
+  for (let row = 0; row < 3; row += 1) {
+    for (let col = 0; col < 3; col += 1) {
+      const dark = row >= col;
+      cells.push(`<rect class="${dark ? "causal-mask-cell dark" : "causal-mask-cell"}" x="${x0 + col * (cell + gap)}" y="${y0 + row * (cell + gap)}" width="${cell}" height="${cell}"></rect>`);
+    }
+  }
+  return `<g class="causal-mask-glyph">${cells.join("")}</g>`;
+}
+
+function drawCnnGlyph(x, y, w, h, cls = "core-visual-cnn") {
+  const sx = x + w * 0.2;
+  const sy = y + h * 0.2;
+  const sw = w * 0.52;
+  const sh = h * 0.5;
+  const slices = Array.from({ length: 5 }, (_, i) => `
+    <rect class="core-cnn-slice" x="${sx + i * 8}" y="${sy + i * 3}" width="${sw}" height="${sh}"></rect>
+  `).join("");
+  return `<g class="core-visual ${cls}">${slices}</g>`;
+}
+
+function drawCnnDiffusionGlyph(x, y, w, h, cls = "core-visual-diffusion") {
+  return `
+    <g class="core-visual ${cls}">
+      ${drawCnnGlyph(x, y, w, h, cls)}
+      ${drawDiffusionLoop(x + w * 0.9, y + h * 0.48, Math.min(62, w * 0.3), Math.min(50, h * 0.42))}
+    </g>
+  `;
+}
+
+function drawDiffusionLoop(cx, cy, w, h) {
+  const scale = Math.min(w, h) / 24;
+  const x = cx - 12 * scale;
+  const y = cy - 12 * scale;
+  return `
+    <g class="core-diffusion-loop-reference" transform="translate(${x} ${y}) scale(${scale})">
+      <path class="core-diffusion-loop" d="M 20 11 A 8.1 8.1 0 0 0 4.5 9 M 4 5 L 4 9 L 8 9"></path>
+      <path class="core-diffusion-loop" d="M 4 13 A 8.1 8.1 0 0 0 19.5 15 M 20 19 L 20 15 L 16 15"></path>
+    </g>
+  `;
+}
+
+function drawMlpGlyph(x, y, w, h, cls = "core-visual-mlp") {
+  const cols = [0.22, 0.5, 0.78];
+  const rows = [[0.32, 0.5, 0.68], [0.38, 0.62], [0.32, 0.5, 0.68]];
+  const nodes = rows.map((ys, ci) => ys.map((ratio, ri) => ({ x: x + w * cols[ci], y: y + h * ratio, id: `${ci}-${ri}` })));
+  const edges = [
+    ...nodes[0].flatMap((a) => nodes[1].map((b) => `<path class="core-mlp-edge" d="M ${a.x} ${a.y} L ${b.x} ${b.y}"></path>`)),
+    ...nodes[1].flatMap((a) => nodes[2].map((b) => `<path class="core-mlp-edge" d="M ${a.x} ${a.y} L ${b.x} ${b.y}"></path>`))
+  ].join("");
+  const circles = nodes.flat().map((n) => `<circle class="core-mlp-node" cx="${n.x}" cy="${n.y}" r="4"></circle>`).join("");
+  return `<g class="core-visual ${cls}">${edges}${circles}</g>`;
+}
+
 function drawFuturePredictor(box, diagram, mini, ids) {
   const rendered = diagram.pattern === "pixel_idm";
   const latent = diagram.pattern === "latent_idm";
+  const stages = futurePredictorStages(diagram, mini);
   const frames = Array.from({ length: 4 }, (_, index) => `
-    <rect class="${rendered ? "future-frame" : "latent-frame"}" x="${box.x + 34 + index * 54}" y="${box.y + 98 + index * 8}" width="74" height="52"></rect>
+    <rect class="${rendered ? "future-frame" : "latent-frame"}" x="${box.x + 32 + index * 52}" y="${box.y + 88 + index * 6}" width="70" height="48"></rect>
   `).join("");
   return `
     <g filter="url(#${ids.softShadow})">
@@ -445,18 +693,140 @@ function drawFuturePredictor(box, diagram, mini, ids) {
       <text class="core-title" x="${box.x + 22}" y="${box.y + 30}">${latent ? "latent future model" : "pixel future generator"}</text>
       ${drawWrappedText(diagram.core.details.join(" / "), box.x + 22, box.y + 52, 31, 2, "core-detail", 11)}
       ${frames}
+      ${stages.map((stage, index) => {
+        const y = box.y + 172 + index * (mini ? 34 : 38);
+        return `
+          <g class="future-stage-node">
+            <rect class="future-stage-block" x="${box.x + 28}" y="${y}" width="${box.w - 56}" height="${mini ? 29 : 33}"></rect>
+            <text class="block-label" x="${box.x + 42}" y="${y + 15}">${escapeHtml(shortText(stage.label, 30))}</text>
+            ${mini ? "" : drawWrappedText(stage.detail, box.x + 42, y + 28, 32, 1, "block-detail", 9)}
+          </g>
+        `;
+      }).join("")}
       ${diagram.motifs.diffusion ? drawNoiseSchedule({ ...box, h: box.h - 12 }, mini, ids) : ""}
       <text class="core-note" x="${box.x + 28}" y="${box.y + box.h - 24}">${rendered ? "decoded future frames are action evidence" : "hidden future features stay compressed"}</text>
     </g>
   `;
 }
 
+function futurePredictorStages(diagram, mini) {
+  const source = [
+    ...(diagram.components || []),
+    ...diagram.core.details.map((detail) => ({ label: detail, detail })),
+    ...diagram.heads.filter((head) => /video former|feature tap|adapter|video|future|latent|predictor|backbone/i.test(`${head.label} ${head.detail}`))
+  ];
+  const stages = source.map((item) => {
+    const text = typeof item === "string" ? item : `${item.label || ""} ${item.detail || ""}`;
+    return { label: futureStageLabel(text), detail: compactDetail(text) };
+  }).filter((stage) => /video|former|feature|tap|adapter|future|latent|backbone|predictor|u-net|unet/i.test(`${stage.label} ${stage.detail}`));
+  return uniqueByText(stages, "label").slice(0, mini ? 3 : 4);
+}
+
+function futureStageLabel(text) {
+  const lower = String(text || "").toLowerCase();
+  if (/video former/.test(lower)) return "Video Former Aggregator";
+  if (/feature tap|hidden feature|decoder feature/.test(lower)) return "Hidden Feature Tap";
+  if (/adapter|cnn/.test(lower)) return "Feature Adapter";
+  if (/svd|stable video|video u-net|unet/.test(lower)) return "SVD Video U-Net";
+  if (/video prediction backbone|video predictor|v[_ ]?theta|vtheta/.test(lower)) return "Video Prediction Backbone";
+  if (/future|latent/.test(lower)) return "Future Representation";
+  return conciseLabel(text);
+}
+
 function drawInverseDynamics(box, diagram, mini) {
+  const idmHeads = idmHeadRows(diagram);
   return `
     <g>
       <rect class="idm-panel" x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}"></rect>
-      <text class="core-title" x="${box.x + 20}" y="${box.y + 30}">inverse dynamics / action head</text>
-      ${drawHeadStack(diagram.heads, { x: box.x + 6, y: box.y + 28, w: box.w - 12, h: box.h - 42 }, mini)}
+      <text class="core-title" x="${box.x + 20}" y="${box.y + 30}">inverse dynamics model</text>
+      ${drawHeadStack(idmHeads, { x: box.x + 6, y: box.y + 28, w: box.w - 12, h: box.h - 42 }, mini)}
+    </g>
+  `;
+}
+
+function idmHeadRows(diagram) {
+  const idmRows = diagram.heads.filter((head) => (
+    /inverse dynamics|idm|action decoder|action head|policy|control|trajectory|chunk/i.test(`${head.label} ${head.detail}`) &&
+    !/unified|world-action|obs\+action/i.test(`${head.label} ${head.detail}`)
+  ));
+  if (idmRows.length) return idmRows;
+  return [{ label: "IDM", detail: "" }];
+}
+
+function idmActionOutputs(diagram) {
+  const actionRows = diagram.outputs.filter((output) => (
+    /action|control|trajectory|chunk|policy/i.test(`${output.label} ${output.detail}`) &&
+    !/unified|obs\+action|observation.*action|action.*observation/i.test(`${output.label} ${output.detail}`)
+  ));
+  if (actionRows.length) return actionRows;
+  return [{ label: "Action Chunk", detail: "executable robot controls" }];
+}
+
+function drawEncoderOnlyArchitecture(diagram, view, options = {}, ids) {
+  const mini = Boolean(options.mini);
+  const y0 = diagramLayoutY(options);
+  const h = diagramMainHeight(options);
+  const inputBox = { x: 34, y: y0, w: 178, h };
+  const encoderBox = { x: 238, y: y0, w: 178, h };
+  const policyBox = { x: 468, y: y0, w: 290, h };
+  const trainOnlyBox = { x: 798, y: y0 + 20, w: 152, h: h - 40 };
+  const outputBox = { x: 986, y: y0, w: 140, h };
+  const trainBox = { x: 34, y: y0 + h + 36, w: 1092, h: mini ? 108 : 142 };
+  return [
+    drawColumnPanel(inputBox, "policy inputs", drawTokenGroups(diagram.inputs, inputBox, mini)),
+    drawColumnPanel(encoderBox, "runtime encoders", drawEncoderStack(diagram.encoders, encoderBox, mini)),
+    drawEncoderPolicyCore(policyBox, diagram, mini, ids),
+    drawEncoderOnlyAuxiliary(trainOnlyBox, diagram, mini),
+    drawColumnPanel(outputBox, "outputs", drawOutputStack(diagram.outputs, outputBox, mini)),
+    drawTypedFlow(inputBox, encoderBox, "visual", ids, 0.34, 0.34, "encode"),
+    drawTypedFlow(inputBox, encoderBox, "language", ids, 0.52, 0.52, ""),
+    drawTypedFlow(encoderBox, policyBox, "future", ids, 0.5, 0.5, "represent"),
+    drawTypedFlow(policyBox, outputBox, "action", ids, 0.48, 0.48, "act"),
+    drawConnector(policyBox.x + policyBox.w, policyBox.y + h * 0.7, trainOnlyBox.x, trainOnlyBox.y + trainOnlyBox.h * 0.68, "training only", true, ids),
+    drawTrainingBand(diagram, trainBox, policyBox, trainOnlyBox, mini, ids),
+    mini ? "" : drawRuntimeStrip(diagram.runtime, policyBox, outputBox, trainBox)
+  ].join("");
+}
+
+function drawEncoderPolicyCore(box, diagram, mini, ids) {
+  const heads = uniqueByText([
+    { label: "Action Head", detail: "runtime policy decoder" },
+    ...diagram.heads.filter((head) => /action|policy|control|chunk/i.test(head.label || ""))
+  ], "label").slice(0, mini ? 2 : 3);
+  return `
+    <g filter="url(#${ids.softShadow})">
+      <rect class="core-panel encoder-policy-core" x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" fill="url(#${ids.coreGrad})"></rect>
+      <text class="core-title" x="${box.x + 22}" y="${box.y + 30}">${escapeHtml(diagram.core.label)}</text>
+      ${drawWrappedText(diagram.core.details.join(" / "), box.x + 22, box.y + 52, 32, 2, "core-detail", 11)}
+      <rect class="shared-attn-band" x="${box.x + 22}" y="${box.y + 86}" width="${box.w - 44}" height="${mini ? 68 : 82}"></rect>
+      <text class="core-note" x="${box.x + 34}" y="${box.y + 112}">vision/text features feed the policy core</text>
+      ${drawAttentionBadges(diagram.attention, box, mini)}
+      ${drawHeadStack(heads, { x: box.x + 26, y: box.y + box.h - (mini ? 124 : 136), w: box.w - 52, h: mini ? 108 : 118 }, mini)}
+    </g>
+  `;
+}
+
+function drawEncoderOnlyAuxiliary(box, diagram, mini) {
+  const items = uniqueByText([
+    { label: "World / Video Head", detail: "trains representation" },
+    ...diagram.heads.filter((head) => /future|video|latent|world|depth|force/i.test(head.label || ""))
+  ], "label").slice(0, mini ? 3 : 4);
+  return `
+    <g>
+      <rect class="encoder-only-aux" x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}"></rect>
+      <text class="panel-title" x="${box.x + 14}" y="${box.y + 23}">train-time branch</text>
+      ${(items.length ? items : [{ label: "Auxiliary Head", detail: "not used at runtime" }]).map((item, index) => {
+        const y = box.y + 48 + index * (mini ? 46 : 52);
+        return `
+          <g>
+            <rect class="aux-head-block" x="${box.x + 14}" y="${y}" width="${box.w - 28}" height="${mini ? 36 : 42}"></rect>
+            <text class="block-label" x="${box.x + 24}" y="${y + 17}">${escapeHtml(shortText(item.label, 18))}</text>
+            ${drawWrappedText(item.detail, box.x + 24, y + 32, 16, 1, "block-detail", 9.5)}
+          </g>
+        `;
+      }).join("")}
+      <path class="encoder-only-cut" d="M ${box.x + 18} ${box.y + box.h - 30} L ${box.x + box.w - 18} ${box.y + box.h - 30}"></path>
+      <text class="core-note" x="${box.x + 20}" y="${box.y + box.h - 12}">removed for deployment</text>
     </g>
   `;
 }
@@ -465,19 +835,23 @@ function drawEnhancementArchitecture(diagram, view, options = {}, ids) {
   const mini = Boolean(options.mini);
   const y0 = diagramLayoutY(options);
   const h = diagramMainHeight(options);
-  const baseBox = { x: 334, y: y0, w: 360, h };
-  const inputBox = { x: 34, y: y0, w: 220, h };
-  const enhanceBox = { x: 748, y: y0, w: 184, h };
-  const outputBox = { x: 984, y: y0, w: 142, h };
+  const inputBox = { x: 34, y: y0, w: 178, h };
+  const encoderBox = { x: 238, y: y0, w: 160, h };
+  const baseBox = { x: 432, y: y0, w: 310, h };
+  const enhanceBox = { x: 786, y: y0, w: 166, h };
+  const outputBox = { x: 986, y: y0, w: 140, h };
   const trainBox = { x: 34, y: y0 + h + 36, w: 1092, h: mini ? 108 : 142 };
   return [
     drawColumnPanel(inputBox, "policy inputs", drawTokenGroups(diagram.inputs, inputBox, mini)),
+    drawColumnPanel(encoderBox, "vision / text encoders", drawEncoderStack(diagram.encoders, encoderBox, mini)),
     drawCorePanel(diagram, baseBox, mini, ids),
     drawEnhancementOverlay(enhanceBox, diagram, mini),
     drawColumnPanel(outputBox, "outputs", drawOutputStack(diagram.outputs, outputBox, mini)),
-    drawConnector(inputBox.x + inputBox.w, inputBox.y + h * 0.5, baseBox.x, baseBox.y + h * 0.5, "embed", false, ids),
+    drawTypedFlow(inputBox, encoderBox, "visual", ids, 0.35, 0.35, "encode"),
+    drawTypedFlow(inputBox, encoderBox, "language", ids, 0.52, 0.52, ""),
+    drawTypedFlow(encoderBox, baseBox, "future", ids, 0.5, 0.5, "embed"),
     drawConnector(baseBox.x + baseBox.w, baseBox.y + h * 0.45, enhanceBox.x, enhanceBox.y + h * 0.45, "adapt / align", true, ids),
-    drawConnector(enhanceBox.x + enhanceBox.w, enhanceBox.y + h * 0.5, outputBox.x, outputBox.y + h * 0.5, "deploy", false, ids),
+    drawTypedFlow(enhanceBox, outputBox, "action", ids, 0.5, 0.5, "deploy"),
     drawTrainingBand(diagram, trainBox, baseBox, enhanceBox, mini, ids),
     mini ? "" : drawRuntimeStrip(diagram.runtime, baseBox, outputBox, trainBox)
   ].join("");
@@ -528,13 +902,38 @@ function diagramDefs(model, ids) {
       <marker id="${ids.arrow}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
         <path d="M0,0 L10,5 L0,10 z" fill="#526066"></path>
       </marker>
+      ${flowGradient(ids.visualFlow, "#5d8fc5")}
+      ${flowGradient(ids.languageFlow, "#9874b8")}
+      ${flowGradient(ids.stateFlow, "#72a36e")}
+      ${flowGradient(ids.actionFlow, "#d49a3d")}
+      ${flowGradient(ids.futureFlow, "#2f8793")}
     </defs>
+  `;
+}
+
+function flowGradient(id, color) {
+  return `
+    <linearGradient id="${id}" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0%" stop-color="${color}" stop-opacity="0.05"></stop>
+      <stop offset="34%" stop-color="${color}" stop-opacity="0.32"></stop>
+      <stop offset="76%" stop-color="${color}" stop-opacity="0.72"></stop>
+      <stop offset="100%" stop-color="${color}" stop-opacity="0.95"></stop>
+    </linearGradient>
   `;
 }
 
 function inferTokenGroups(model, arch, allText, options = {}) {
   const maxGroups = options.mini ? 3 : 5;
   const tokens = arch.inputTokens || model.diagram?.inputs || [];
+  const inputText = [
+    ...(tokens || []),
+    ...(model.diagram?.inputs || []),
+    ...(model.diagram?.runtimePath || []),
+    ...(arch.inferenceRecipe || [])
+  ].join(" ").toLowerCase();
+  const explicitGroups = explicitInputTokenGroups(tokens, maxGroups);
+  if (explicitGroups.length >= Math.min(3, tokens.length || 3)) return explicitGroups;
+
   const groups = [];
   const add = (kind, label, matcher, fallback = "") => {
     const hits = uniqueByText(tokens.filter((item) => matcher.test(item))).slice(0, 3);
@@ -547,10 +946,10 @@ function inferTokenGroups(model, arch, allText, options = {}) {
     }
   };
 
-  add("visual", "visual / world", /rgb|image|camera|frame|video|observation|view|depth|tactile|gelsight/i, /rgb|image|camera|frame|video|observation|visual|world/.test(allText) ? "observation tokens" : "");
-  add("language", "language", /language|instruction|text|t5|qwen|vlm/i, /language|instruction|text|t5|qwen|vlm/.test(allText) ? "instruction" : "");
-  add("state", "state / context", /state|proprio|force|value|goal|history|memory|latent|dino/i);
-  add("action", "action", /action|trajectory|chunk|control|gripper|end-effector/i, /action|trajectory|policy|control|chunk/.test(allText) ? "action chunk" : "");
+  add("visual", "visual / world", /rgb|image|camera|frame|video|observation|view|depth|tactile|gelsight/i, /rgb|image|camera|frame|video|observation|visual|world/.test(inputText || allText) ? "observation tokens" : "");
+  add("language", "language", /language|instruction|\btext\b|textual|t5|qwen|vlm/i, /language|instruction|\btext\b|textual|t5|qwen|vlm|task description/.test(inputText) ? "instruction" : "");
+  add("state", "state / context", /state|proprio|force|value|goal|history|memory|latent|dino/i, /state|proprio|gripper|end-effector/.test(inputText) ? "state tokens" : "");
+  add("action", "action", /action|trajectory|chunk|control|gripper|end-effector/i, /action|trajectory|policy|control|chunk/.test(inputText || allText) ? "action chunk" : "");
   add("noise", "noise / targets", /noise|noisy|future|flow|diffusion|target/i, "");
 
   const unique = uniqueByText(groups, "label");
@@ -561,22 +960,105 @@ function inferTokenGroups(model, arch, allText, options = {}) {
   return unique.slice(0, maxGroups);
 }
 
+function explicitInputTokenGroups(tokens, maxGroups) {
+  if (!tokens?.length) return [];
+  const groups = [];
+  tokens.forEach((token) => {
+    const text = String(token || "");
+    const lower = text.toLowerCase();
+    const kind = inputTokenKind(text);
+    const label = inputTokenLabel(text, kind);
+    if (!label) return;
+    groups.push({ kind, label, tokens: [compactToken(text)] });
+  });
+  return uniqueByText(groups, "label").slice(0, maxGroups);
+}
+
+function inputTokenKind(text) {
+  const lower = String(text || "").toLowerCase();
+  if (/noise|noisy|diffusion timestep|flow.*time|timestep/.test(lower)) return "noise";
+  if (/language|instruction|\btext\b|clip language|t5|vlm/.test(lower)) return "language";
+  if (/action|trajectory|control|command/.test(lower) && !/feature/.test(lower)) return "action";
+  if (/state|proprio|joint|gripper|end-effector|force|tactile/.test(lower)) return "state";
+  return "visual";
+}
+
+function inputTokenLabel(text, kind) {
+  const lower = String(text || "").toLowerCase();
+  if (/current image|initial image|current observation|initial observation|\bs0\b/.test(lower)) return "current image s0";
+  if (/final noised|white noise|noised video latent|noisy future/.test(lower)) return "xT noisy latent";
+  if (/static.*wrist|wrist.*static/.test(lower)) return "static+wrist features";
+  if (/learnable.*query|query tokens?/.test(lower)) return "query tokens";
+  if (/wrist/.test(lower) && /camera|view|image/.test(lower)) return "wrist view";
+  if (/static/.test(lower) && /camera|view|image/.test(lower)) return "static view";
+  if (kind === "language") return /clip/.test(lower) ? "CLIP language" : "instruction";
+  if (kind === "action") return /noisy/.test(lower) ? "noisy action" : "action chunk";
+  if (kind === "state") return /proprio/.test(lower) ? "proprio state" : "robot state";
+  if (kind === "noise") return /timestep|flow/.test(lower) ? "diffusion time" : "noise";
+  if (/video|frames|clip|history/.test(lower)) return "video/history";
+  if (/image|observation|rgb|camera|view/.test(lower)) return "image";
+  return "";
+}
+
 function inferEncoders(arch, allText, options = {}) {
   const candidates = [];
-  (arch.tokenization || []).forEach((item) => {
+  const pools = [
+    ...(arch.tokenization || []),
+    ...(arch.inputTokens || []),
+    ...(arch.backbone || [])
+  ];
+  pools.forEach((item) => {
     const lower = item.toLowerCase();
-    if (/t5|text|language|instruction/.test(lower)) candidates.push({ label: "Text Encoder", detail: compactDetail(item), kind: "language" });
-    if (/vae|vqgan|video vae|causal vae/.test(lower)) candidates.push({ label: "Video VAE", detail: compactDetail(item), kind: "visual" });
-    if (/dino|siglip|clip|dpav3|v-jepa|vision encoder/.test(lower)) candidates.push({ label: "Vision Encoder", detail: compactDetail(item), kind: "visual" });
-    if (/q-former|query/.test(lower)) candidates.push({ label: "Q-Former", detail: compactDetail(item), kind: "latent" });
-    if (/fast|vq|codebook|quant/.test(lower)) candidates.push({ label: "Codebook / VQ", detail: compactDetail(item), kind: "action" });
-    if (/mlp|project|proprio|state|action/.test(lower)) candidates.push({ label: "MLP Projector", detail: compactDetail(item), kind: "state" });
+    const detail = compactDetail(item);
+    if (/frozen vlm|vlm.*encod|encod.*vlm|video-language model|vision-language model/.test(lower)) {
+      candidates.push({ label: preciseEncoderLabel("VLM Vision Path", item), detail, kind: "visual" });
+      candidates.push({ label: preciseEncoderLabel("VLM Language Path", item), detail, kind: "language" });
+    }
+    if (/t5|text encoder|language encoder|\bclip\b text|qwen|llama|gemma|paligemma|prismatic|chameleon|lwm|frozen vlm|\bvlm\b/.test(lower)) {
+      candidates.push({ label: preciseEncoderLabel("Text Encoder", item), detail, kind: "language" });
+    }
+    if (/vae|vq-?gan|video vae|causal vae|vq-?vae|codebook|quant/.test(lower)) {
+      candidates.push({ label: preciseEncoderLabel("Video Tokenizer", item), detail, kind: /action/.test(lower) ? "action" : "visual" });
+    }
+    if (/cosmos|wan2\.?1|wan2\.?2|cogvideox|stable video diffusion|\bsvd\b/.test(lower) && /latent|token|frame|video/.test(lower)) {
+      candidates.push({ label: preciseEncoderLabel("Video Tokenizer", item), detail, kind: "visual" });
+    }
+    if (/dino|siglip|\bclip\b|mae|vit|dpav3|v-jepa|vision encoder|resnet|cnn|vision transformer|frozen vlm|\bvlm\b/.test(lower)) {
+      candidates.push({ label: preciseEncoderLabel("Vision Encoder", item), detail, kind: "visual" });
+    }
+    if (/q-former|query/.test(lower)) candidates.push({ label: "Q-Former", detail, kind: "latent" });
+    if (/action encoder|action projector|action tokens|chunk|trajectory/.test(lower)) {
+      candidates.push({ label: preciseEncoderLabel("Action Encoder", item), detail, kind: "action" });
+    }
+    if (/mlp|project|proprio|state|end-effector|gripper|linear/.test(lower)) {
+      candidates.push({ label: preciseEncoderLabel("State MLP Encoder", item), detail, kind: "state" });
+    }
   });
-  if (/vae/.test(allText)) candidates.push({ label: "VAE Latents", detail: "compressed video/state tokens", kind: "visual" });
-  if (/dino|siglip|clip/.test(allText)) candidates.push({ label: "VFM Features", detail: "semantic/geometric targets", kind: "visual" });
-  if (/t5|language|instruction/.test(allText)) candidates.push({ label: "Text Tokens", detail: "cross-attention condition", kind: "language" });
-  if (/action/.test(allText)) candidates.push({ label: "Action Tokens", detail: "chunk or flow tokens", kind: "action" });
-  return uniqueByText(candidates, "label").slice(0, options.mini ? 3 : 5);
+  if (/wan2\.?2/.test(allText) && /vae|latent|video/.test(allText)) candidates.push({ label: "Wan2.2 Causal VAE", detail: "pretrained latent video tokenizer", kind: "visual" });
+  if (/wan2\.?1/.test(allText) && /vae|latent|video/.test(allText)) candidates.push({ label: "Wan2.1 Causal VAE", detail: "pretrained latent video tokenizer", kind: "visual" });
+  if (/cosmos-predict2|cosmos video latent|cosmos video diffusion/.test(allText)) candidates.push({ label: "Cosmos/Wan2.1 VAE", detail: "latent video frame tokenizer", kind: "visual" });
+  if (/cogvideox/.test(allText)) candidates.push({ label: "CogVideoX 3D VAE", detail: "latent video tokenizer", kind: "visual" });
+  if (/stable video diffusion|\bsvd\b/.test(allText)) candidates.push({ label: "SVD VAE Encoder", detail: "latent video tokenizer", kind: "visual" });
+  if (/cosmos/.test(allText) && /\btext\b|textual|task description|language|instruction/.test(allText)) candidates.push({ label: "Cosmos T5-XXL Encoder", detail: "text condition embeddings", kind: "language" });
+  if (/wan2\.?2/.test(allText) && /\btext\b|textual|task description|language|instruction/.test(allText)) candidates.push({ label: "Wan2.2 T5 Encoder", detail: "text condition embeddings", kind: "language" });
+  if (/wan2\.?1/.test(allText) && /\btext\b|textual|task description|language|instruction/.test(allText)) candidates.push({ label: "Wan2.1 T5 Encoder", detail: "text condition embeddings", kind: "language" });
+  if (/cogvideox/.test(allText) && /\btext\b|textual|task description|language|instruction/.test(allText)) candidates.push({ label: "T5 Text Encoder", detail: "CogVideoX text condition", kind: "language" });
+  if (/stable video diffusion|\bsvd\b/.test(allText) && /\btext\b|textual|task description|language|instruction/.test(allText)) candidates.push({ label: "CLIP Text Encoder", detail: "text condition embeddings", kind: "language" });
+  if (/mae/.test(allText) && /vit/.test(allText)) candidates.push({ label: "MAE ViT Encoder", detail: "visual observation features", kind: "visual" });
+  if (/dino\s?v?2|dinov2/.test(allText)) candidates.push({ label: "DINOv2 Encoder", detail: "semantic visual features", kind: "visual" });
+  else if (/\bdino\b/.test(allText)) candidates.push({ label: "DINO Encoder", detail: "semantic visual features", kind: "visual" });
+  if (/siglip/.test(allText)) candidates.push({ label: "SigLIP Encoder", detail: "vision-language features", kind: "visual" });
+  if (/\bclip\b/.test(allText)) candidates.push({ label: /\btext\b/.test(allText) ? "CLIP Text Encoder" : "CLIP Vision Encoder", detail: "CLIP features", kind: /\btext\b/.test(allText) ? "language" : "visual" });
+  if (/t5|t5-xxl/.test(allText)) candidates.push({ label: /t5-xxl/.test(allText) ? "T5-XXL Encoder" : (/wan2\.?2/.test(allText) ? "Wan2.2 T5 Encoder" : "T5 Text Encoder"), detail: /t5-xxl/.test(allText) ? "T5-XXL language condition" : "language condition", kind: "language" });
+  if (/frozen vlm|vlm.*observation|vlm.*language|vision-language model/.test(allText)) {
+    candidates.push({ label: "Frozen VLM Vision Path", detail: "observation features from frozen VLM", kind: "visual" });
+    candidates.push({ label: "Frozen VLM Language Path", detail: "language features from frozen VLM", kind: "language" });
+  }
+  if (/language|instruction|task description|\btext\b goal/.test(allText) && !/t5|clip text|qwen|llama|gemma|paligemma|prismatic|chameleon|lwm|frozen vlm|\bvlm\b|cosmos|wan2\.?|cogvideox|stable video diffusion|\bsvd\b/.test(allText)) {
+    candidates.push({ label: "Text Condition Encoder", detail: "language or task condition", kind: "language" });
+  }
+  if (/action/.test(allText)) candidates.push({ label: "Action Encoder", detail: "chunk or flow tokens", kind: "action" });
+  return pruneGenericEncoders(candidates).slice(0, options.mini ? 3 : 6);
 }
 
 function inferCore(model, arch, allText) {
@@ -595,7 +1077,29 @@ function inferCore(model, arch, allText) {
   if (/mlp|ffn|feed-forward/.test(allText)) layerBadges.push("FFN");
   if (/adaln|adaptive layer norm/.test(allText)) layerBadges.push("AdaLN");
   if (/flow matching|diffusion|denois/.test(allText)) layerBadges.push("noise t");
-  return { label, details, layerBadges: layerBadges.length ? layerBadges : ["attention", "MLP", "head"] };
+  return { label, details, layerBadges: layerBadges.length ? layerBadges : ["attention", "MLP", "head"], kind: coreVisualKind(label, allText) };
+}
+
+function coreVisualKind(label, allText) {
+  const text = `${label || ""} ${allText || ""}`.toLowerCase();
+  if (/act-style|act actor|actor module \(act\)|\bact-vae\b|action transformer/.test(text)) return "act";
+  if (/\bdit\b|diffusion transformer|mm-dit|mmd[it]?/.test(text)) return "dit";
+  if (/diffusion|denois|flow matching|rectified flow/.test(text)) return "diffusion";
+  if (/transformer|attention|gpt|autoregressive|vlm|llm|qwen|gemma|llama/.test(text)) return "transformer";
+  if (/cnn|u-net|unet|conv/.test(text)) return "cnn";
+  if (/mlp|linear projector|projection head/.test(text)) return "mlp";
+  return "transformer";
+}
+
+function isAutoregressiveDiagram(diagram) {
+  const text = [
+    diagram.core?.label,
+    ...(diagram.core?.details || []),
+    ...(diagram.attention || []),
+    ...(diagram.components || []).map((item) => `${item.label || ""} ${item.detail || ""}`),
+    ...(diagram.encoders || []).map((item) => `${item.label || ""} ${item.detail || ""}`)
+  ].join(" ").toLowerCase();
+  return /autoregressive|auto-regressive|gpt-style|causal transformer|causal attention|causal mask|blockwise causal|block-causal/.test(text);
 }
 
 function inferStreams(model, arch, allText, options = {}) {
@@ -604,7 +1108,7 @@ function inferStreams(model, arch, allText, options = {}) {
     if (test) streams.push({ label, detail, color });
   };
   add("Video / World", streamDetail(arch, /video|rgb|visual|world|future|dino|vae/i, "future/state latents"), "#4c78a8", /video|rgb|visual|world|future|dino|vae/.test(allText));
-  add("Language", streamDetail(arch, /language|instruction|text|t5|vlm/i, "instruction condition"), "#8f6bb8", /language|instruction|text|t5|vlm/.test(allText));
+  add("Language", streamDetail(arch, /language|instruction|\btext\b|textual|t5|vlm/i, "instruction condition"), "#8f6bb8", /language|instruction|\btext\b|textual|t5|vlm/.test(allText));
   add("Action", streamDetail(arch, /action|chunk|policy|control/i, "action chunk"), "#d08a2e", /action|chunk|policy|control/.test(allText));
   add("State", streamDetail(arch, /state|proprio|memory|history/i, "proprio/history"), "#5a8f63", /state|proprio|memory|history/.test(allText));
   add("Value / Reward", streamDetail(arch, /value|reward|map|grpo|rl/i, "value or reward"), "#9f5f63", /value|reward|map|grpo|rl/.test(allText));
@@ -615,10 +1119,8 @@ function inferStreams(model, arch, allText, options = {}) {
 function inferAttentionBadges(allText, options = {}) {
   const badges = [];
   const add = (label, test) => { if (test) badges.push(label); };
-  add("causal mask", /causal|autoregressive|block-causal/.test(allText));
   add("cross-attn", /cross-attention|cross attention|cross-attn/.test(allText));
   add("joint/self-attn", /joint attention|shared attention|self-attention|self attention|mmsa/.test(allText));
-  add("leakage mask", /cannot attend|no future|prevent.*leak|mask/.test(allText));
   add("unilateral", /unilateral/.test(allText));
   add("cache / memory", /cache|ttt memory|memory/.test(allText));
   add("async denoise", /asynchronous|async|partial denois|few-step|shortcut/.test(allText));
@@ -628,26 +1130,178 @@ function inferAttentionBadges(allText, options = {}) {
 
 function inferHeads(model, arch, allText, options = {}) {
   const heads = [];
-  (arch.heads || []).forEach((item) => heads.push({ label: headLabel(item), detail: compactDetail(item) }));
-  if (/action/.test(allText)) heads.push({ label: "Action Head", detail: "denoise/decode action chunk" });
-  if (/future|video/.test(allText)) heads.push({ label: "Future Head", detail: "video or latent prediction" });
-  if (/value|reward/.test(allText)) heads.push({ label: "Value Head", detail: "score future trajectory" });
-  if (/depth/.test(allText)) heads.push({ label: "Depth Head", detail: "RGB-D / inverse depth" });
-  if (/force|tactile/.test(allText)) heads.push({ label: "Force/Tactile Head", detail: "contact prediction" });
+  const explicitHeadText = [
+    ...(arch.heads || []),
+    ...(arch.branches || []),
+    ...(model.diagram?.components || [])
+  ].join(" ").toLowerCase();
+  const explicitHeads = arch.heads || [];
+  const unified = isUnifiedHeadArchitecture(model, arch, allText);
+  const collapsedUnified = shouldCollapseUnifiedHeads(model, arch, allText);
+
+  if (unified || collapsedUnified) {
+    explicitHeads
+      .filter((item) => /mlp|linear|projection|projector|controller/i.test(item) && !/diffusion policy|\bdit\b|\bact\b|action transformer|cache|variant|flash/i.test(item))
+      .forEach((item) => heads.push({ label: unifiedProjectionLabel(item), detail: compactDetail(item) }));
+    return uniqueByText(heads, "label").slice(0, options.mini ? 3 : 5);
+  }
+  explicitHeads.forEach((item) => heads.push({ label: headLabel(item), detail: compactDetail(item) }));
+
+  if (!unified && /inverse dynamics|inverse-dynamics|\bidm\b/.test(allText) && !heads.some((head) => /inverse dynamics|idm/i.test(`${head.label} ${head.detail}`))) {
+    heads.push({ label: /latent.*\bidm\b|\bidm\b.*latent/.test(allText) ? "latent IDM" : "IDM", detail: "" });
+  }
+  if (!unified && /action head|action decoder|policy head|control head|trajectory decoder|diffusion policy|action expert|act-vae|cvae action|linear.*action/.test(explicitHeadText) && !heads.some((head) => /action|policy|control|trajectory|chunk/i.test(`${head.label} ${head.detail}`))) {
+    heads.push({ label: "Action Head", detail: "paper-specified action decoder" });
+  }
+  if (!unified && /future.*head|future.*decoder|video.*decoder|observation.*decoder|visual.*head|latent.*head|forecasting branch|forward dynamics branch/.test(explicitHeadText) && !heads.some((head) => /future|video|observation|visual|latent|dynamics/i.test(`${head.label} ${head.detail}`))) {
+    heads.push({ label: "Future/Obs Decoder", detail: "paper-specified future output" });
+  }
+  if (/value head|reward head|value map|value-map|asvm/.test(explicitHeadText)) heads.push({ label: "Value Head", detail: "score future trajectory" });
+  if (/depth head|depth decoder|rgb-d|4d/.test(explicitHeadText)) heads.push({ label: "Depth Head", detail: "RGB-D / inverse depth" });
+  if (/force head|force predictor|tactile head|tactile decoder/.test(explicitHeadText)) heads.push({ label: "Force/Tactile Head", detail: "contact prediction" });
   return uniqueByText(heads, "label").slice(0, options.mini ? 3 : 5);
+}
+
+function unifiedProjectionLabel(item) {
+  const lower = String(item || "").toLowerCase();
+  if (/vae decoder|vq-?gan decoder/.test(lower)) return "Video Decoder";
+  if (/controller/.test(lower)) return "Controller";
+  if (/linear/.test(lower)) return "Linear Projection";
+  if (/mlp|projection|projector/.test(lower)) return "MLP Projection";
+  return headLabel(item);
 }
 
 function inferOutputs(model, arch, allText, options = {}) {
   const outputs = [];
   const add = (label, detail, test) => { if (test) outputs.push({ label, detail }); };
-  add("Action Chunk", "executable robot controls", /action|policy|control|chunk/.test(allText));
-  add("Future Video", "decoded or latent rollout", /future video|rgb|video|frame/.test(allText));
-  add("Latent Future", "DINO/VAE/value state", /latent|dino|jepa|condition/.test(allText));
-  add("Value Map", "spatial intent/value", /value map|value-map|asvm/.test(allText));
-  add("Depth / 4D", "RGB-D reconstruction", /depth|rgb-d|4d/.test(allText));
-  add("Force / State", "tactile/force/proprio", /force|tactile|state|proprio/.test(allText));
+  const outputText = [
+    ...(arch.inferenceRecipe || []),
+    ...(model.diagram?.runtimePath || []),
+    ...(model.diagram?.outputs || [])
+  ].join(" ").toLowerCase();
+  const actionEvidenceText = [
+    outputText,
+    ...(arch.heads || []),
+    ...(arch.branches || [])
+  ].join(" ").toLowerCase();
+  const unified = isUnifiedHeadArchitecture(model, arch, allText);
+
   (model.diagram?.outputs || []).forEach((item) => outputs.push({ label: compactToken(item), detail: "paper output" }));
-  return uniqueByText(outputs, "label").slice(0, options.mini ? 3 : 5);
+  if (unified && !outputs.length) {
+    outputs.unshift({ label: "Unified Obs+Action Tokens", detail: "single prediction stream" });
+  }
+  add("Future Video", "decoded or latent rollout", !unified && hasRuntimeFutureOutput(outputText) && !outputs.some(isFutureOutputLike));
+  add("Latent Future", "DINO/VAE/value state", !unified && hasRuntimeLatentFutureOutput(outputText) && !outputs.some(isFutureOutputLike));
+  add("Value Map", "spatial intent/value", /value map|value-map|asvm/.test(outputText));
+  add("Depth / 4D", "RGB-D reconstruction", /depth|rgb-d|4d/.test(outputText));
+  add("Force / State", "tactile/force/proprio", /force|tactile|virtual force/.test(outputText));
+  if (!unified && /action chunk|action output|policy output|control|trajectory/.test(actionEvidenceText) && !outputs.some(isActionOutputLike)) {
+    outputs.push({ label: "Action Chunk", detail: "executable robot controls" });
+  }
+  return normalizeOutputs(outputs).slice(0, options.mini ? 3 : 5);
+}
+
+function hasRuntimeFutureOutput(text) {
+  return /future video|future frame|generated video|video rollout|decoded future|future observation/.test(text) && !/remove(?:s|d)?\s+(?:the\s+)?future|do not .*future|without .*future|no .*future|training-only .*future|future .*training only/.test(text);
+}
+
+function hasRuntimeLatentFutureOutput(text) {
+  return /future.*latent|latent future|dino.*future|jepa.*future|visual-state/.test(text) && !/remove(?:s|d)?\s+(?:the\s+)?future|do not .*future|without .*future|no .*future|training-only .*future|future .*training only/.test(text);
+}
+
+function isFutureOutputLike(output) {
+  const text = `${output?.label || output || ""} ${output?.detail || ""}`.toLowerCase();
+  return /future|rollout|observation token|video|latent|dino|jepa|visual-state|rgb-d|depth/.test(text) && !isActionOutputLike(output);
+}
+
+function normalizeOutputs(outputs) {
+  const result = [];
+  let actionOutput = null;
+  outputs.forEach((output) => {
+    if (isActionOutputLike(output)) {
+      actionOutput = mergeActionOutput(actionOutput, output);
+      return;
+    }
+    result.push(output);
+  });
+  const normalized = uniqueByText(result, "label");
+  if (actionOutput) normalized.push(actionOutput);
+  return normalized;
+}
+
+function isActionOutputLike(output) {
+  const text = `${output?.label || output || ""} ${output?.detail || ""}`.toLowerCase();
+  if (/latent action|act[_ -]?\d|act token/.test(text) && !/robot|control|chunk|trajectory|command|policy|runtime/.test(text)) return false;
+  return /action|control|trajectory|chunk|policy output|robot controls|arm|gripper|end-effector|\bwbc\b|joint/.test(text);
+}
+
+function mergeActionOutput(current, next) {
+  if (!current) return canonicalActionOutput(next);
+  const candidate = canonicalActionOutput(next);
+  return actionOutputScore(candidate) > actionOutputScore(current) ? candidate : current;
+}
+
+function canonicalActionOutput(output) {
+  const label = String(output?.label || output || "Action Chunk");
+  const detail = String(output?.detail || "runtime output");
+  if (/wbc/i.test(label)) return { label: "WBC Controls", detail };
+  if (/gripper|arm|joint|end-effector|cartesian|low-level/i.test(`${label} ${detail}`)) return { label: "Robot Actions", detail };
+  if (/sequence|trajectory/i.test(`${label} ${detail}`)) return { label: "Action Trajectory", detail };
+  return { label: /action/i.test(label) ? label : "Action Chunk", detail };
+}
+
+function actionOutputScore(output) {
+  const text = `${output.label || ""} ${output.detail || ""}`.toLowerCase();
+  let score = 0;
+  if (!/paper output|runtime output|executable robot controls/.test(text)) score += 2;
+  if (/robot|wbc|cartesian|joint|end-effector|gripper|arm/.test(text)) score += 4;
+  if (/trajectory|sequence/.test(text)) score += 3;
+  if (/chunk/.test(text)) score += 2;
+  if (/action/.test(text)) score += 1;
+  return score;
+}
+
+function inferComponents(model, arch, options = {}) {
+  return uniqueByText([
+    ...(model.diagram?.components || []),
+    ...(arch.backbone || []),
+    ...(arch.branches || []),
+    ...(arch.heads || [])
+  ].map((item) => ({
+    label: conciseLabel(item),
+    detail: compactDetail(item)
+  })), "label").slice(0, options.mini ? 6 : 10);
+}
+
+function isUnifiedHeadArchitecture(model, arch, allText) {
+  const text = [
+    model.family,
+    model.category,
+    ...(arch.heads || []),
+    ...(arch.branches || []),
+    ...(arch.backbone || []),
+    ...(arch.inferenceRecipe || []),
+    ...(model.diagram?.outputs || [])
+  ].join(" ").toLowerCase();
+  if (model.family === "unified" || model.diagram?.pattern === "unified") {
+    if (/separate.*head|separate.*decoder|action branch|future.*branch|observation.*branch|cvae action|linear.*action/.test(text)) return false;
+    return true;
+  }
+  return /unified.*head|single.*head|same.*head|one.*head.*action.*observation|joint.*obs.*action|joint.*action.*obs/.test(text);
+}
+
+function shouldCollapseUnifiedHeads(model, arch, allText) {
+  const text = [
+    model.family,
+    model.category,
+    ...(arch.heads || []),
+    ...(arch.branches || []),
+    ...(arch.backbone || []),
+    ...(model.diagram?.outputs || [])
+  ].join(" ").toLowerCase();
+  if (model.family !== "unified" && model.diagram?.pattern !== "unified") return false;
+  if (/future image branch|future video branch|foresight branch|world-model branch|action branch reads|conditional vae action|cvae action/.test(text)) return false;
+  return /same model can be|single joint|joint video-action|joint velocity prediction|both action noise and future-observation noise/.test(text);
 }
 
 function inferTraining(arch, allText, options = {}) {
@@ -679,6 +1333,1178 @@ function drawColumnPanel(box, title, content) {
       <text class="panel-title" x="${box.x + 14}" y="${box.y + 23}">${escapeHtml(title)}</text>
       ${content}
     </g>
+  `;
+}
+
+function drawColumnShell(box, title) {
+  return `
+    <g>
+      <rect class="diagram-panel" x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}"></rect>
+      <text class="panel-title" x="${box.x + 14}" y="${box.y + 23}">${escapeHtml(title)}</text>
+    </g>
+  `;
+}
+
+function drawFittedColumnShell(box, rows, title = "") {
+  const bounds = fittedRowsBounds(box, rows);
+  return `
+    <g>
+      <rect class="diagram-panel io-column-panel" x="${bounds.x}" y="${bounds.y}" width="${bounds.w}" height="${bounds.h}"></rect>
+      ${title ? `<text class="panel-title" x="${bounds.x + 14}" y="${bounds.y + 23}">${escapeHtml(title)}</text>` : ""}
+    </g>
+  `;
+}
+
+function fittedRowsBounds(box, rows) {
+  if (!rows?.length) return { x: box.x, y: box.y + box.h * 0.42, w: box.w, h: 58 };
+  const padY = 12;
+  const minY = Math.min(...rows.map((row) => row.y));
+  const maxY = Math.max(...rows.map((row) => row.y + row.h));
+  return {
+    x: box.x,
+    y: Math.max(box.y, minY - padY),
+    w: box.w,
+    h: Math.min(box.y + box.h, maxY + padY) - Math.max(box.y, minY - padY)
+  };
+}
+
+function drawColumnLabel(box, title) {
+  return `<text class="panel-title floating-column-title" x="${box.x + 14}" y="${box.y + 23}">${escapeHtml(title)}</text>`;
+}
+
+function drawDenseTokenGroups(groups, box, mini) {
+  return drawDenseTokenRows(denseTokenRows(groups, box, mini), mini);
+}
+
+function denseTokenRows(groups, box, mini) {
+  const list = (groups.length ? groups : [{ kind: "visual", label: "observation", tokens: ["sensor tokens"] }]).slice(0, mini ? 5 : 6);
+  const gap = mini ? 5 : 6;
+  const available = box.h - 24;
+  const rowH = Math.max(28, Math.min(mini ? 42 : 46, Math.floor((available - gap * (list.length - 1)) / list.length)));
+  const contentH = list.length * rowH + Math.max(0, list.length - 1) * gap;
+  const top = box.y + (box.h - contentH) / 2;
+  return list.map((group, index) => {
+    const row = {
+      item: group,
+      kind: group.kind || kindFromText(`${group.label} ${group.tokens?.join(" ")}`),
+      x: box.x + 12,
+      y: top + index * (rowH + gap),
+      w: box.w - 24,
+      h: rowH,
+      centerY: top + index * (rowH + gap) + rowH / 2
+    };
+    return withIoAnchors(row);
+  });
+}
+
+function drawDenseTokenRail(group, x, y, w, h, mini) {
+  const colors = tokenColors(group.kind);
+  const text = `${group.label || ""} ${(group.tokens || []).join(" ")}`;
+  const tooltip = inputTooltip(group);
+  const anchors = withIoAnchors({ x, y, w, h, centerY: y + h / 2 });
+  const { iconX, iconY, iconW, iconH, tight } = anchors;
+  const caption = ioCaption(group.kind, text, true);
+  return `
+    <g>
+      <title>${escapeHtml(tooltip)}</title>
+      <rect class="io-hit-area" x="${x}" y="${y}" width="${w}" height="${h}"></rect>
+      <rect class="token-rail" x="${tight.x}" y="${tight.y}" width="${tight.w}" height="${tight.h}" fill="${colors[0]}" stroke="${colors[1]}"></rect>
+      ${drawInputGlyph(group.kind, text, iconX, iconY, iconW, iconH)}
+      ${drawIoDetailBadge(caption, tight.x + tight.w + 7, tight.y + tight.h + 3)}
+    </g>
+  `;
+}
+
+function drawDenseTokenRows(rows, mini) {
+  return rows.map((row) => drawDenseTokenRail(row.item, row.x, row.y, row.w, row.h, mini)).join("");
+}
+
+function drawDenseEncoderStack(encoders, box, mini) {
+  return drawDenseEncoderRows(denseEncoderRows(encoders, box, mini), mini);
+}
+
+function denseEncoderRows(encoders, box, mini, inputs = []) {
+  const list = orderEncodersForInputs(preciseEncoders(encoders), inputs).slice(0, mini ? 5 : 6);
+  const top = box.y + 42;
+  const gap = mini ? 5 : 6;
+  const available = box.h - 54;
+  const itemH = Math.max(46, Math.min(mini ? 48 : 60, Math.floor((available - gap * (list.length - 1)) / list.length)));
+  return list.map((encoder, index) => ({
+    item: encoder,
+    kind: encoder.kind || kindFromText(`${encoder.label} ${encoder.detail}`),
+    x: box.x + 12,
+    y: top + index * (itemH + gap),
+    w: box.w - 24,
+    h: itemH,
+    centerY: top + index * (itemH + gap) + itemH / 2
+  }));
+}
+
+function drawDenseEncoderRows(rows, mini) {
+  return rows.map((row) => {
+    const encoder = row.item;
+    const y = row.y;
+    const itemH = row.h;
+    const kind = encoder.kind || "visual";
+    const shape = encoderShape(encoder);
+    const fill = encoderFill(kind);
+    const stroke = encoderStroke(kind);
+    const shapeSvg = drawEncoderShape(shape, row.x, y, row.w, itemH, fill, stroke, kind);
+    const glyph = drawEncoderBodyGlyph(shape, row.x + row.w / 2, y + itemH * 0.62, row.w, itemH, kind);
+    const detail = encoderDetailBadgeText(encoder.detail);
+    return `
+      <g class="encoder-node encoder-${escapeHtml(kind)} encoder-shape-${shape}">
+        ${shapeSvg}
+        <text class="block-title" x="${row.x + row.w / 2}" y="${y + 14}" text-anchor="middle">${escapeHtml(shortText(encoder.label, 22))}</text>
+        ${glyph}
+        ${detail ? drawBlockDetailBadge(detail, row.x + row.w + 5, y + itemH + 3) : ""}
+      </g>
+    `;
+  }).join("");
+}
+
+function drawDenseHeadStack(heads, box, mini) {
+  return drawDenseHeadRows(denseHeadRows(heads, box, mini), mini);
+}
+
+function denseHeadRows(heads, box, mini, outputs = []) {
+  const list = heads.length ? orderHeadsForOutputs(preciseHeads(heads), outputs).slice(0, mini ? 5 : 6) : [];
+  if (!list.length) return [];
+  const top = box.y + 42;
+  const gap = mini ? 5 : 6;
+  const available = box.h - 54;
+  const itemH = Math.max(46, Math.min(mini ? 48 : 60, Math.floor((available - gap * (list.length - 1)) / list.length)));
+  return list.map((head, index) => ({
+    item: head,
+    kind: kindFromText(`${head.label} ${head.detail}`),
+    x: box.x + 12,
+    y: top + index * (itemH + gap),
+    w: box.w - 24,
+    h: itemH,
+    centerY: top + index * (itemH + gap) + itemH / 2
+  }));
+}
+
+function drawDenseHeadRows(rows, mini) {
+  return rows.map((row) => {
+    const head = row.item;
+    const y = row.y;
+    const kind = row.kind || kindFromText(`${head.label} ${head.detail}`);
+    const shape = headShape(head);
+    const fill = headFill(kind, shape);
+    const stroke = headStroke(kind, shape);
+    const shapeSvg = drawHeadShape(shape, row.x, y, row.w, row.h, fill, stroke, kind);
+    const glyphKind = headGlyphKind(head);
+    const glyphW = Math.min(88, row.w - 24);
+    const glyphH = Math.max(21, row.h - 22);
+    const glyphX = row.x + (row.w - glyphW) / 2;
+    const glyphY = y + 17;
+    const hideDetail = glyphKind === "idm" || glyphKind === "latent-idm";
+    const detail = hideDetail ? "" : blockDetailBadgeText(head.detail);
+    return `
+      <g class="head-node head-${escapeHtml(kind)} head-shape-${shape}">
+        ${shapeSvg}
+        <text class="block-title" x="${row.x + row.w / 2}" y="${y + 14}" text-anchor="middle">${escapeHtml(shortText(head.label, 22))}</text>
+        ${glyphKind ? drawHeadGlyph(glyphKind, glyphX, glyphY, glyphW, glyphH, kind) : shape === "reverse-funnel" ? drawReverseFunnelGlyph(row.x + row.w / 2, y + row.h * 0.62, kind) : ""}
+        ${detail ? drawBlockDetailBadge(detail, row.x + row.w + 5, y + row.h + 3) : ""}
+      </g>
+    `;
+  }).join("");
+}
+
+function drawDenseOutputStack(outputs, box, mini) {
+  return drawDenseOutputRows(denseOutputRows(outputs, box, mini), mini);
+}
+
+function denseOutputRows(outputs, box, mini) {
+  const list = normalizeOutputs(outputs.length ? outputs : [{ label: "Action", detail: "runtime output" }]).slice(0, mini ? 5 : 6);
+  const gap = mini ? 5 : 6;
+  const available = box.h - 24;
+  const itemH = Math.max(32, Math.min(mini ? 42 : 46, Math.floor((available - gap * (list.length - 1)) / list.length)));
+  const contentH = list.length * itemH + Math.max(0, list.length - 1) * gap;
+  const top = box.y + (box.h - contentH) / 2;
+  return list.map((output, index) => {
+    const row = {
+      item: output,
+      kind: outputKind(output),
+      x: box.x + 10,
+      y: top + index * (itemH + gap),
+      w: box.w - 20,
+      h: itemH,
+      centerY: top + index * (itemH + gap) + itemH / 2
+    };
+    return withIoAnchors(row);
+  });
+}
+
+function withIoAnchors(row) {
+  const iconW = Math.min(row.w - 4, 58);
+  const iconH = Math.min(row.h - 4, 42);
+  const iconX = row.x + Math.max(4, (row.w - iconW) / 2);
+  const iconY = row.y + Math.max(4, (row.h - iconH) / 2);
+  const tight = ioTightBox(iconX, iconY, iconW, iconH);
+  return {
+    ...row,
+    iconX,
+    iconY,
+    iconW,
+    iconH,
+    tight,
+    leftAnchor: { x: tight.x, y: tight.y + tight.h / 2 },
+    rightAnchor: { x: tight.x + tight.w, y: tight.y + tight.h / 2 }
+  };
+}
+
+function drawDenseOutputRows(rows, mini) {
+  return rows.map((row) => {
+    const output = row.item;
+    const y = row.y;
+    const text = `${output.label || ""} ${output.detail || ""}`;
+    const tooltip = outputTooltip(output);
+    const kind = outputKind(output);
+    const colors = tokenColors(kind);
+    const { iconX, iconY, iconW, iconH, tight } = row;
+    const caption = ioCaption(kind, text, false);
+    return `
+      <g>
+        <title>${escapeHtml(tooltip)}</title>
+        <rect class="io-hit-area" x="${row.x}" y="${y}" width="${row.w}" height="${row.h}"></rect>
+        <rect class="${kind === "action" ? "action-output" : "output-block"}" x="${tight.x}" y="${tight.y}" width="${tight.w}" height="${tight.h}" fill="${colors[0]}" stroke="${colors[1]}"></rect>
+        ${drawOutputGlyph(kind, text, iconX, iconY, iconW, iconH)}
+        ${drawIoDetailBadge(caption, tight.x + tight.w + 7, tight.y + tight.h + 3)}
+      </g>
+    `;
+  }).join("");
+}
+
+function drawSankeyRibbons(diagram, boxes, ids, mini, rows = {}) {
+  const tracks = sankeyTracks(diagram).slice(0, mini ? 4 : 6);
+  const [inputBox, encoderBox, coreBox, headBox, outputBox] = boxes;
+  const coreIn = coreBox.x - 8;
+  const coreOut = coreBox.x + coreBox.w + 8;
+  const inputRoutes = buildInputEncoderRoutes(rows.inputs || [], rows.encoders || []);
+  const encoderRoutes = rows.encoders?.length ? rows.encoders : tracks.map((track, index) => ({
+    kind: track.kind,
+    x: encoderBox.x + 12,
+    y: sankeyY(inputBox, track.kind, index, tracks.length) - 16,
+    w: encoderBox.w - 24,
+    h: 32,
+    centerY: sankeyY(inputBox, track.kind, index, tracks.length)
+  }));
+  return `
+    <g class="sankey-layer">
+      ${inputRoutes.map((route) => drawSankeyRibbon(route.track, [
+        [route.input.rightAnchor.x, route.input.rightAnchor.y],
+        [route.input.rightAnchor.x + 10, route.input.rightAnchor.y],
+        [route.encoder.x - 8, route.encoder.centerY],
+        [route.encoder.x + route.encoder.w * 0.34, route.encoder.centerY]
+      ], ids, "input-to-encoder", route.width)).join("")}
+      ${encoderRoutes.map((encoder) => {
+        const track = { kind: encoder.kind || "visual" };
+        return drawSankeyRibbon(track, [
+          [encoder.x + encoder.w * 0.66, encoder.centerY],
+          [encoder.x + encoder.w + 12, encoder.centerY],
+          [coreIn, encoder.centerY + sankeyDrift(track.kind, 1)]
+        ], ids, "encoder-to-core", Math.max(12, sankeyWidth(track.kind) * 0.72));
+      }).join("")}
+      ${tracks.map((track, index) => {
+        const outputAnchor = routeAnchorForKind(rows.outputs || [], track.kind, "left");
+        if (!outputAnchor) return "";
+        const y = routeYForKind(rows.heads || [], track.kind) ?? outputAnchor.y ?? sankeyY(inputBox, track.kind, index, tracks.length);
+        const outputPoints = [
+          [coreOut, y + sankeyDrift(track.kind, 2)],
+          [headBox.x + 4, y + sankeyDrift(track.kind, 2)],
+          [outputAnchor.x, outputAnchor.y]
+        ];
+        return drawSankeyRibbon(track, outputPoints, ids, "output");
+      }).join("")}
+    </g>
+  `;
+}
+
+function drawInputGlyph(kind, text, x, y, w, h) {
+  const resolved = ioKind(kind, text);
+  if (resolved === "language") return drawLanguageGlyph(text, x, y, w, h);
+  if (resolved === "state") return drawStateGlyph(x, y, w, h);
+  if (resolved === "action") return drawActionGlyph(x, y, w, h);
+  if (resolved === "noise") return drawNoisyFrameGlyph(x, y, w, h);
+  return drawFrameStackGlyph(text, x, y, w, h, /video|frames|history|clip|rollout|future/i.test(text));
+}
+
+function drawOutputGlyph(kind, text, x, y, w, h) {
+  const resolved = ioKind(kind, text);
+  if (resolved === "action") return drawActionGlyph(x, y, w, h);
+  if (resolved === "state") return drawStateGlyph(x, y, w, h);
+  if (resolved === "noise") return drawNoisyFrameGlyph(x, y, w, h);
+  if (resolved === "language") return drawLanguageGlyph(text, x, y, w, h);
+  if (/latent|token|dino|jepa|value/i.test(text)) return drawLatentGlyph(x, y, w, h);
+  return drawFrameStackGlyph(text, x, y, w, h, /video|frames|future|rollout|observation/i.test(text));
+}
+
+function drawIoDetailBadge(caption, rightX, baselineY) {
+  if (!caption) return "";
+  const width = Math.max(24, caption.length * 5.4 + 9);
+  const x = rightX - width;
+  const y = baselineY - 13;
+  return `
+    <g class="io-detail-badge">
+      <rect x="${x}" y="${y}" width="${width}" height="15"></rect>
+      <text x="${rightX - 5}" y="${baselineY - 3}" text-anchor="end">${escapeHtml(caption)}</text>
+    </g>
+  `;
+}
+
+function blockDetailBadgeText(detail) {
+  const text = String(detail || "").trim();
+  if (!text || /runtime output|paper output decoder|observation features|instruction features/i.test(text)) return "";
+  return compactBadgeLabel(text);
+}
+
+function encoderDetailBadgeText(detail) {
+  return blockDetailBadgeText(detail);
+}
+
+function compactBadgeLabel(detail) {
+  const text = String(detail || "").replace(/\s+/g, " ").trim();
+  const lower = text.toLowerCase();
+  const rules = [
+    [/clip.*language|language.*clip|instruction.*clip|clip.*text/, "CLIP text"],
+    [/t5.*language|language.*t5|instruction.*t5|t5.*text/, "T5 text"],
+    [/qwen|gemma|paligemma|vlm/, "VLM"],
+    [/history.*observ|observ.*history|frame history|past frames?/, "history obs"],
+    [/current.*observ|current.*image|initial.*image|\bs0\b/, "current obs"],
+    [/\bcls\b|class token/, "CLS token"],
+    [/patch token|image patch/, "patch tokens"],
+    [/static.*wrist|wrist.*static/, "static+wrist"],
+    [/query tokens?|q-former|perceiver/, "queries"],
+    [/action.*decoder|decoder.*action/, "action dec"],
+    [/(arm|gripper).*action|action.*(arm|gripper|control|chunk|trajectory)|continuous arm|binary gripper/, "action dec"],
+    [/action.*chunk|chunk.*action|chunk|horizon/, "chunk"],
+    [/proprio|state|joint|end-effector|6-?dof/, "proprio"],
+    [/future.*image|image.*decoder|future.*decoder|observation.*decoder/, "future dec"],
+    [/hidden feature|feature tap|feature aggregation/, "feature tap"],
+    [/diffusion|denois|noise|flow/, "diffusion"],
+    [/velocity field|velocity/, "velocity"],
+    [/latent/, "latent"],
+    [/vae|vq-?gan|vq-?vae/, "VAE/VQ"],
+    [/dino|jepa|siglip|mae|vit|resnet|cnn/, "vision feat"],
+    [/linear|mlp|projection|projector/, "MLP"],
+    [/video/, "video"],
+    [/image|frame|rgb|camera|view/, "image"]
+  ];
+  const match = rules.find(([pattern]) => pattern.test(lower));
+  if (match) return match[1];
+  return fallbackBadgeLabel(text);
+}
+
+function fallbackBadgeLabel(text) {
+  const cleaned = text
+    .replace(/\b(?:encoded|processed|generated|trained|conditioned|supplied|through|using|with|from|into|by|the|and|for|during|runtime)\b/gi, " ")
+    .replace(/[^a-z0-9+.-]+/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const words = cleaned.split(" ").filter(Boolean);
+  return words.slice(0, 2).join(" ") || "";
+}
+
+function drawBlockDetailBadge(caption, rightX, baselineY) {
+  if (!caption) return "";
+  const width = Math.max(32, caption.length * 5.1 + 11);
+  const x = rightX - width;
+  const y = baselineY - 16;
+  return `
+    <g class="block-detail-badge">
+      <rect x="${x}" y="${y}" width="${width}" height="16"></rect>
+      <text x="${rightX - 6}" y="${baselineY - 5}" text-anchor="end">${escapeHtml(caption)}</text>
+    </g>
+  `;
+}
+
+function ioTightBox(iconX, iconY, iconW, iconH) {
+  return {
+    x: iconX + 1,
+    y: iconY + 1,
+    w: Math.max(28, iconW - 1),
+    h: Math.max(26, iconH - 1)
+  };
+}
+
+function inputTooltip(group) {
+  const role = {
+    visual: "visual input",
+    language: "language input",
+    state: "robot state input",
+    action: "action input",
+    noise: "noise/timestep input",
+    future: "future/latent input"
+  }[group.kind] || "input";
+  const detail = [group.label, ...(group.tokens || [])].filter(Boolean).join(": ");
+  return detail ? `${role}: ${detail}` : role;
+}
+
+function outputTooltip(output) {
+  const kind = outputKind(output);
+  const role = {
+    visual: "visual output",
+    future: "latent/future output",
+    action: "action output",
+    state: "state/force output",
+    language: "language output",
+    noise: "noise output"
+  }[kind] || "output";
+  const detail = [output.label, output.detail].filter(Boolean).join(": ");
+  return detail ? `${role}: ${detail}` : role;
+}
+
+function ioKind(kind, text) {
+  const lower = String(text || "").toLowerCase();
+  if (kind === "noise" || /noise|noisy|diffusion timestep/.test(lower)) return "noise";
+  if (kind === "language" || /language|instruction|\btext\b|task description|goal/.test(lower)) return "language";
+  if (kind === "state" || /state|proprio|joint|gripper|end-effector|force|tactile/.test(lower)) return "state";
+  if (kind === "action" || /action|control|trajectory|chunk|policy|command/.test(lower)) return "action";
+  return "visual";
+}
+
+function outputKind(output) {
+  const text = `${output.label || ""} ${output.detail || ""}`;
+  if (/action|control|trajectory|chunk|policy|command/i.test(text)) return "action";
+  if (/state|force|tactile|proprio/i.test(text)) return "state";
+  if (/noise|noisy/i.test(text)) return "noise";
+  if (/language|instruction|\btext\b/i.test(text)) return "language";
+  if (/latent|dino|jepa|value/i.test(text)) return "future";
+  return "visual";
+}
+
+function ioCaption(kind, text, input) {
+  const resolved = ioKind(kind, text);
+  const detail = criticalIoDetail(resolved, text, input);
+  return detail;
+}
+
+function criticalIoDetail(kind, text, input) {
+  const lower = String(text || "").toLowerCase();
+  const count = mediaFrameCount(lower);
+  const views = lower.match(/(\d{1,2})\s*(?:camera|view|rgb[- ]?d|rgb)\b/);
+  const hz = lower.match(/(\d{1,3})\s*hz\b/);
+  const dof = lower.match(/(\d{1,2})[- ]?dof|\b(\d{1,2})[- ]?d\b.*(?:action|pose|end-effector)/);
+  const chunk = lower.match(/(?:chunk|horizon|sequence)\D{0,10}(\d{1,3})/);
+  if (views) return `${views[1]} views`;
+  if (hz) return `${hz[1]} Hz`;
+  if (/\bs0\b|current image|initial image/.test(lower)) return "s0";
+  if (/static.*wrist|wrist.*static/.test(lower)) return "static+wrist";
+  if (/final noised|white noise|x_t|xt noisy|noised video latent/.test(lower)) return "xT noise";
+  if (kind === "visual" && count > 4) return `${count}x`;
+  if (kind === "visual" && /dino/.test(lower)) return "DINO";
+  if (kind === "visual" && /\bvae\b|latent/.test(lower)) return "VAE latent";
+  if (kind === "state" && /6-?dof|6d/.test(lower)) return "6-DoF";
+  if (kind === "state" && /proprio/.test(lower)) return "proprio";
+  if (kind === "state" && /joint/.test(lower)) return "joints";
+  if (kind === "action" && dof) return `${dof[1] || dof[2]}-D`;
+  if (kind === "action" && chunk) return `${chunk[1]}-step`;
+  if (kind === "action" && /chunk/.test(lower)) return "chunk";
+  if (/query tokens?|learnable.*query/.test(lower)) return "queries";
+  if (kind === "noise" && /flow/.test(lower)) return "flow t";
+  if (kind === "noise" && /diffusion|denois/.test(lower)) return "diffusion t";
+  return "";
+}
+
+function mediaFrameCount(text) {
+  const lower = String(text || "").toLowerCase();
+  const explicit = lower.match(/(?:^|\D)(\d{1,3})\s*(?:rgb\s*)?(?:frames?|views?|images?|camera views?|future frames?)/);
+  if (explicit) return Number(explicit[1]);
+  const horizon = lower.match(/(?:horizon|chunk|history|window|clip|sequence)\D{0,12}(\d{1,3})/);
+  if (horizon) return Number(horizon[1]);
+  if (/single|current|initial/.test(lower) && !/history|video|frames|clip/.test(lower)) return 1;
+  if (/history|video|frames|clip|rollout|future/.test(lower)) return 4;
+  return 1;
+}
+
+function drawFrameStackGlyph(text, x, y, w, h, preferStack = false) {
+  const count = mediaFrameCount(text);
+  const visible = Math.max(1, Math.min(4, preferStack ? count : 1));
+  const frameW = Math.min(w - 4, 42);
+  const frameH = Math.min(h - 4, 30);
+  const baseX = x + Math.max(0, (w - frameW - (visible - 1) * 5) / 2);
+  const baseY = y + Math.max(0, (h - frameH - (visible - 1) * 3) / 2);
+  const frames = Array.from({ length: visible }, (_, index) => {
+    const dx = (visible - 1 - index) * 5;
+    const dy = (visible - 1 - index) * 3;
+    return `
+      <g>
+        <rect class="io-frame" x="${baseX + dx}" y="${baseY + dy}" width="${frameW}" height="${frameH}"></rect>
+        ${drawSceneIcon(baseX + dx, baseY + dy, frameW, frameH)}
+      </g>
+    `;
+  }).join("");
+  return frames;
+}
+
+function drawSceneIcon(x, y, w, h) {
+  const sunX = x + w - 9;
+  const sunY = y + 8;
+  const flowerX = x + w * 0.42;
+  const flowerY = y + h * 0.58;
+  return `
+    <rect class="io-sky" x="${x + 3}" y="${y + 3}" width="${w - 6}" height="${h * 0.45}"></rect>
+    <circle class="io-sun" cx="${sunX}" cy="${sunY}" r="3.2"></circle>
+    <path class="io-ground" d="M ${x + 3} ${y + h - 6} C ${x + w * 0.35} ${y + h - 10}, ${x + w * 0.66} ${y + h - 3}, ${x + w - 3} ${y + h - 7}"></path>
+    <path class="io-stem" d="M ${flowerX} ${y + h - 7} C ${flowerX - 1} ${flowerY + 5}, ${flowerX + 1} ${flowerY + 2}, ${flowerX} ${flowerY}"></path>
+    <circle class="io-flower-petal" cx="${flowerX}" cy="${flowerY - 4}" r="2.3"></circle>
+    <circle class="io-flower-petal" cx="${flowerX + 4}" cy="${flowerY}" r="2.3"></circle>
+    <circle class="io-flower-petal" cx="${flowerX}" cy="${flowerY + 4}" r="2.3"></circle>
+    <circle class="io-flower-petal" cx="${flowerX - 4}" cy="${flowerY}" r="2.3"></circle>
+    <circle class="io-flower-core" cx="${flowerX}" cy="${flowerY}" r="2"></circle>
+  `;
+}
+
+function drawNoisyFrameGlyph(x, y, w, h) {
+  const size = Math.min(w - 4, h - 4, 34);
+  const fx = x + Math.max(0, (w - size) / 2);
+  const fy = y + Math.max(0, (h - size) / 2);
+  const cell = size / 8;
+  const cells = Array.from({ length: 64 }, (_, i) => {
+    const col = i % 8;
+    const row = Math.floor(i / 8);
+    const cx = fx + col * cell;
+    const cy = fy + row * cell;
+    const hash = noiseHash(col, row);
+    const shade = 38 + Math.floor(hash * 148);
+    return `<rect class="io-noise-cell" x="${cx}" y="${cy}" width="${cell + 0.15}" height="${cell + 0.15}" fill="rgb(${shade},${shade},${shade})"></rect>`;
+  }).join("");
+  return `
+    <rect class="io-frame io-noisy-frame" x="${fx}" y="${fy}" width="${size}" height="${size}"></rect>
+    <g clip-path="inset(0 round 3px)">${cells}</g>
+  `;
+}
+
+function noiseHash(x, y) {
+  const n = Math.sin((x + 1) * 127.1 + (y + 1) * 311.7 + x * y * 74.7) * 43758.5453123;
+  return n - Math.floor(n);
+}
+
+function drawLanguageGlyph(text, x, y, w, h) {
+  const boxW = Math.min(w - 3, 44);
+  const boxH = Math.min(h - 3, 32);
+  const bx = x + Math.max(0, (w - boxW) / 2);
+  const by = y + Math.max(0, (h - boxH) / 2);
+  return `
+    <rect class="io-language-box" x="${bx}" y="${by}" width="${boxW}" height="${boxH}"></rect>
+    <path class="io-quote-mark" d="M ${bx + 8} ${by + 9} C ${bx + 5} ${by + 12}, ${bx + 5} ${by + 17}, ${bx + 10} ${by + 18} M ${bx + 15} ${by + 9} C ${bx + 12} ${by + 12}, ${bx + 12} ${by + 17}, ${bx + 17} ${by + 18}"></path>
+    <path class="io-language-line" d="M ${bx + 24} ${by + 10} L ${bx + boxW - 7} ${by + 10} M ${bx + 8} ${by + 23} L ${bx + boxW - 7} ${by + 23} M ${bx + 8} ${by + 28} L ${bx + boxW - 14} ${by + 28}"></path>
+  `;
+}
+
+function drawStateGlyph(x, y, w, h) {
+  return drawActionGlyph(x, y, w, h);
+}
+
+function drawActionGlyph(x, y, w, h) {
+  const sx = x + 4;
+  const sy = y + h * 0.5;
+  const width = Math.min(w - 8, 54);
+  return `
+    <path class="io-action-path io-action-a" d="M ${sx} ${sy - 8} C ${sx + width * 0.2} ${sy - 18}, ${sx + width * 0.55} ${sy + 5}, ${sx + width} ${sy - 10}"></path>
+    <path class="io-action-path io-action-b" d="M ${sx} ${sy} C ${sx + width * 0.25} ${sy + 12}, ${sx + width * 0.58} ${sy - 14}, ${sx + width} ${sy + 2}"></path>
+    <path class="io-action-path io-action-c" d="M ${sx} ${sy + 8} C ${sx + width * 0.32} ${sy - 2}, ${sx + width * 0.63} ${sy + 18}, ${sx + width} ${sy + 8}"></path>
+    <path class="io-action-path io-action-d" d="M ${sx} ${sy + 14} C ${sx + width * 0.22} ${sy + 2}, ${sx + width * 0.62} ${sy - 4}, ${sx + width} ${sy + 15}"></path>
+    <circle class="io-action-point" cx="${sx}" cy="${sy - 8}" r="2"></circle>
+  `;
+}
+
+function drawLatentGlyph(x, y, w, h) {
+  const gx = x + Math.max(0, (w - 42) / 2);
+  const gy = y + Math.max(0, (h - 26) / 2);
+  return Array.from({ length: 12 }, (_, i) => {
+    const cx = gx + (i % 4) * 11;
+    const cy = gy + Math.floor(i / 4) * 9;
+    return `<rect class="io-latent-cell" x="${cx}" y="${cy}" width="7" height="6"></rect>`;
+  }).join("");
+}
+
+function drawSankeyRibbon(track, points, ids, phase = "", widthOverride = null) {
+  const width = widthOverride || sankeyWidth(track.kind);
+  const color = streamColor(track.kind);
+  const top = points.map(([x, y]) => [x, y - width / 2]);
+  const bottom = points.map(([x, y]) => [x, y + width / 2]).reverse();
+  const d = [
+    `M ${top[0][0]} ${top[0][1]}`,
+    ...top.slice(1).map(([x, y], index) => {
+      const [px, py] = top[index];
+      const c = Math.max(28, (x - px) * 0.42);
+      return `C ${px + c} ${py}, ${x - c} ${y}, ${x} ${y}`;
+    }),
+    `L ${bottom[0][0]} ${bottom[0][1]}`,
+    ...bottom.slice(1).map(([x, y], index) => {
+      const [px, py] = bottom[index];
+      const c = Math.max(28, Math.abs(x - px) * 0.42);
+      return `C ${px - c} ${py}, ${x + c} ${y}, ${x} ${y}`;
+    }),
+    "Z"
+  ].join(" ");
+  return `
+    <path class="sankey-ribbon sankey-${escapeHtml(track.kind)} ${phase ? `sankey-${phase}` : ""}" d="${d}" fill="${streamGradient(track.kind, ids)}"></path>
+    <path class="sankey-ribbon-edge" d="${ribbonCenterPath(points)}" stroke="${color}"></path>
+  `;
+}
+
+function buildInputEncoderRoutes(inputs, encoders) {
+  return inputs.map((input) => {
+    const encoder = findBestEncoderForInput(input, encoders);
+    const kind = routeKind(input, encoder);
+    return {
+      input,
+      encoder: encoder || {
+        x: input.x + input.w + 42,
+        y: input.y,
+        w: 80,
+        h: input.h,
+        centerY: input.centerY,
+        kind
+      },
+      track: { kind },
+      width: Math.min(sankeyWidth(kind), Math.max(12, input.h * 0.48))
+    };
+  });
+}
+
+function findBestEncoderForInput(input, encoders) {
+  const inputText = `${input.item?.label || ""} ${input.item?.tokens?.join(" ") || ""}`.toLowerCase();
+  const preferredKinds = encoderKindsForInput(input.kind, inputText);
+  const scored = encoders.map((encoder) => ({
+    encoder,
+    score: encoderScoreForInput(input, inputText, encoder, preferredKinds)
+  })).filter((item) => item.score > 0).sort((a, b) => b.score - a.score);
+  return scored[0]?.encoder || encoders.find((encoder) => preferredKinds.includes(encoder.kind)) || encoders[0];
+}
+
+function orderEncodersForInputs(encoders, inputs = []) {
+  const remaining = encoders.map((encoder) => ({
+    ...encoder,
+    kind: encoder.kind || kindFromText(`${encoder.label} ${encoder.detail}`)
+  }));
+  const ordered = [];
+  inputs.forEach((input) => {
+    const inputText = `${input.item?.label || input.label || ""} ${input.item?.tokens?.join(" ") || input.tokens?.join(" ") || ""}`.toLowerCase();
+    const preferredKinds = encoderKindsForInput(input.kind, inputText);
+    let bestIndex = -1;
+    let bestScore = 0;
+    remaining.forEach((encoder, index) => {
+      const score = encoderScoreForInput(input, inputText, { item: encoder, kind: encoder.kind }, preferredKinds);
+      if (score > bestScore) {
+        bestScore = score;
+        bestIndex = index;
+      }
+    });
+    if (bestIndex >= 0) ordered.push(remaining.splice(bestIndex, 1)[0]);
+  });
+  return ordered.concat(remaining);
+}
+
+function orderHeadsForOutputs(heads, outputs = []) {
+  const remaining = heads.map((head) => ({
+    ...head,
+    kind: kindFromText(`${head.label} ${head.detail}`)
+  }));
+  const ordered = [];
+  outputs.forEach((output) => {
+    const targetKind = output.kind || outputKind(output.item || output);
+    let bestIndex = -1;
+    let bestScore = 0;
+    remaining.forEach((head, index) => {
+      const score = headScoreForOutput(head, targetKind, output);
+      if (score > bestScore) {
+        bestScore = score;
+        bestIndex = index;
+      }
+    });
+    if (bestIndex >= 0) ordered.push(remaining.splice(bestIndex, 1)[0]);
+  });
+  return ordered.concat(remaining);
+}
+
+function headScoreForOutput(head, targetKind, output) {
+  const text = `${head.label || ""} ${head.detail || ""}`.toLowerCase();
+  const outputText = `${output.item?.label || output.label || ""} ${output.item?.detail || output.detail || ""}`.toLowerCase();
+  let score = head.kind === targetKind ? 4 : 0;
+  if (targetKind === "action" && /action|policy|control|trajectory|chunk|act\b|diffusion|dit|mlp|idm/.test(text)) score += 8;
+  if ((targetKind === "visual" || targetKind === "future") && /future|obs|observation|video|image|frame|decoder|vae|vq|latent/.test(text)) score += 8;
+  if (targetKind === "language" && /language|text|instruction|t5/.test(text)) score += 8;
+  if (targetKind === "state" && /state|proprio|force|tactile|joint/.test(text)) score += 8;
+  if (/future|video|image|observation/.test(outputText) && /future|obs|video|image|decoder/.test(text)) score += 4;
+  return score;
+}
+
+function encoderKindsForInput(kind, text) {
+  if (/instruction|language|\btext\b|textual|goal/.test(text) || kind === "language") return ["language", "visual"];
+  if (/state|proprio|gripper|end-effector|force|tactile/.test(text) || kind === "state") return ["state", "action", "visual"];
+  if (/action|trajectory|chunk|control/.test(text) || kind === "action") return ["action", "state"];
+  if (/future|latent|world|target|noise/.test(text) || kind === "future" || kind === "noise") return ["future", "visual", "action"];
+  return ["visual", "future"];
+}
+
+function encoderScoreForInput(input, inputText, encoder, preferredKinds) {
+  const encoderText = `${encoder.item?.label || ""} ${encoder.item?.detail || ""}`.toLowerCase();
+  let score = preferredKinds.includes(encoder.kind) ? 4 : 0;
+  if (/instruction|language|\btext\b|textual|goal/.test(inputText) && /t5|\btext\b|textual|language|vlm|qwen|gemma|llama|clip text|chameleon|prismatic|lwm/.test(encoderText)) score += 8;
+  if (/image|rgb|camera|frame|visual|observation|video/.test(inputText) && /vae|vq|dino|siglip|clip|mae|vit|resnet|cnn|jepa|vggt|vision|image|video|chameleon|vlm|qwen|gemma|lwm/.test(encoderText)) score += 8;
+  if (/state|proprio|gripper|end-effector|force|tactile/.test(inputText) && /state|proprio|mlp|linear|force|tactile/.test(encoderText)) score += 8;
+  if (/action|trajectory|chunk|control/.test(inputText) && /action|trajectory|chunk|flow|mlp|linear|token/.test(encoderText)) score += 8;
+  if (/future|latent|world|target/.test(inputText) && /future|latent|vae|dino|jepa|world|video/.test(encoderText)) score += 4;
+  return score;
+}
+
+function routeKind(input, encoder) {
+  if (input.kind === "language") return "language";
+  if (input.kind === "state") return "state";
+  if (input.kind === "action") return "action";
+  if (input.kind === "future" || input.kind === "noise") return "future";
+  return encoder?.kind || input.kind || "visual";
+}
+
+function routeYForKind(rows, kind) {
+  const direct = rows.find((row) => row.kind === kind);
+  if (direct) return direct.centerY;
+  if (kind === "future") return rows.find((row) => /future|video|latent|value|depth/i.test(`${row.item?.label} ${row.item?.detail}`))?.centerY;
+  if (kind === "action") return rows.find((row) => /action|policy|control|trajectory/i.test(`${row.item?.label} ${row.item?.detail}`))?.centerY;
+  return null;
+}
+
+function routeAnchorForKind(rows, kind, side = "left") {
+  const row = routeRowForKind(rows, kind);
+  if (!row) return null;
+  const anchor = side === "right" ? row.rightAnchor : row.leftAnchor;
+  return anchor || { x: side === "right" ? row.x + row.w : row.x, y: row.centerY };
+}
+
+function routeRowForKind(rows, kind) {
+  const direct = rows.find((row) => row.kind === kind);
+  if (direct) return direct;
+  if (kind === "future") return rows.find((row) => /future|video|latent|value|depth/i.test(`${row.item?.label} ${row.item?.detail}`));
+  if (kind === "action") return rows.find((row) => /action|policy|control|trajectory|chunk/i.test(`${row.item?.label} ${row.item?.detail}`));
+  if (kind === "visual") return rows.find((row) => /visual|image|video|frame|observation|rgb/i.test(`${row.item?.label} ${row.item?.detail}`));
+  if (kind === "language") return rows.find((row) => /language|instruction|text|task/i.test(`${row.item?.label} ${row.item?.detail}`));
+  if (kind === "state") return rows.find((row) => /state|proprio|joint|force|tactile/i.test(`${row.item?.label} ${row.item?.detail}`));
+  return null;
+}
+
+function ribbonCenterPath(points) {
+  return [
+    `M ${points[0][0]} ${points[0][1]}`,
+    ...points.slice(1).map(([x, y], index) => {
+      const [px, py] = points[index];
+      const c = Math.max(28, (x - px) * 0.42);
+      return `C ${px + c} ${py}, ${x - c} ${y}, ${x} ${y}`;
+    })
+  ].join(" ");
+}
+
+function drawSankeyLabels(diagram, boxes) {
+  const tracks = sankeyTracks(diagram).slice(0, 5);
+  const inputBox = boxes[0];
+  const outputBox = boxes[4];
+  return `
+    <g class="sankey-labels">
+      ${tracks.map((track, index) => {
+        const y = sankeyY(inputBox, track.kind, index, tracks.length);
+        return `
+          <text class="sankey-flow-label" x="${inputBox.x + 16}" y="${y - sankeyWidth(track.kind) / 2 - 4}">${escapeHtml(shortText(track.label, 18))}</text>
+          <text class="sankey-flow-label is-output" x="${outputBox.x + outputBox.w - 10}" y="${y + sankeyDrift(track.kind, 3) - sankeyWidth(track.kind) / 2 - 4}" text-anchor="end">${escapeHtml(shortText(track.output, 16))}</text>
+        `;
+      }).join("")}
+    </g>
+  `;
+}
+
+function sankeyTracks(diagram) {
+  const sources = [
+    ...diagram.inputs.map((item) => ({ kind: item.kind || kindFromText(`${item.label} ${item.tokens?.join(" ")}`), label: item.label })),
+    ...diagram.encoders.map((item) => ({ kind: item.kind || kindFromText(`${item.label} ${item.detail}`), label: item.label })),
+    ...diagram.outputs.map((item) => ({ kind: kindFromText(`${item.label} ${item.detail}`), output: item.label }))
+  ];
+  const byKind = new Map();
+  sources.forEach((item) => {
+    if (!item.kind) return;
+    const existing = byKind.get(item.kind) || { kind: item.kind, label: streamLabel(item.kind), output: streamOutput(item.kind, diagram) };
+    if (item.label && existing.label === streamLabel(item.kind)) existing.label = item.label;
+    if (item.output) existing.output = item.output;
+    byKind.set(item.kind, existing);
+  });
+  ["visual", "language", "state", "future", "action"].forEach((kind) => {
+    if (streamPresent(kind, diagram) && !byKind.has(kind)) byKind.set(kind, { kind, label: streamLabel(kind), output: streamOutput(kind, diagram) });
+  });
+  const order = ["visual", "language", "state", "future", "action", "latent", "noise"];
+  return Array.from(byKind.values()).sort((a, b) => order.indexOf(a.kind) - order.indexOf(b.kind));
+}
+
+function streamPresent(kind, diagram) {
+  const haystack = [
+    ...diagram.inputs.map((item) => `${item.kind} ${item.label} ${item.tokens?.join(" ")}`),
+    ...diagram.encoders.map((item) => `${item.kind} ${item.label} ${item.detail}`),
+    ...diagram.heads.map((item) => `${item.label} ${item.detail}`),
+    ...diagram.outputs.map((item) => `${item.label} ${item.detail}`)
+  ].join(" ").toLowerCase();
+  return kindFromText(haystack) === kind || new RegExp(kind === "visual" ? "rgb|image|video|observation|vision|vae|dino|siglip|clip" : kind).test(haystack);
+}
+
+function streamLabel(kind) {
+  return {
+    visual: "visual stream",
+    language: "language stream",
+    state: "state stream",
+    future: "future/world stream",
+    action: "action stream",
+    latent: "latent stream",
+    noise: "noise stream"
+  }[kind] || "stream";
+}
+
+function streamOutput(kind, diagram) {
+  const hit = diagram.outputs.find((output) => kindFromText(`${output.label} ${output.detail}`) === kind);
+  if (hit) return hit.label;
+  return {
+    visual: "visual tokens",
+    language: "conditioning",
+    state: "state",
+    future: "future state",
+    action: "action",
+    latent: "latent",
+    noise: "denoise"
+  }[kind] || "output";
+}
+
+function sankeyY(box, kind, index, count) {
+  const fixed = {
+    visual: 0.22,
+    language: 0.36,
+    state: 0.5,
+    future: 0.64,
+    action: 0.78,
+    latent: 0.58,
+    noise: 0.7
+  };
+  const ratio = fixed[kind] || (0.25 + index * (0.55 / Math.max(count - 1, 1)));
+  return box.y + box.h * ratio;
+}
+
+function sankeyWidth(kind) {
+  return {
+    visual: 28,
+    language: 18,
+    state: 18,
+    future: 24,
+    action: 24,
+    latent: 20,
+    noise: 16
+  }[kind] || 18;
+}
+
+function sankeyDrift(kind, stage) {
+  const drift = {
+    visual: [0, -6, -10, -8],
+    language: [3, -2, 4, 8],
+    state: [0, 4, 2, 0],
+    future: [-2, -8, -10, -4],
+    action: [0, 8, 10, 4],
+    latent: [0, -4, -2, 0],
+    noise: [0, 5, 6, 0]
+  }[kind] || [0, 0, 0, 0];
+  return drift[stage] || 0;
+}
+
+function encoderShape(encoder) {
+  const text = `${encoder.label || ""} ${encoder.detail || ""}`.toLowerCase();
+  if (/vlm|qwen|gemma|paligemma|prismatic|lwm|chameleon|llama|language model/.test(text)) return "vlm";
+  if (/vae|vq|tokenizer|codebook|compress|latent|dino|siglip|clip vision|mae|resnet|cnn|vit|v-jepa|vggt|video encoder/.test(text)) return "funnel";
+  if (/t5|text encoder|clip text|language/.test(text)) return "text";
+  return "block";
+}
+
+function drawEncoderShape(shape, x, y, w, h, fill, stroke, kind) {
+  if (shape === "funnel") {
+    const narrow = Math.max(40, w * 0.42);
+    const rightX = x + w;
+    const ny0 = y + h * 0.27;
+    const ny1 = y + h * 0.73;
+    return `<path class="encoder-block encoder-funnel encoder-${escapeHtml(kind)}" d="M ${x} ${y} L ${rightX} ${ny0} L ${rightX} ${ny1} L ${x} ${y + h} Z" fill="${fill}" stroke="${stroke}"></path>`;
+  }
+  if (shape === "vlm") {
+    return `
+      <rect class="encoder-block encoder-vlm encoder-${escapeHtml(kind)}" x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}" stroke="${stroke}"></rect>
+      <rect class="encoder-vlm-screen" x="${x + w - 38}" y="${y + 8}" width="24" height="${Math.max(14, h - 16)}"></rect>
+    `;
+  }
+  if (shape === "text") {
+    return `<rect class="encoder-block encoder-text encoder-${escapeHtml(kind)}" x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}" stroke="${stroke}"></rect>`;
+  }
+  return `<rect class="encoder-block encoder-${escapeHtml(kind)}" x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}" stroke="${stroke}"></rect>`;
+}
+
+function headShape(head) {
+  const text = `${head.label || ""} ${head.detail || ""}`.toLowerCase();
+  if (/vae|vq-?gan|decoder|decode|reconstruct|uncompress|decompress/.test(text) && /video|image|frame|visual|observation|future|latent|vae|vq/.test(text)) return "reverse-funnel";
+  if (/unified|world-action|joint/.test(text)) return "vlm";
+  if (/language|text|t5/.test(text)) return "text";
+  return "block";
+}
+
+function drawHeadShape(shape, x, y, w, h, fill, stroke, kind) {
+  if (shape === "reverse-funnel") {
+    const wide = Math.max(40, w * 0.58);
+    const leftX = x;
+    const wy0 = y;
+    const wy1 = y + h;
+    return `<path class="head-block decoder-reverse-funnel head-${escapeHtml(kind)}" d="M ${leftX} ${y + h * 0.28} L ${x + w} ${wy0} L ${x + w} ${wy1} L ${leftX} ${y + h * 0.72} Z" fill="${fill}" stroke="${stroke}"></path>`;
+  }
+  if (shape === "vlm") {
+    return `<rect class="head-block head-vlm head-${escapeHtml(kind)}" x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}" stroke="${stroke}"></rect>`;
+  }
+  if (shape === "text") {
+    return `<rect class="head-block head-text head-${escapeHtml(kind)}" x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}" stroke="${stroke}"></rect>`;
+  }
+  return `<rect class="head-block head-${escapeHtml(kind)}" x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}" stroke="${stroke}"></rect>`;
+}
+
+function headGlyphKind(head) {
+  const label = `${head.label || ""}`.toLowerCase();
+  const text = `${head.label || ""} ${head.detail || ""}`.toLowerCase();
+  if (/latent.*\bidm\b|\bidm\b.*latent/.test(text)) return "latent-idm";
+  if (/inverse dynamics|\bidm\b/.test(text)) return "idm";
+  if (/diffusion policy/.test(text)) return "diffusion-policy";
+  if (/action expert dit|\bdit\b|diffusion transformer/.test(text)) return "dit";
+  if (/act-style|\bact-vae\b|\bact\b actor|\bact\b module|autoregressive action decoder/.test(text)) return "act";
+  if (/future\/obs|future|video|image|frame|observation|vae|vq-?gan|decoder/.test(label) && !/diffusion|denois|flow|\bdit\b|idm/.test(text)) return "";
+  if (/diffusion|denois|flow/.test(text)) return "diffusion-policy";
+  if (/transformer|attention/.test(text)) return "transformer";
+  if (/mlp|linear|projection|projector/.test(label)) return "mlp";
+  return "";
+}
+
+function drawHeadGlyph(kind, x, y, w, h, streamKind = "action") {
+  const pad = 1;
+  if (kind === "dit") return drawMiniTransformerGlyph(x + pad, y + pad, w - pad * 2, h - pad * 2, { diffusion: true });
+  if (kind === "act") return drawMiniTransformerGlyph(x + pad, y + pad, w - pad * 2, h - pad * 2, { label: "ACT" });
+  if (kind === "transformer") return drawMiniTransformerGlyph(x + pad, y + pad, w - pad * 2, h - pad * 2, {});
+  if (kind === "diffusion-policy") return drawMiniDiffusionPolicyGlyph(x + pad, y + pad, w - pad * 2, h - pad * 2);
+  if (kind === "idm") return drawIdmGlyph(x + pad, y + pad, w - pad * 2, h - pad * 2, false);
+  if (kind === "latent-idm") return drawIdmGlyph(x + pad, y + pad, w - pad * 2, h - pad * 2, true);
+  if (kind === "mlp") return drawMlpGlyph(x + pad, y + pad, w - pad * 2, h - pad * 2, "core-visual-mlp head-mlp-glyph");
+  return "";
+}
+
+function drawMiniTransformerGlyph(x, y, w, h, options = {}) {
+  const blockW = w * 0.58;
+  const blockH = h * 0.46;
+  const blockX = x + (w - blockW) / 2;
+  const blockY = y + h * 0.27;
+  const tokenN = 4;
+  const tokenW = Math.min(8, (blockW - 8) / tokenN);
+  const tokenGap = 3;
+  const seqW = tokenN * tokenW + (tokenN - 1) * tokenGap;
+  const seqX = blockX + (blockW - seqW) / 2;
+  const tokens = (yy) => Array.from({ length: tokenN }, (_, index) => `<rect class="core-seq-token head-seq-token" x="${seqX + index * (tokenW + tokenGap)}" y="${yy}" width="${tokenW}" height="4"></rect>`).join("");
+  const layers = Array.from({ length: 4 }, (_, index) => {
+    const lx = blockX + 6 + index * ((blockW - 12) / 3);
+    return `<path class="core-layer-line head-layer-line" d="M ${lx} ${blockY + 4} L ${lx} ${blockY + blockH - 4}"></path>`;
+  }).join("");
+  const label = options.label ? `<text class="head-glyph-label" x="${blockX + blockW / 2}" y="${blockY + blockH / 2 + 3}" text-anchor="middle">${escapeHtml(options.label)}</text>` : "";
+  return `
+    <g class="head-glyph head-transformer-glyph">
+      ${tokens(blockY - 7)}
+      <rect class="core-transformer-block head-transformer-block" x="${blockX}" y="${blockY}" width="${blockW}" height="${blockH}"></rect>
+      ${layers}
+      ${label}
+      ${tokens(blockY + blockH + 3)}
+      ${options.diffusion ? drawDiffusionLoop(blockX + blockW + 9, blockY + blockH / 2, Math.min(22, w * 0.32), Math.min(22, h * 0.56)) : ""}
+    </g>
+  `;
+}
+
+function drawMiniDiffusionPolicyGlyph(x, y, w, h) {
+  const cx = x + w * 0.48;
+  const cy = y + h * 0.52;
+  const sw = w * 0.44;
+  const sh = h * 0.46;
+  const slices = Array.from({ length: 4 }, (_, index) => `
+    <rect class="core-cnn-slice head-cnn-slice" x="${cx - sw / 2 + index * 4}" y="${cy - sh / 2 + index * 2}" width="${sw}" height="${sh}"></rect>
+  `).join("");
+  return `<g class="head-glyph head-diffusion-policy-glyph">${slices}${drawDiffusionLoop(x + w * 0.78, cy, Math.min(22, w * 0.34), Math.min(22, h * 0.58))}</g>`;
+}
+
+function drawIdmGlyph(x, y, w, h, latent = false) {
+  const frameW = Math.min(22, w * 0.34);
+  const frameH = Math.min(18, h * 0.58);
+  const leftX = x + 2;
+  const rightX = x + w - frameW - 2;
+  const fy = y + (h - frameH) / 2;
+  const midX = x + w / 2;
+  return `
+    <g class="head-glyph idm-glyph ${latent ? "latent-idm-glyph" : ""}">
+      ${latent ? drawLatentIdmFrame(leftX, fy, frameW, frameH, "t") : drawIdmFrame(leftX, fy, frameW, frameH, "t")}
+      ${latent ? drawLatentIdmFrame(rightX, fy, frameW, frameH, "t+1") : drawIdmFrame(rightX, fy, frameW, frameH, "t+1")}
+      <path class="idm-back-arrow" d="M ${rightX - 2} ${fy + frameH * 0.5} C ${midX + 8} ${fy - 2}, ${midX - 8} ${fy - 2}, ${leftX + frameW + 2} ${fy + frameH * 0.5}"></path>
+      <path class="idm-back-arrow-head" d="M ${leftX + frameW + 2} ${fy + frameH * 0.5} L ${leftX + frameW + 8} ${fy + frameH * 0.5 - 4} L ${leftX + frameW + 8} ${fy + frameH * 0.5 + 4} Z"></path>
+    </g>
+  `;
+}
+
+function drawIdmFrame(x, y, w, h, badge) {
+  return `
+    <g>
+      <rect class="idm-frame" x="${x}" y="${y}" width="${w}" height="${h}"></rect>
+      ${drawSceneIcon(x, y, w, h)}
+      ${drawSmallCornerBadge(x + w - 12, y + h - 8, badge)}
+    </g>
+  `;
+}
+
+function drawLatentIdmFrame(x, y, w, h, badge) {
+  return `
+    <g>
+      <rect class="idm-frame latent-idm-frame" x="${x}" y="${y}" width="${w}" height="${h}"></rect>
+      <text class="latent-idm-z" x="${x + w / 2}" y="${y + h / 2 + 4}" text-anchor="middle">Z</text>
+      ${drawSmallCornerBadge(x + w - 12, y + h - 8, badge)}
+    </g>
+  `;
+}
+
+function drawSmallCornerBadge(x, y, text) {
+  const w = Math.max(12, String(text).length * 4.2 + 5);
+  return `
+    <g class="idm-time-badge">
+      <rect x="${x}" y="${y}" width="${w}" height="8"></rect>
+      <text x="${x + w - 2}" y="${y + 6}" text-anchor="end">${escapeHtml(text)}</text>
+    </g>
+  `;
+}
+
+function drawReverseFunnelGlyph(x, y, kind) {
+  const color = streamColor(kind);
+  return `
+    <g class="encoder-glyph decoder-glyph">
+      <path d="M ${x - 11} ${y} L ${x + 1} ${y - 8} M ${x - 11} ${y} L ${x + 1} ${y + 8}" fill="none" stroke="${color}" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"></path>
+      <circle cx="${x + 9}" cy="${y - 8}" r="2.5" fill="${color}"></circle>
+      <circle cx="${x + 9}" cy="${y}" r="2.5" fill="${color}"></circle>
+      <circle cx="${x + 9}" cy="${y + 8}" r="2.5" fill="${color}"></circle>
+    </g>
+  `;
+}
+
+function headFill(kind, shape) {
+  if (shape === "reverse-funnel") return "#eef8f7";
+  return encoderFill(kind);
+}
+
+function headStroke(kind, shape) {
+  if (shape === "reverse-funnel") return "#2f8793";
+  return encoderStroke(kind);
+}
+
+function drawFunnelGlyph(x, y, kind) {
+  const color = streamColor(kind);
+  return `
+    <g class="encoder-glyph">
+      <circle cx="${x - 9}" cy="${y - 7}" r="2.5" fill="${color}"></circle>
+      <circle cx="${x - 9}" cy="${y}" r="2.5" fill="${color}"></circle>
+      <circle cx="${x - 9}" cy="${y + 7}" r="2.5" fill="${color}"></circle>
+      <path d="M ${x - 2} ${y - 8} L ${x + 10} ${y} L ${x - 2} ${y + 8}" fill="none" stroke="${color}" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"></path>
+    </g>
+  `;
+}
+
+function drawEncoderBodyGlyph(shape, cx, cy, rowW, rowH, kind) {
+  const glyphW = Math.min(74, rowW * 0.56);
+  const glyphH = Math.max(18, Math.min(30, rowH - 24));
+  const x = cx - glyphW / 2;
+  const y = cy - glyphH / 2;
+  if (shape === "vlm") return drawVlmGlyph(x, y, glyphW, glyphH, kind);
+  if (shape === "funnel") return drawFunnelGlyph(cx, cy, kind);
+  if (shape === "text") return drawTextEncoderGlyph(x, y, glyphW, glyphH, kind);
+  return drawMlpGlyph(x + 6, y + 1, glyphW - 12, glyphH - 2, "core-visual-mlp encoder-mlp-glyph");
+}
+
+function drawTextEncoderGlyph(x, y, w, h, kind) {
+  const color = streamColor(kind);
+  const lineY = [0.28, 0.5, 0.72].map((p) => y + h * p);
+  return `
+    <g class="encoder-glyph text-encoder-glyph">
+      <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="4" ry="4" fill="rgba(255,255,255,0.36)" stroke="${color}" stroke-width="1.2"></rect>
+      ${lineY.map((yy, index) => `<path d="M ${x + 7} ${yy} L ${x + w - 8 - index * 6} ${yy}" stroke="${color}" stroke-width="1.4" stroke-linecap="round"></path>`).join("")}
+    </g>
+  `;
+}
+
+function drawVlmGlyph(x, y, w, h, kind) {
+  const color = streamColor(kind);
+  const lines = [0.34, 0.5, 0.66].map((p) => {
+    const xx = x + w * p;
+    return `<path d="M ${xx} ${y + 4} L ${xx} ${y + h - 4}" stroke="${color}" stroke-width="1.25" stroke-linecap="round"></path>`;
+  }).join("");
+  return `
+    <g class="encoder-glyph">
+      <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" ry="3" fill="none" stroke="${color}" stroke-width="1.3"></rect>
+      ${lines}
+    </g>
+  `;
+}
+
+function encoderFill(kind) {
+  return {
+    language: "#f5ecfb",
+    action: "#fff5e4",
+    state: "#edf7ed",
+    latent: "#eaf7f6",
+    future: "#eaf7f6",
+    visual: "#eef6ff"
+  }[kind] || "#f8fbff";
+}
+
+function encoderStroke(kind) {
+  return {
+    language: "#b48bd0",
+    action: "#d49a3d",
+    state: "#72a36e",
+    latent: "#2f8793",
+    future: "#2f8793",
+    visual: "#5d8fc5"
+  }[kind] || "#b9cbe0";
+}
+
+function drawEncoderOnlyCore(box, diagram, mini, ids) {
+  const trainOnly = uniqueByText([
+    { label: "Train-only world head", detail: "representation supervision" },
+    ...diagram.heads.filter((head) => /future|video|world|latent|depth|force|tactile/i.test(`${head.label} ${head.detail}`))
+  ], "label").slice(0, 2);
+  return `
+    <g filter="url(#${ids.softShadow})">
+      <rect class="core-panel encoder-policy-core" x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" fill="url(#${ids.coreGrad})"></rect>
+      <text class="core-title" x="${box.x + 22}" y="${box.y + 30}">${escapeHtml(diagram.core.label)}</text>
+      ${drawWrappedText(diagram.core.details.join(" / "), box.x + 22, box.y + 52, 33, 2, "core-detail", 11)}
+      <rect class="shared-attn-band" x="${box.x + 24}" y="${box.y + 92}" width="${box.w - 48}" height="${mini ? 58 : 76}"></rect>
+      <text class="core-note" x="${box.x + 38}" y="${box.y + 120}">runtime keeps encoder representation</text>
+      ${trainOnly.map((head, index) => {
+        const y = box.y + box.h - (mini ? 98 : 112) + index * 48;
+        return `
+          <g>
+            <rect class="encoder-only-aux" x="${box.x + 28}" y="${y}" width="${box.w - 56}" height="38"></rect>
+            <text class="block-label" x="${box.x + 42}" y="${y + 16}">${escapeHtml(shortText(head.label, 26))}</text>
+            ${drawWrappedText(head.detail, box.x + 42, y + 30, 28, 1, "block-detail", 9.5)}
+          </g>
+        `;
+      }).join("")}
+    </g>
+  `;
+}
+
+function drawInputEncoderStack(diagram, box, mini) {
+  const splitY = box.y + (mini ? 116 : 134);
+  const tokenBox = { x: box.x, y: box.y, w: box.w, h: mini ? 126 : 146 };
+  const encoderBox = { x: box.x, y: splitY, w: box.w, h: box.h - (splitY - box.y) };
+  const tokenCount = 2;
+  const encoderCount = 2;
+  return `
+    ${drawTokenGroups(diagram.inputs.slice(0, tokenCount), tokenBox, mini)}
+    <text class="stack-title" x="${box.x + 18}" y="${splitY + 23}">encoders</text>
+    ${drawEncoderStack(diagram.encoders.slice(0, encoderCount), encoderBox, mini)}
   `;
 }
 
@@ -721,39 +2547,28 @@ function drawTokenRail(group, x, y, w, h, mini) {
 }
 
 function drawEncoderStack(encoders, box, mini) {
+  const list = encoders.length ? encoders : [
+    { label: "Vision Encoder", detail: "observation features" },
+    { label: "Text / Goal Encoder", detail: "instruction features" }
+  ];
   const top = box.y + 48;
-  const itemH = mini ? 46 : 50;
-  const gap = 9;
-  return encoders.map((encoder, index) => {
+  const gap = mini ? 7 : 9;
+  const available = box.h - 58;
+  const itemH = Math.max(38, Math.min(mini ? 46 : 50, Math.floor((available - gap * (list.length - 1)) / list.length)));
+  return list.map((encoder, index) => {
     const y = top + index * (itemH + gap);
     return `
       <g>
         <rect class="encoder-block" x="${box.x + 14}" y="${y}" width="${box.w - 28}" height="${itemH}"></rect>
         <text class="block-label" x="${box.x + 25}" y="${y + 18}">${escapeHtml(encoder.label)}</text>
-        ${drawWrappedText(encoder.detail, box.x + 25, y + 34, 18, 1, "block-detail", 10)}
+        ${drawWrappedText(encoder.detail, box.x + 25, y + 34, 18, itemH > 44 ? 1 : 0, "block-detail", 10)}
       </g>
     `;
   }).join("");
 }
 
 function drawCorePanel(diagram, box, mini, ids) {
-  const streamTop = box.y + 78;
-  const streamH = mini ? 30 : 34;
-  const streamGap = mini ? 8 : 10;
-  const maxStreams = Math.min(diagram.streams.length, mini ? 4 : 6);
-  const streamBox = { x: box.x + 22, y: streamTop - 12, w: box.w - 168, h: maxStreams * (streamH + streamGap) + 8 };
-  const streamSvg = diagram.streams.slice(0, maxStreams).map((stream, index) => {
-    const y = streamTop + index * (streamH + streamGap);
-    return drawCoreStream(stream, streamBox.x + 6, y, streamBox.w - 12, streamH);
-  }).join("");
-  const layerX = box.x + box.w - 122;
-  const layerY = box.y + 52;
-  const layerSvg = diagram.core.layerBadges.slice(0, 5).map((label, index) => `
-    <rect class="layer-chip" x="${layerX}" y="${layerY + index * 31}" width="90" height="22"></rect>
-    <text class="layer-text" x="${layerX + 45}" y="${layerY + 15 + index * 31}" text-anchor="middle">${escapeHtml(label)}</text>
-  `).join("");
   const attentionSvg = drawAttentionBadges(diagram.attention, box, mini);
-  const noiseSvg = diagram.motifs.diffusion ? drawNoiseSchedule(box, mini, ids) : "";
   const memorySvg = diagram.motifs.online ? `<text class="core-note" x="${box.x + 24}" y="${box.y + box.h - 22}">online/cache path updates context without changing the main token grammar</text>` : "";
 
   return `
@@ -761,13 +2576,8 @@ function drawCorePanel(diagram, box, mini, ids) {
       <rect class="core-panel" x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" fill="url(#${ids.coreGrad})"></rect>
       <text class="core-title" x="${box.x + 24}" y="${box.y + 30}">${escapeHtml(diagram.core.label)}</text>
       ${drawWrappedText(diagram.core.details.join(" / "), box.x + 24, box.y + 50, 36, 2, "core-detail", 11)}
-      <rect class="shared-attn-band" x="${streamBox.x}" y="${streamBox.y}" width="${streamBox.w}" height="${streamBox.h}"></rect>
-      ${streamSvg}
-      <rect class="transformer-stack" x="${layerX - 10}" y="${layerY - 20}" width="112" height="${Math.min(188, diagram.core.layerBadges.length * 31 + 28)}"></rect>
-      <text class="stack-title" x="${layerX + 45}" y="${layerY - 5}" text-anchor="middle">N x block</text>
-      <g>${layerSvg}</g>
+      ${drawCoreVisual(diagram.core.kind, box.x + 44, box.y + 92, box.w - 88, mini ? 116 : 142, { autoregressive: isAutoregressiveDiagram(diagram) })}
       ${attentionSvg}
-      ${noiseSvg}
       ${memorySvg}
     </g>
   `;
@@ -792,9 +2602,10 @@ function drawCoreStream(stream, x, y, w, h) {
 }
 
 function drawAttentionBadges(badges, box, mini) {
+  const visibleBadges = (badges || []).filter((badge) => !/causal mask|leakage mask/i.test(badge));
   const startX = box.x + 24;
   const y = box.y + box.h - (mini ? 74 : 82);
-  return badges.map((badge, index) => {
+  return visibleBadges.map((badge, index) => {
     const x = startX + (index % 3) * 84;
     const row = Math.floor(index / 3);
     return `
@@ -842,7 +2653,7 @@ function drawHeadStack(heads, box, mini) {
 }
 
 function drawOutputStack(outputs, box, mini) {
-  const list = outputs.length ? outputs : [{ label: "Action", detail: "runtime output" }];
+  const list = normalizeOutputs(outputs.length ? outputs : [{ label: "Action", detail: "runtime output" }]);
   const top = box.y + 48;
   const gap = mini ? 7 : 9;
   const available = box.h - 58;
@@ -951,6 +2762,249 @@ function drawConnector(x1, y1, x2, y2, label = "", dashed = false, ids = { arrow
     <path class="${cls}" d="M ${x1} ${y1} C ${x1 + direction * c} ${y1}, ${x2 - direction * c} ${y2}, ${x2} ${y2}" marker-end="url(#${ids.arrow})"></path>
     ${label ? `<text class="edge-label" x="${midX}" y="${midY}" text-anchor="middle">${escapeHtml(label)}</text>` : ""}
   `;
+}
+
+function drawTypedFlow(fromBox, toBox, kind, ids, fromRatio = 0.5, toRatio = 0.5, label = "") {
+  const x1 = fromBox.x + fromBox.w;
+  const y1 = fromBox.y + fromBox.h * fromRatio;
+  const x2 = toBox.x;
+  const y2 = toBox.y + toBox.h * toRatio;
+  const direction = x2 >= x1 ? 1 : -1;
+  const c = Math.max(28, Math.abs(x2 - x1) * 0.42);
+  const midX = (x1 + x2) / 2;
+  const midY = (y1 + y2) / 2 - 9;
+  const color = streamColor(kind);
+  return `
+    <path class="stream-flow" stroke="${streamGradient(kind, ids)}" d="M ${x1} ${y1} C ${x1 + direction * c} ${y1}, ${x2 - direction * c} ${y2}, ${x2} ${y2}"></path>
+    <path class="flow-chevron" stroke="${color}" d="M ${x2 - direction * 12} ${y2 - 5} L ${x2} ${y2} L ${x2 - direction * 12} ${y2 + 5}"></path>
+    ${label ? `<text class="edge-label stream-edge-label" x="${midX}" y="${midY}" text-anchor="middle">${escapeHtml(label)}</text>` : ""}
+  `;
+}
+
+function drawStreamBundle(fromBox, toBox, items, ids, label = "") {
+  const kinds = uniqueByText((items || []).map((item) => ({
+    kind: item.kind || kindFromText(`${item.label || item} ${item.detail || ""}`),
+    label: item.label || String(item)
+  })), "kind").slice(0, 4);
+  const visible = kinds.length ? kinds : [{ kind: "visual", label: "features" }];
+  return visible.map((item, index) => {
+    const fromRatio = 0.28 + index * (0.44 / Math.max(visible.length - 1, 1));
+    const toRatio = fromRatio;
+    return drawTypedFlow(fromBox, toBox, item.kind, ids, fromRatio, toRatio, index === 0 ? label : "");
+  }).join("");
+}
+
+function drawUnificationFlow(fromBox, toBox, diagram, ids) {
+  const pattern = diagram.pattern || diagram.family;
+  if (pattern === "multi_stream") {
+    return [
+      drawTypedFlow(fromBox, toBox, "visual", ids, 0.34, 0.36, "fuse"),
+      drawTypedFlow(fromBox, toBox, "action", ids, 0.64, 0.64, "")
+    ].join("");
+  }
+  if (pattern === "encoder_only") {
+    return [
+      drawTypedFlow(fromBox, toBox, "action", ids, 0.48, 0.52, "policy"),
+      drawConnector(fromBox.x + fromBox.w, fromBox.y + fromBox.h * 0.74, toBox.x, toBox.y + toBox.h * 0.78, "train-only", true, ids)
+    ].join("");
+  }
+  if (["pixel_idm", "latent_idm", "implicit_future"].includes(pattern)) {
+    return [
+      drawTypedFlow(fromBox, toBox, "future", ids, 0.4, 0.36, "future"),
+      drawTypedFlow(fromBox, toBox, "action", ids, 0.65, 0.66, "action")
+    ].join("");
+  }
+  return [
+    drawTypedFlow(fromBox, toBox, "future", ids, 0.36, 0.34, "decode"),
+    drawTypedFlow(fromBox, toBox, "action", ids, 0.64, 0.66, "")
+  ].join("");
+}
+
+function streamGradient(kind, ids) {
+  const key = `${kind}Flow`;
+  return ids[key] ? `url(#${ids[key]})` : `url(#${ids.futureFlow})`;
+}
+
+function tokenColors(kind) {
+  const colors = {
+    visual: ["#e8f2ff", "#5d8fc5"],
+    language: ["#f2eafa", "#9874b8"],
+    state: ["#edf7ed", "#72a36e"],
+    action: ["#fff2dc", "#d49a3d"],
+    noise: ["#f4f5f7", "#a9b1b8"],
+    future: ["#eaf7f6", "#2f8793"],
+    latent: ["#edf7ed", "#72a36e"]
+  };
+  return colors[kind] || colors.visual;
+}
+
+function streamColor(kind) {
+  return {
+    visual: "#5d8fc5",
+    language: "#9874b8",
+    state: "#72a36e",
+    action: "#d49a3d",
+    future: "#2f8793",
+    latent: "#2f8793",
+    noise: "#a9b1b8"
+  }[kind] || "#5d8fc5";
+}
+
+function kindFromText(text) {
+  const lower = String(text || "").toLowerCase();
+  if (/language|instruction|\btext\b|textual|t5|qwen|llama|paligemma|vlm/.test(lower)) return "language";
+  if (/action|policy|control|trajectory|chunk|gripper|end-effector/.test(lower)) return "action";
+  if (/state|proprio|force|tactile|gelsight|depth/.test(lower)) return "state";
+  if (/future|world|latent|video|rollout/.test(lower)) return "future";
+  return "visual";
+}
+
+function preciseEncoders(encoders) {
+  const list = encoders.length ? encoders : [
+    { label: "Vision Encoder", detail: "observation features", kind: "visual" },
+    { label: "Text / Goal Encoder", detail: "instruction features", kind: "language" },
+    { label: "Action Projector", detail: "state/action tokens", kind: "action" }
+  ];
+  return pruneGenericEncoders(list.map((encoder) => ({
+    ...encoder,
+    label: preciseEncoderLabel(encoder.label, encoder.detail),
+    detail: compactDetail(encoder.detail || encoder.label),
+    kind: encoder.kind || kindFromText(`${encoder.label} ${encoder.detail}`)
+  })));
+}
+
+function preciseHeads(heads) {
+  const list = heads.length ? heads : [{ label: "Action Head", detail: "runtime policy decoder" }];
+  return pruneGenericHeads(list.map((head) => ({
+    ...head,
+    label: preciseHeadLabel(head.label, head.detail),
+    detail: compactDetail(head.detail || head.label)
+  })));
+}
+
+function preciseEncoderLabel(label, detail) {
+  const text = `${label || ""} ${detail || ""}`;
+  const lower = text.toLowerCase();
+  if (/wan2\.?2/.test(lower) && /causal vae|vae/.test(lower)) return "Wan2.2 Causal VAE";
+  if (/wan2\.?1/.test(lower) && /causal vae|vae/.test(lower)) return "Wan2.1 Causal VAE";
+  if (/wan/.test(lower) && /causal vae|vae/.test(lower)) return "Wan Causal VAE";
+  if (/wan2\.?2/.test(lower) && /t5/.test(lower)) return "Wan2.2 T5 Encoder";
+  if (/wan2\.?1/.test(lower) && /t5/.test(lower)) return "Wan2.1 T5 Encoder";
+  if (/cosmos/.test(lower) && /t5|\btext\b|textual|language|instruction|goal/.test(lower)) return "Cosmos T5-XXL Encoder";
+  if (/t5-xxl/.test(lower)) return "T5-XXL Encoder";
+  if (/cosmos/.test(lower) && /vae|tokenizer/.test(lower)) return "Cosmos VAE Tokenizer";
+  if (/cosmos-reason/.test(lower)) return "Cosmos-Reason Encoder";
+  if (/cogvideox/.test(lower) && /vae|3d/.test(lower)) return "CogVideoX 3D VAE";
+  if (/stable video diffusion|\bsvd\b/.test(lower) && /vae|latent|encoder/.test(lower)) return "SVD VAE Encoder";
+  if (/sdxl/.test(lower) && /vae/.test(lower)) return "SDXL VAE";
+  if (/t5/.test(lower)) return "T5 Text Encoder";
+  if (/\bclip\b/.test(lower) && /\btext\b|textual|language|instruction/.test(lower)) return "CLIP Text Encoder";
+  if (/\bclip\b/.test(lower)) return "CLIP Vision Encoder";
+  if (/eagle-?2/.test(lower) && /siglip/.test(lower)) return "Eagle-2 SigLIP-2";
+  if (/siglip/.test(lower)) return "SigLIP Encoder";
+  if (/dino\s?v?2|dinov2/.test(lower)) return "DINOv2 Encoder";
+  if (/dino\s?v?3|dinov3/.test(lower)) return "DINOv3 Encoder";
+  if (/\bdino\b/.test(lower)) return "DINO Encoder";
+  if (/mae/.test(lower) && /vit/.test(lower)) return "MAE ViT Encoder";
+  if (/v-jepa\s?2|vjepa\s?2/.test(lower)) return "V-JEPA2 Encoder";
+  if (/v-jepa|vjepa/.test(lower)) return "V-JEPA Encoder";
+  if (/video ?mae/.test(lower)) return "VideoMAE Encoder";
+  if (/vggt/.test(lower)) return "VGGT Feature Encoder";
+  if (/chameleon/.test(lower)) return /\btext\b|textual|bpe/.test(lower) ? "Chameleon BPE Tokenizer" : "Chameleon VQ-GAN";
+  if (/vq-?gan/.test(lower)) return "VQ-GAN Tokenizer";
+  if (/vq-?vae|codebook/.test(lower)) return "VQ-VAE Codebook";
+  if (/kl-f16/.test(lower)) return "kl-f16 VAE";
+  if (/vae/.test(lower)) return /video|frame|image|visual/.test(lower) ? "Video VAE" : "VAE Encoder";
+  if (/qwen3-vl|qwen3vl/.test(lower)) return "Qwen3-VL Encoder";
+  if (/qwen2\.?5/.test(lower)) return "Qwen2.5 VLM";
+  if (/qwen/.test(lower)) return "Qwen/VLM Encoder";
+  if (/lwm-chat|large world model|\blwm\b/.test(lower)) return "LWM-Chat-1M";
+  if (/gemma|paligemma/.test(lower)) return /siglip/.test(lower) ? "PaliGemma SigLIP" : "PaliGemma/Gemma";
+  if (/paligemma/.test(lower)) return "PaliGemma Encoder";
+  if (/prismatic/.test(lower)) return "Prismatic VLM Encoder";
+  if (/\bvlm\b/.test(lower) && /vision path|observation|visual/.test(lower)) return "Frozen VLM Vision Path";
+  if (/\bvlm\b/.test(lower) && /language path|language|instruction|\btext\b|textual/.test(lower)) return "Frozen VLM Language Path";
+  if (/frozen vlm|\bvlm\b/.test(lower)) return "Frozen VLM Encoder";
+  if (/resnet|cnn/.test(lower)) return "CNN Vision Encoder";
+  if (/vit|vision transformer/.test(lower)) return "ViT Vision Encoder";
+  if (/proprio|state|mlp|linear/.test(lower)) return "State MLP Encoder";
+  if (/action/.test(lower)) return "Action Encoder";
+  if (/language|instruction|\btext\b|textual/.test(lower)) return "Text Encoder";
+  return shortText(label || "Encoder", 24);
+}
+
+function pruneGenericEncoders(encoders) {
+  const unique = uniqueByText(encoders, "label");
+  const labels = unique.map((encoder) => encoder.label.toLowerCase());
+  const hasNamedText = labels.some((label) => /t5|clip text|qwen|llama|gemma|paligemma|prismatic|chameleon bpe|cosmos-reason|vlm language/.test(label));
+  const hasNamedVision = labels.some((label) => /wan|dino|siglip|clip vision|mae|vq-gan|vqgan|vq-vae|sdxl|svd|cogvideox|resnet|cnn|vit|v-jepa|vggt|chameleon|vlm vision/.test(label));
+  const hasNamedAction = labels.some((label) => /act-vae|action projector|latent action|vq-vae codebook/.test(label));
+  return unique.filter((encoder) => {
+    const label = encoder.label.toLowerCase();
+    if (labels.some((item) => /vlm vision path/.test(item)) && /^frozen vlm encoder$/.test(label)) return false;
+    if (hasNamedText && /^text encoder$|^t5\/text encoder$/.test(label)) return false;
+    if (labels.some((item) => /wan2\.[12] t5|t5-xxl/.test(item)) && /^t5 text encoder$/.test(label)) return false;
+    if (hasNamedVision && /^vision encoder$|^video tokenizer$|^video vae$|^vae encoder$|^clip vision encoder$|^v-jepa encoder$/.test(label)) return false;
+    if (hasNamedAction && /^action encoder$/.test(label)) return false;
+    return true;
+  });
+}
+
+function preciseHeadLabel(label, detail) {
+  const text = `${label || ""} ${detail || ""}`;
+  const lower = text.toLowerCase();
+  if (/latent.*\bidm\b|\bidm\b.*latent/.test(lower)) return "latent IDM";
+  if (/inverse dynamics|idm/.test(lower)) return "IDM";
+  if (/unified world-action|world-action denoiser|unified.*denois/.test(lower)) return "Unified World-Action Denoiser";
+  if (/cvae|conditional vae/.test(lower) && /action/.test(lower)) return "cVAE Action Decoder";
+  if (/diffusion|denois|flow/.test(lower) && /action/.test(lower)) return "Diffusion Action Head";
+  if (/linear/.test(lower) && /action|arm|gripper/.test(lower)) return "Linear Action Head";
+  if (/action expert dit/.test(lower)) return "Action Expert DiT";
+  if (/ge-act|autoregressive action decoder/.test(lower)) return "GE-Act Decoder";
+  if (/1d cnn|u-net|unet/.test(lower) && /action/.test(lower)) return "1D CNN Action U-Net";
+  if (/act-vae/.test(lower)) return "Act-VAE Decoder";
+  if (/vqgan|vq-gan/.test(lower) && /decoder/.test(lower)) return "VQ-GAN Video Decoder";
+  if (/vqgan/.test(lower) && /decoder/.test(lower)) return "VQGAN Video Decoder";
+  if (/vae/.test(lower) && /decoder/.test(lower)) return "VAE Video Decoder";
+  if (/value/.test(lower) && /map|asvm/.test(lower)) return "ASVM Value Head";
+  if (/force/.test(lower)) return "Force Predictor";
+  if (/video|future|image|frame|observation/.test(lower)) return "Future/Obs Decoder";
+  if (/value|reward|score/.test(lower)) return "Value Head";
+  if (/depth|rgb-d|4d/.test(lower)) return "Depth Decoder";
+  if (/force|tactile|gelsight/.test(lower)) return "Force/Tactile Head";
+  if (/action|policy|control|trajectory|chunk/.test(lower)) return "Action Head";
+  return shortText(label || "Prediction Head", 24);
+}
+
+function pruneGenericHeads(heads) {
+  const unique = uniqueByText(heads, "label");
+  const labels = unique.map((head) => head.label.toLowerCase());
+  const hasSpecificAction = labels.some((label) => /diffusion|linear|cvae|expert dit|u-net|act-vae|inverse dynamics|ge-act/.test(label));
+  const hasSpecificFuture = labels.some((label) => /vq-gan|vae video|asvm|force|future\/obs|value/.test(label));
+  return unique.filter((head) => {
+    const label = head.label.toLowerCase();
+    if (hasSpecificAction && /^action head$/.test(label)) return false;
+    if (hasSpecificFuture && /^future head$/.test(label)) return false;
+    return true;
+  });
+}
+
+function streamGradientForLabel(label, ids) {
+  const lower = String(label || "").toLowerCase();
+  if (/action|policy|control/.test(lower)) return streamGradient("action", ids);
+  if (/language|instruction|\btext\b|textual|goal/.test(lower)) return streamGradient("language", ids);
+  if (/state|proprio|force|tactile/.test(lower)) return streamGradient("state", ids);
+  if (/future|world|latent|video/.test(lower)) return streamGradient("future", ids);
+  return streamGradient("visual", ids);
+}
+
+function unifiedHeadMode(diagram) {
+  const headText = diagram.heads.map((head) => `${head.label} ${head.detail}`).join(" ").toLowerCase();
+  const outputText = diagram.outputs.map((head) => `${head.label} ${head.detail}`).join(" ").toLowerCase();
+  if (/unified token head|single.*head|same.*head|joint.*head/.test(`${headText} ${outputText}`)) return "unified";
+  const hasObs = /future|video|observation|latent|world|depth|force/.test(`${headText} ${outputText}`);
+  const hasAction = /action|policy|control|chunk/.test(`${headText} ${outputText}`);
+  return hasObs && hasAction ? "separate" : "unified";
 }
 
 function drawWrappedText(text, x, y, maxChars, maxLines, cls, lineHeight = 12) {

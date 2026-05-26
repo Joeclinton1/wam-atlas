@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Video Action Model Atlas</title>
     <meta name="description" content="Interactive atlas and generated architecture diagrams for video action models and world action models.">
-  <link rel="stylesheet" href="styles.css?v=metrics-anchor-1">
+  <link rel="stylesheet" href="styles.css?v=diagram-core-glyphs-17">
   </head>
   <body>
     <header class="topbar">
@@ -79,6 +79,7 @@
             <button id="resetZoom" class="plain-button" type="button">Reset Zoom</button>
           </div>
           <div id="timelineLegend" class="timeline-floating-legend" hidden></div>
+          <aside id="familyHoverCard" class="family-hover-card" hidden></aside>
         </div>
 
         <div class="atlas-layout">
@@ -152,11 +153,16 @@
         </section>
         <section>
           <h2>Visual Grammar</h2>
+          <div id="learnFlow" class="learn-flow"></div>
           <div id="grammarGrid" class="grammar-grid"></div>
         </section>
         <section>
           <h2>Main Families</h2>
           <div id="familyGrid" class="family-grid"></div>
+        </section>
+        <section>
+          <h2>Open Questions</h2>
+          <div id="researchGrid" class="research-grid"></div>
         </section>
       </section>
 
@@ -177,6 +183,6 @@
       </section>
     </main>
 
-  <script type="module" src="js/app.js?v=metrics-anchor-1"></script>
+  <script type="module" src="js/app.js?v=diagram-core-glyphs-17"></script>
   </body>
 </html>
