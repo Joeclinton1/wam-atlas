@@ -1,4 +1,4 @@
-import { state, familyColors, typeColors, escapeHtml, wrapText, shortText } from './shared.js?v=diagram-core-glyphs-17';
+import { state, familyColors, typeColors, escapeHtml, wrapText, shortText } from './shared.js?v=diagram-core-glyphs-24';
 
 export function renderDiagram(container, model, options = {}) {
   const spec = getArchitectureSpec(model);
@@ -13,6 +13,7 @@ export function renderDiagram(container, model, options = {}) {
       <rect class="diagram-bg" x="0" y="0" width="${view.w}" height="${view.h}"></rect>
       ${header}
       ${drawArchitectureDiagram(diagram, view, options, ids)}
+      ${drawGlobalUnifiedTokenLegend(diagram, view, options)}
     </svg>
   `;
 }
@@ -108,39 +109,54 @@ function drawArchitectureDiagram(diagram, view, options = {}, ids) {
 
 function drawStandardArchitecture(diagram, view, options = {}, ids) {
   const mini = Boolean(options.mini);
+  const unifiedDirect = diagram.pattern === "unified";
   const y0 = diagramLayoutY(options);
   const h = diagramMainHeight(options);
+  const coreH = standardCoreHeight(diagram, mini);
   const inputBox = { x: 34, y: y0, w: 132, h };
   const encoderBox = { x: 200, y: y0, w: 184, h };
-  const coreBox = { x: 432, y: y0, w: 304, h };
-  const headBox = { x: 782, y: y0, w: 184, h };
-  const outputBox = { x: 1020, y: y0, w: 106, h };
+  const coreBox = { x: 432, y: y0 + (h - coreH) / 2, w: 304, h: coreH };
+  const headBox = unifiedDirect ? { x: 0, y: y0, w: 0, h } : { x: 782, y: y0, w: 184, h };
+  const outputBox = unifiedDirect ? { x: 910, y: y0, w: 132, h } : { x: 1020, y: y0, w: 106, h };
   const trainBox = { x: 34, y: y0 + h + 36, w: 1092, h: mini ? 108 : 142 };
   const inputs = denseTokenRows(diagram.inputs, inputBox, mini);
   const outputs = denseOutputRows(diagram.outputs, outputBox, mini);
   const encoders = denseEncoderRows(diagram.encoders, encoderBox, mini, inputs);
-  const heads = denseHeadRows(diagram.heads, headBox, mini, outputs);
+  const heads = unifiedDirect ? [] : denseHeadRows(diagram.heads, headBox, mini, outputs);
   return [
     drawFittedColumnShell(inputBox, inputs),
     drawColumnLabel(encoderBox, "encoders"),
     drawStandardCorePanel(diagram, coreBox, mini, ids),
     heads.length ? drawColumnLabel(headBox, "heads") : "",
     drawFittedColumnShell(outputBox, outputs),
-    drawSankeyRibbons(diagram, [inputBox, encoderBox, coreBox, headBox, outputBox], ids, mini, { inputs, encoders, heads, outputs }),
+    drawSankeyRibbons(diagram, [inputBox, encoderBox, coreBox, headBox, outputBox], ids, mini, { inputs, encoders, heads, outputs, directOutputs: unifiedDirect }),
     drawDenseTokenRows(inputs, mini),
     drawDenseEncoderRows(encoders, mini),
     drawDenseHeadRows(heads, mini),
     drawDenseOutputRows(outputs, mini),
-    drawTrainingBand(diagram, trainBox, coreBox, headBox, mini, ids),
+    drawTrainingBand(diagram, trainBox, coreBox, unifiedDirect ? outputBox : headBox, mini, ids),
     mini ? "" : drawRuntimeStrip(diagram.runtime, coreBox, outputBox, trainBox)
   ].join("");
+}
+
+function standardCoreHeight(diagram, mini) {
+  if (diagram.pattern === "unified") return mini ? 198 : 224;
+  if (diagram.pattern === "multi_stream") {
+    const count = Math.max(2, Math.min(diagram.streams.length || 2, mini ? 4 : 5));
+    return mini ? 92 + count * 48 : 100 + count * 54;
+  }
+  if (diagram.pattern === "implicit_future") return mini ? 214 : 250;
+  if (diagram.pattern === "joint_latent") return mini ? 198 : 224;
+  if (diagram.pattern === "latent_action") return mini ? 226 : 268;
+  if (diagram.pattern === "encoder_only") return mini ? 192 : 224;
+  return mini ? 228 : 270;
 }
 
 function drawStandardCorePanel(diagram, box, mini, ids) {
   if (diagram.pattern === "encoder_only") return drawEncoderOnlyCore(box, diagram, mini, ids);
   if (diagram.pattern === "unified") return drawUnifiedCore(box, diagram, mini, ids);
   if (diagram.pattern === "multi_stream") return drawParallelStreams(box, diagram, mini, ids);
-  if (diagram.pattern === "joint_latent") return drawLatentManifold(box, diagram, mini, ids);
+  if (diagram.pattern === "joint_latent") return drawJointLatentSequenceCore(box, diagram, mini, ids);
   if (diagram.pattern === "latent_action") return drawLatentActionCodebook(box, diagram, mini);
   if (["pixel_idm", "latent_idm"].includes(diagram.pattern)) return drawFuturePredictor(box, diagram, mini, ids);
   if (diagram.pattern === "implicit_future") return drawImplicitFutureRepresentation(box, diagram, mini, ids);
@@ -219,15 +235,185 @@ function drawUnifiedSequence(box, diagram, mini) {
 }
 
 function drawUnifiedCore(box, diagram, mini, ids) {
+  const visualY = box.y + (mini ? 58 : 62);
+  const visualH = mini ? 106 : 124;
   return `
     <g filter="url(#${ids.softShadow})">
       <rect class="core-panel unified-core" x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" fill="url(#${ids.coreGrad})"></rect>
       <text class="core-title" x="${box.x + 22}" y="${box.y + 30}">${escapeHtml(diagram.core.label)}</text>
-      ${drawWrappedText(diagram.core.details.join(" / "), box.x + 22, box.y + 50, 32, 2, "core-detail", 11)}
-      ${drawCoreVisual(diagram.core.kind, box.x + 42, box.y + 88, box.w - 84, mini ? 122 : 150, { autoregressive: isAutoregressiveDiagram(diagram) })}
-      ${drawAttentionBadges(diagram.attention, box, mini)}
+      ${drawWrappedText(diagram.core.details.join(" / "), box.x + 22, box.y + 50, 32, 1, "core-detail", 11)}
+      ${drawUnifiedStreamCore(box.x + 20, visualY, box.w - 40, visualH, diagram, mini)}
+      ${drawUnifiedModeBadges(diagram, box, mini)}
     </g>
   `;
+}
+
+function drawJointLatentSequenceCore(box, diagram, mini, ids) {
+  const visualH = Math.min(mini ? 92 : 108, box.h - 116);
+  const visualY = box.y + (mini ? 60 : 62);
+  return `
+    <g filter="url(#${ids.softShadow})">
+      <rect class="core-panel unified-core joint-latent-core" x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" fill="url(#${ids.coreGrad})"></rect>
+      <text class="core-title" x="${box.x + 22}" y="${box.y + 30}">${escapeHtml(diagram.core.label)}</text>
+      ${drawWrappedText(diagram.core.details.join(" / "), box.x + 22, box.y + 50, 32, 1, "core-detail", 11)}
+      ${drawCoreVisual(diagram.core.kind, box.x + 42, visualY, box.w - 84, visualH, { autoregressive: isAutoregressiveDiagram(diagram) })}
+      ${drawCompactAttentionBadges(diagram.attention, box, mini)}
+    </g>
+  `;
+}
+
+function drawUnifiedStreamCore(x, y, w, h, diagram, mini) {
+  const ar = isAutoregressiveDiagram(diagram);
+  const diffusion = !ar && (diagram.motifs?.diffusion || /diffusion|denois|flow|dit/i.test(`${diagram.core?.label || ""} ${diagram.core?.details?.join(" ") || ""}`));
+  const block = { x: x + w * 0.2, y: y + h * 0.16, w: w * 0.6, h: h * 0.66 };
+  const topY = y + 10;
+  const bottomY = y + h - 24;
+  const vocab = unifiedStreamVocabulary(diagram);
+  const arTokens = ["o", "p", "a", "o", "p", "a", "f"];
+  const denoiseTokens = vocab.some(([letter]) => letter === "v") ? ["o", "p", "n", "f", "a", "v"] : ["o", "p", "n", "f", "a"];
+  const denoiseTargets = vocab.some(([letter]) => letter === "v") ? ["f", "a", "f", "a", "v"] : ["f", "a", "f", "a"];
+  const top = unifiedStreamTokens(x + 10, topY, w - 20, ar ? arTokens : denoiseTokens, "context");
+  const bottom = unifiedStreamTokens(x + 18, bottomY, w - 36, ar ? arTokens : denoiseTargets, "target");
+  const causal = ar ? `<path class="unified-causal-sweep" d="M ${x + 24} ${topY + 31} C ${x + w * 0.26} ${topY + 54}, ${x + w * 0.52} ${topY + 53}, ${x + w - 26} ${topY + 24}"></path>` : "";
+  const loop = diffusion && !["dit", "diffusion"].includes(diagram.core?.kind)
+    ? drawDiffusionLoop(block.x + block.w + 26, block.y + block.h * 0.5, 42, 34)
+    : "";
+  return `
+    <g class="unified-stream-core">
+      <rect class="unified-stream-shell" x="${x}" y="${y}" width="${w}" height="${h}"></rect>
+      ${top}
+      <g class="unified-core-block">
+        ${drawCoreVisual(diagram.core.kind, block.x, block.y, block.w, block.h, { autoregressive: ar, diffusion, expanded: ar })}
+        ${causal}
+        ${loop}
+      </g>
+      ${bottom}
+    </g>
+  `;
+}
+
+function drawGlobalUnifiedTokenLegend(diagram, view, options = {}) {
+  if (diagram.pattern !== "unified") return "";
+  const mini = Boolean(options.mini);
+  return drawUnifiedTokenLegend(diagram, view.w - (mini ? 92 : 110), mini ? 18 : 38, mini);
+}
+
+function unifiedStreamVocabulary(diagram) {
+  const ar = isAutoregressiveDiagram(diagram);
+  if (ar) {
+    return [
+      ["o", "obs", "visual"],
+      ["p", "proprio", "state"],
+      ["a", "action", "action"],
+      ["f", "future", "future"]
+    ];
+  }
+  const text = [
+    diagram.core?.label,
+    ...(diagram.core?.details || []),
+    ...(diagram.inputs || []).map((item) => `${item.label || ""} ${item.detail || ""}`),
+    ...(diagram.outputs || []).map((item) => `${item.label || ""} ${item.detail || ""}`)
+  ].join(" ").toLowerCase();
+  const entries = [
+    ["o", "obs", "visual"],
+    ["p", "proprio", "state"],
+    ["n", "noise", "noise"],
+    ["f", "future", "future"],
+    ["a", "action", "action"]
+  ];
+  if (/value|reward|score/.test(text)) entries.push(["v", "value", "future"]);
+  return entries;
+}
+
+function drawUnifiedTokenLegend(diagram, x, y, mini) {
+  const entries = unifiedStreamVocabulary(diagram);
+  const visible = entries.slice(0, mini ? 4 : 6);
+  const gap = mini ? 3 : 4;
+  const parts = visible.map((entry, index) => {
+    const [letter, label, kind] = entry;
+    const ix = x;
+    const iy = y + index * (mini ? 14 : 16);
+    return `
+      <g class="unified-token-legend-item">
+        <rect class="unified-stream-token ${kind}" x="${ix}" y="${iy}" width="13" height="13"></rect>
+        <text class="legend-letter" x="${ix + 6.5}" y="${iy + 9.5}" text-anchor="middle">${escapeHtml(letter)}</text>
+        <text class="legend-label" x="${ix + 17}" y="${iy + 9.5}">${escapeHtml(label)}</text>
+      </g>
+    `;
+  }).join("");
+  return `<g class="unified-token-legend">${parts}</g>`;
+}
+
+function unifiedStreamTokens(x, y, w, items, role) {
+  const gap = 7;
+  const tokenW = Math.min(28, (w - gap * (items.length - 1)) / items.length);
+  const total = items.length * tokenW + (items.length - 1) * gap;
+  const x0 = x + (w - total) / 2;
+  return `
+    <g class="unified-stream-tokens ${role}">
+      ${items.map((item, index) => {
+        const tx = x0 + index * (tokenW + gap);
+        const kind = item === "a" ? "action" : item === "p" ? "state" : item === "n" ? "noise" : item === "v" || item === "f" ? "future" : "visual";
+        return `
+          <rect class="unified-stream-token ${kind}" x="${tx}" y="${y}" width="${tokenW}" height="18"></rect>
+          <text x="${tx + tokenW / 2}" y="${y + 12.5}" text-anchor="middle">${escapeHtml(item)}</text>
+        `;
+      }).join("")}
+    </g>
+  `;
+}
+
+function drawUnifiedModeBadges(diagram, box, mini) {
+  const badges = [
+    "direct tokens",
+    "no heads",
+    isAutoregressiveDiagram(diagram) ? "AR order" : "",
+    diagram.motifs?.diffusion ? "noise targets" : "",
+    ...(diagram.attention || []).filter((badge) => !/causal mask|leakage mask/i.test(badge)).slice(0, 2).map(compactAttentionLabel)
+  ].filter(Boolean);
+  const visibleBadges = uniqueByText(badges, "value").slice(0, 3);
+  const chipW = mini ? 72 : 78;
+  const gap = 10;
+  const totalW = visibleBadges.length * chipW + Math.max(0, visibleBadges.length - 1) * gap;
+  const x0 = box.x + (box.w - totalW) / 2;
+  const y = box.y + box.h - (mini ? 29 : 31);
+  return visibleBadges.map((badge, index) => {
+    const x = x0 + index * (chipW + gap);
+    return `
+      <rect class="attention-badge compact-attention-badge" x="${x}" y="${y}" width="${chipW}" height="20"></rect>
+      <text class="attention-text" x="${x + chipW / 2}" y="${y + 14}" text-anchor="middle">${escapeHtml(badge)}</text>
+    `;
+  }).join("");
+}
+
+function drawCompactAttentionBadges(badges, box, mini) {
+  const visibleBadges = (badges || []).filter((badge) => !/causal mask|leakage mask/i.test(badge)).slice(0, 3);
+  const chipW = mini ? 72 : 78;
+  const gap = 10;
+  const totalW = visibleBadges.length * chipW + Math.max(0, visibleBadges.length - 1) * gap;
+  const x0 = box.x + (box.w - totalW) / 2;
+  const y = box.y + box.h - (mini ? 30 : 32);
+  return visibleBadges.map((badge, index) => {
+    const x = x0 + index * (chipW + gap);
+    const label = compactAttentionLabel(badge);
+    return `
+      <rect class="attention-badge compact-attention-badge" x="${x}" y="${y}" width="${chipW}" height="20"></rect>
+      <text class="attention-text" x="${x + chipW / 2}" y="${y + 14}" text-anchor="middle">${escapeHtml(label)}</text>
+    `;
+  }).join("");
+}
+
+function compactAttentionLabel(badge) {
+  const text = String(badge || "").toLowerCase();
+  if (/cache|memory/.test(text)) return "cache";
+  if (/async/.test(text)) return "async";
+  if (/cross/.test(text)) return "cross-attn";
+  if (/self/.test(text) && /joint/.test(text)) return "joint attn";
+  if (/shared/.test(text)) return "shared attn";
+  if (/bidirectional|bi-directional/.test(text)) return "bi-dir";
+  if (/causal/.test(text)) return "causal";
+  if (/language/.test(text)) return "lang attn";
+  return shortText(String(badge || ""), 12).replace(/\.{3,}$/, "");
 }
 
 function drawUnifiedOutputs(box, diagram, mini, ids) {
@@ -431,9 +617,10 @@ function drawFutureIdmArchitecture(diagram, view, options = {}, ids) {
   const mini = Boolean(options.mini);
   const y0 = diagramLayoutY(options);
   const h = diagramMainHeight(options);
+  const futureH = futurePredictorHeight(diagram, mini);
   const inputBox = { x: 34, y: y0, w: 132, h };
   const encoderBox = { x: 194, y: y0, w: 166, h };
-  const futureBox = { x: 396, y: y0, w: 292, h };
+  const futureBox = { x: 396, y: y0 + (h - futureH) / 2, w: 292, h: futureH };
   const idmBox = { x: 724, y: y0, w: 174, h };
   const outputBox = { x: 934, y: y0, w: 130, h };
   const trainBox = { x: 34, y: y0 + h + 36, w: 1092, h: mini ? 108 : 142 };
@@ -589,9 +776,9 @@ function drawTransformerGlyph(x, y, w, h, options = {}) {
   const seqN = 5;
   const tokenW = Math.min(16, (w - 18) / seqN);
   const blockX = x + w * 0.23;
-  const blockY = y + h * 0.28;
+  const blockY = y + h * (options.expanded ? 0.2 : 0.28);
   const blockW = w * 0.54;
-  const blockH = h * 0.42;
+  const blockH = h * (options.expanded ? 0.56 : 0.42);
   const tokenGap = 5;
   const seqW = seqN * tokenW + (seqN - 1) * tokenGap;
   const seqX = blockX + (blockW - seqW) / 2;
@@ -607,7 +794,7 @@ function drawTransformerGlyph(x, y, w, h, options = {}) {
   }).join("");
   const loop = options.diffusion ? drawDiffusionLoop(x + w * 0.9, y + h * 0.46, Math.min(62, w * 0.28), Math.min(50, h * 0.4)) : "";
   const label = options.label && !options.autoregressive ? `<text class="core-glyph-label" x="${blockX + blockW / 2}" y="${blockY + blockH / 2 + 4}" text-anchor="middle">${escapeHtml(options.label)}</text>` : "";
-  const causalMask = options.autoregressive ? drawCausalMaskGlyph(blockX + blockW / 2, blockY + blockH / 2, Math.min(36, blockW * 0.42)) : "";
+  const causalMask = options.autoregressive ? drawCausalMaskGlyph(blockX + blockW / 2, blockY + blockH / 2, Math.min(24, blockW * 0.38, blockH * 0.72)) : "";
   return `
     <g class="core-visual ${options.cls || "core-visual-transformer"}">
       ${tokens(topY, "top")}
@@ -684,27 +871,143 @@ function drawFuturePredictor(box, diagram, mini, ids) {
   const rendered = diagram.pattern === "pixel_idm";
   const latent = diagram.pattern === "latent_idm";
   const stages = futurePredictorStages(diagram, mini);
-  const frames = Array.from({ length: 4 }, (_, index) => `
-    <rect class="${rendered ? "future-frame" : "latent-frame"}" x="${box.x + 32 + index * 52}" y="${box.y + 88 + index * 6}" width="70" height="48"></rect>
-  `).join("");
+  const title = rendered ? "future video model" : "latent future model";
   return `
     <g filter="url(#${ids.softShadow})">
       <rect class="core-panel future-core" x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" fill="url(#${ids.coreGrad})"></rect>
-      <text class="core-title" x="${box.x + 22}" y="${box.y + 30}">${latent ? "latent future model" : "pixel future generator"}</text>
-      ${drawWrappedText(diagram.core.details.join(" / "), box.x + 22, box.y + 52, 31, 2, "core-detail", 11)}
-      ${frames}
+      <text class="core-title" x="${box.x + 20}" y="${box.y + 29}">${title}</text>
+      ${drawFuturePipelineDiagram(box, diagram, rendered, latent, mini)}
+      ${drawFutureStageChips(stages, box, mini)}
+    </g>
+  `;
+}
+
+function futurePredictorHeight(diagram, mini) {
+  const chipRows = Math.ceil(futurePredictorStages(diagram, mini).length / (mini ? 3 : 4));
+  return mini ? 156 + chipRows * 24 : 186 + chipRows * 25;
+}
+
+function drawFuturePipelineDiagram(box, diagram, rendered, latent, mini) {
+  const y = box.y + (mini ? 46 : 50);
+  const h = mini ? 86 : 104;
+  const input = { x: box.x + 22, y: y + 18, w: 58, h: 44 };
+  const model = { x: box.x + 104, y: y + 6, w: 84, h: h - 12 };
+  const output = { x: box.x + 212, y: y + 18, w: 58, h: 44 };
+  const badges = futurePipelineBadges(diagram, rendered, latent);
+  return `
+    <g class="future-pipeline">
+      <g class="future-pipeline-io">
+        ${latent ? drawLatentFutureStack(input.x, input.y, input.w, input.h, "z_t") : drawFrameStackGlyph("current image", input.x, input.y, input.w, input.h, false)}
+        ${drawFuturePipelineBadge(rendered ? "obs" : "z", input.x + input.w - 8, input.y + input.h + 6)}
+      </g>
+      ${drawFuturePipelineArrow(input.x + input.w + 4, y + h * 0.5, model.x - 7, y + h * 0.5, "visual")}
+      <g class="future-model-box">
+        <rect x="${model.x}" y="${model.y}" width="${model.w}" height="${model.h}"></rect>
+        ${drawFutureModelGlyph(model, diagram, rendered, latent)}
+        <text x="${model.x + model.w / 2}" y="${model.y + model.h - 9}" text-anchor="middle">${rendered ? "render" : "predict"}</text>
+      </g>
+      ${drawFuturePipelineArrow(model.x + model.w + 7, y + h * 0.5, output.x - 4, y + h * 0.5, latent ? "future" : "visual")}
+      <g class="future-pipeline-io">
+        ${latent ? drawLatentFutureStack(output.x, output.y, output.w, output.h, "z+1") : drawFrameStackGlyph("future video frames", output.x, output.y, output.w, output.h, true)}
+        ${drawFuturePipelineBadge(rendered ? "future frames" : "future z", output.x + output.w - 8, output.y + output.h + 6)}
+      </g>
+      <g class="future-pipeline-badges">
+        ${badges.map((badge, index) => drawFuturePipelineBadge(badge, box.x + 78 + index * 58, y + h + 14)).join("")}
+      </g>
+    </g>
+  `;
+}
+
+function drawFutureModelGlyph(model, diagram, rendered, latent) {
+  const cx = model.x + model.w / 2;
+  const cy = model.y + model.h * 0.45;
+  if (diagram.motifs.diffusion || /diffusion|denois|flow/i.test(`${diagram.core.label} ${diagram.core.details.join(" ")}`)) {
+    return drawDiffusionLoop(cx, cy, 34, 30);
+  }
+  if (rendered) {
+    return `<g class="future-mini-video">${drawFrameStackGlyph("video model", model.x + 20, model.y + 18, model.w - 40, 34, true)}</g>`;
+  }
+  return `<g class="future-mini-latent">${drawLatentGlyph(model.x + 18, model.y + 17, model.w - 36, 34)}</g>`;
+}
+
+function drawLatentFutureStack(x, y, w, h, badge) {
+  const layers = [0, 1, 2].map((index) => `
+    <g transform="translate(${index * 5} ${index * 3})">
+      <rect class="latent-frame compact-latent-frame" x="${x + 6}" y="${y + 5}" width="${Math.min(42, w - 18)}" height="${Math.min(30, h - 12)}"></rect>
+      ${drawLatentGlyph(x + 7, y + 6, Math.min(40, w - 20), Math.min(28, h - 14))}
+    </g>
+  `).join("");
+  return `
+    <g>
+      ${layers}
+      ${drawSmallCornerBadge(x + w - 24, y + h - 11, badge)}
+    </g>
+  `;
+}
+
+function drawFuturePipelineArrow(x1, y1, x2, y2, kind) {
+  const color = streamColor(kind);
+  return `
+    <g class="future-pipeline-arrow" style="--future-flow:${color}">
+      <path d="M ${x1} ${y1} C ${x1 + 16} ${y1}, ${x2 - 16} ${y2}, ${x2} ${y2}"></path>
+      <path class="future-pipeline-arrow-head" d="M ${x2} ${y2} L ${x2 - 7} ${y2 - 4} L ${x2 - 7} ${y2 + 4} Z"></path>
+    </g>
+  `;
+}
+
+function futurePipelineBadges(diagram, rendered, latent) {
+  const text = [
+    diagram.thesis,
+    diagram.core.label,
+    ...diagram.core.details,
+    ...(diagram.runtime || [])
+  ].join(" ").toLowerCase();
+  const badges = [];
+  if (/offline|synthetic|relabel/.test(text)) badges.push("offline");
+  if (/one-step|single-step|partial/.test(text)) badges.push("1-step");
+  if (/few-step|distill/.test(text)) badges.push("few-step");
+  if (/feature|hidden|tap|video former/.test(text)) badges.push("features");
+  if (rendered) badges.push("pixels");
+  if (latent) badges.push("latent");
+  return uniqueByText(badges.map((label) => ({ label })), "label").map((item) => item.label).slice(0, 4);
+}
+
+function drawFutureStageChips(stages, box, mini) {
+  if (!stages.length) return "";
+  const chipW = mini ? 66 : 62;
+  const chipH = 19;
+  const gap = 7;
+  const cols = mini ? 3 : 4;
+  const totalW = cols * chipW + (cols - 1) * gap;
+  const startX = box.x + (box.w - totalW) / 2;
+  const startY = box.y + box.h - (Math.ceil(stages.length / cols) * (chipH + 5)) - 14;
+  return `
+    <g class="future-stage-chips">
       ${stages.map((stage, index) => {
-        const y = box.y + 172 + index * (mini ? 34 : 38);
+        const col = index % cols;
+        const row = Math.floor(index / cols);
+        const x = startX + col * (chipW + gap);
+        const y = startY + row * (chipH + 5);
         return `
-          <g class="future-stage-node">
-            <rect class="future-stage-block" x="${box.x + 28}" y="${y}" width="${box.w - 56}" height="${mini ? 29 : 33}"></rect>
-            <text class="block-label" x="${box.x + 42}" y="${y + 15}">${escapeHtml(shortText(stage.label, 30))}</text>
-            ${mini ? "" : drawWrappedText(stage.detail, box.x + 42, y + 28, 32, 1, "block-detail", 9)}
+          <g class="future-stage-chip">
+            <title>${escapeHtml(stage.source || stage.label)}</title>
+            <rect x="${x}" y="${y}" width="${chipW}" height="${chipH}"></rect>
+            <text x="${x + chipW / 2}" y="${y + 13}" text-anchor="middle">${escapeHtml(stage.label)}</text>
           </g>
         `;
       }).join("")}
-      ${diagram.motifs.diffusion ? drawNoiseSchedule({ ...box, h: box.h - 12 }, mini, ids) : ""}
-      <text class="core-note" x="${box.x + 28}" y="${box.y + box.h - 24}">${rendered ? "decoded future frames are action evidence" : "hidden future features stay compressed"}</text>
+    </g>
+  `;
+}
+
+function drawFuturePipelineBadge(label, rightX, baselineY) {
+  const width = Math.max(24, label.length * 5.4 + 10);
+  const x = rightX - width;
+  const y = baselineY - 14;
+  return `
+    <g class="future-mini-badge">
+      <rect x="${x}" y="${y}" width="${width}" height="15"></rect>
+      <text x="${rightX - 5}" y="${baselineY - 4}" text-anchor="end">${escapeHtml(label)}</text>
     </g>
   `;
 }
@@ -717,20 +1020,43 @@ function futurePredictorStages(diagram, mini) {
   ];
   const stages = source.map((item) => {
     const text = typeof item === "string" ? item : `${item.label || ""} ${item.detail || ""}`;
-    return { label: futureStageLabel(text), detail: compactDetail(text) };
-  }).filter((stage) => /video|former|feature|tap|adapter|future|latent|backbone|predictor|u-net|unet/i.test(`${stage.label} ${stage.detail}`));
-  return uniqueByText(stages, "label").slice(0, mini ? 3 : 4);
+    return { label: futureStageLabel(text), source: compactDetail(text) };
+  }).filter((stage) => !/^(model|stage|branch)$/i.test(stage.label));
+  return uniqueByText(stages, "label").slice(0, mini ? 5 : 8);
 }
 
 function futureStageLabel(text) {
   const lower = String(text || "").toLowerCase();
-  if (/video former/.test(lower)) return "Video Former Aggregator";
-  if (/feature tap|hidden feature|decoder feature/.test(lower)) return "Hidden Feature Tap";
-  if (/adapter|cnn/.test(lower)) return "Feature Adapter";
-  if (/svd|stable video|video u-net|unet/.test(lower)) return "SVD Video U-Net";
-  if (/video prediction backbone|video predictor|v[_ ]?theta|vtheta/.test(lower)) return "Video Prediction Backbone";
-  if (/future|latent/.test(lower)) return "Future Representation";
-  return conciseLabel(text);
+  if (/video former/.test(lower)) return "Video Former";
+  if (/feature tap|hidden feature|decoder feature|selected upsampling/.test(lower)) return "Feature Tap";
+  if (/offline.*synthetic|synthetic.*data|synthetic.*trajector|generated.*data/.test(lower)) return "Synthetic";
+  if (/synthetic rollout|rollout bank|generated videos?/.test(lower)) return "Rollout Bank";
+  if (/image-to-video|image to video|i2v/.test(lower)) return "I2V";
+  if (/lora|adapter/.test(lower)) return "LoRA Adapt";
+  if (/distill/.test(lower)) return "Distill";
+  if (/idm|inverse dynamics|relabel/.test(lower)) return "IDM Relabel";
+  if (/svd|stable video/.test(lower)) return "SVD";
+  if (/cosmos/.test(lower)) return "Cosmos";
+  if (/wan2?\.?1|wan2?\.?2|wan/.test(lower)) return "Wan";
+  if (/video u-net|unet|u-net/.test(lower)) return "U-Net";
+  if (/video prediction backbone|video predictor|v[_ ]?theta|vtheta|backbone/.test(lower)) return "Predictor";
+  if (/diffusion|denois|flow/.test(lower)) return "Denoiser";
+  if (/future|latent/.test(lower)) return "Future Z";
+  if (/policy/.test(lower)) return "Policy";
+  return compactFutureStageFallback(text);
+}
+
+function compactFutureStageFallback(text) {
+  const badge = compactBadgeLabel(text) || conciseLabel(text);
+  const lower = badge.toLowerCase();
+  if (/offline/.test(lower)) return "Offline";
+  if (/synthetic/.test(lower)) return "Synthetic";
+  if (/action/.test(lower)) return "Action";
+  if (/video/.test(lower)) return "Video";
+  if (/image/.test(lower)) return "Image";
+  if (/latent/.test(lower)) return "Latent";
+  const words = badge.replace(/[^a-z0-9+.-]+/gi, " ").trim().split(/\s+/).filter(Boolean);
+  return words.slice(0, 2).join(" ").slice(0, 12);
 }
 
 function drawInverseDynamics(box, diagram, mini) {
@@ -748,9 +1074,18 @@ function idmHeadRows(diagram) {
   const idmRows = diagram.heads.filter((head) => (
     /inverse dynamics|idm|action decoder|action head|policy|control|trajectory|chunk/i.test(`${head.label} ${head.detail}`) &&
     !/unified|world-action|obs\+action/i.test(`${head.label} ${head.detail}`)
-  ));
+  )).map((head) => normalizeIdmHeadForPattern(head, diagram.pattern));
   if (idmRows.length) return idmRows;
-  return [{ label: "IDM", detail: "" }];
+  return [{ label: diagram.pattern === "latent_idm" ? "latent IDM" : "IDM", detail: "" }];
+}
+
+function normalizeIdmHeadForPattern(head, pattern) {
+  if (pattern !== "latent_idm") return head;
+  const text = `${head.label || ""} ${head.detail || ""}`.toLowerCase();
+  if (/latent.*\bidm\b|\bidm\b.*latent|inverse dynamics|latent action.*relabel|relabel.*latent action/.test(text)) {
+    return { ...head, label: "latent IDM" };
+  }
+  return head;
 }
 
 function idmActionOutputs(diagram) {
@@ -1065,7 +1400,8 @@ function inferCore(model, arch, allText) {
   let label = "World-Action Core";
   if (/mixture-of-transformer|mot\b|multi-modal self-attention|mmsa/.test(allText)) label = "MoT / Shared-Attention Core";
   else if (/\bmm-dit\b|\bmmd[it]?\b/.test(allText)) label = "MM-DiT Core";
-  else if (/\bdit\b|diffusion transformer|diffusion-transformer/.test(allText)) label = "Diffusion Transformer Core";
+  else if (/cosmos-predict|cosmos video model|cosmos video diffusion/.test(allText)) label = "Cosmos Diffusion Transformer";
+  else if (/\bdit\b|diffusion transformer|diffusion-transformer|joint.*denois|flow matching|noisy action|noisy future/.test(allText)) label = "Diffusion Transformer Core";
   else if (/gpt-style|causal transformer|transformer decoder|autoregressive/.test(allText)) label = "Autoregressive Transformer";
   else if (/vlm|qwen|paligemma|prismatic|llama/.test(allText)) label = "VLM Backbone + Action Expert";
   else if (/latent world|world model/.test(allText)) label = "Latent World Model";
@@ -1582,6 +1918,7 @@ function drawSankeyRibbons(diagram, boxes, ids, mini, rows = {}) {
   const [inputBox, encoderBox, coreBox, headBox, outputBox] = boxes;
   const coreIn = coreBox.x - 8;
   const coreOut = coreBox.x + coreBox.w + 8;
+  const directOutputs = Boolean(rows.directOutputs);
   const inputRoutes = buildInputEncoderRoutes(rows.inputs || [], rows.encoders || []);
   const encoderRoutes = rows.encoders?.length ? rows.encoders : tracks.map((track, index) => ({
     kind: track.kind,
@@ -1611,11 +1948,17 @@ function drawSankeyRibbons(diagram, boxes, ids, mini, rows = {}) {
         const outputAnchor = routeAnchorForKind(rows.outputs || [], track.kind, "left");
         if (!outputAnchor) return "";
         const y = routeYForKind(rows.heads || [], track.kind) ?? outputAnchor.y ?? sankeyY(inputBox, track.kind, index, tracks.length);
-        const outputPoints = [
-          [coreOut, y + sankeyDrift(track.kind, 2)],
-          [headBox.x + 4, y + sankeyDrift(track.kind, 2)],
-          [outputAnchor.x, outputAnchor.y]
-        ];
+        const outputPoints = directOutputs
+          ? [
+            [coreOut, y + sankeyDrift(track.kind, 2)],
+            [coreOut + Math.max(58, (outputAnchor.x - coreOut) * 0.42), y + sankeyDrift(track.kind, 2)],
+            [outputAnchor.x, outputAnchor.y]
+          ]
+          : [
+            [coreOut, y + sankeyDrift(track.kind, 2)],
+            [headBox.x + 4, y + sankeyDrift(track.kind, 2)],
+            [outputAnchor.x, outputAnchor.y]
+          ];
         return drawSankeyRibbon(track, outputPoints, ids, "output");
       }).join("")}
     </g>
@@ -2470,27 +2813,31 @@ function encoderStroke(kind) {
 }
 
 function drawEncoderOnlyCore(box, diagram, mini, ids) {
-  const trainOnly = uniqueByText([
-    { label: "Train-only world head", detail: "representation supervision" },
-    ...diagram.heads.filter((head) => /future|video|world|latent|depth|force|tactile/i.test(`${head.label} ${head.detail}`))
-  ], "label").slice(0, 2);
+  const runtimeY = box.y + (mini ? 106 : 124);
+  const trainY = box.y + (mini ? 56 : 64);
+  const latentX = box.x + box.w * 0.48;
+  const ditX = box.x + box.w * 0.5;
+  const policyX = box.x + box.w - 62;
   return `
     <g filter="url(#${ids.softShadow})">
       <rect class="core-panel encoder-policy-core" x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" fill="url(#${ids.coreGrad})"></rect>
       <text class="core-title" x="${box.x + 22}" y="${box.y + 30}">${escapeHtml(diagram.core.label)}</text>
-      ${drawWrappedText(diagram.core.details.join(" / "), box.x + 22, box.y + 52, 33, 2, "core-detail", 11)}
-      <rect class="shared-attn-band" x="${box.x + 24}" y="${box.y + 92}" width="${box.w - 48}" height="${mini ? 58 : 76}"></rect>
-      <text class="core-note" x="${box.x + 38}" y="${box.y + 120}">runtime keeps encoder representation</text>
-      ${trainOnly.map((head, index) => {
-        const y = box.y + box.h - (mini ? 98 : 112) + index * 48;
-        return `
-          <g>
-            <rect class="encoder-only-aux" x="${box.x + 28}" y="${y}" width="${box.w - 56}" height="38"></rect>
-            <text class="block-label" x="${box.x + 42}" y="${y + 16}">${escapeHtml(shortText(head.label, 26))}</text>
-            ${drawWrappedText(head.detail, box.x + 42, y + 30, 28, 1, "block-detail", 9.5)}
-          </g>
-        `;
-      }).join("")}
+      <g class="encoder-only-train">
+        <rect x="${box.x + 38}" y="${trainY - 22}" width="${box.w - 76}" height="${mini ? 48 : 54}"></rect>
+        ${drawCoreVisual("dit", ditX - 54, trainY - 16, 108, mini ? 38 : 44, { diffusion: true })}
+        <text x="${ditX}" y="${trainY + (mini ? 30 : 34)}" text-anchor="middle">not runtime</text>
+      </g>
+      <g class="encoder-only-runtime">
+        <rect x="${box.x + 32}" y="${runtimeY - 28}" width="${box.w - 64}" height="${mini ? 62 : 68}"></rect>
+        ${drawLatentGlyph(latentX - 34, runtimeY - 16, 68, 34)}
+        <text x="${latentX}" y="${runtimeY + 29}" text-anchor="middle">VAE z</text>
+        ${drawMlpGlyph(policyX - 28, runtimeY - 18, 56, 38, "core-visual-mlp encoder-only-policy-glyph")}
+        <text x="${policyX}" y="${runtimeY + 31}" text-anchor="middle">policy</text>
+      </g>
+      <path class="encoder-only-runtime-arrow" d="M ${box.x + 55} ${runtimeY} C ${box.x + 96} ${runtimeY}, ${latentX - 44} ${runtimeY}, ${latentX - 28} ${runtimeY}"></path>
+      <path class="encoder-only-runtime-arrow" d="M ${latentX + 38} ${runtimeY} C ${latentX + 70} ${runtimeY}, ${policyX - 46} ${runtimeY}, ${policyX - 30} ${runtimeY}"></path>
+      <path class="encoder-only-train-link" d="M ${ditX} ${trainY + (mini ? 30 : 36)} C ${ditX - 6} ${trainY + 52}, ${latentX - 18} ${runtimeY - 42}, ${latentX - 4} ${runtimeY - 20}"></path>
+      <path class="encoder-only-cut" d="M ${ditX - 44} ${trainY + (mini ? 42 : 48)} L ${ditX + 44} ${trainY + (mini ? 42 : 48)}"></path>
     </g>
   `;
 }

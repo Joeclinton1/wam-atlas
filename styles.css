@@ -572,6 +572,25 @@ p {
   fill: #d49a3d;
 }
 
+.glyph-token.state {
+  fill: #72a36e;
+}
+
+.glyph-token-letter {
+  fill: rgba(255, 255, 255, 0.92);
+  font-size: 5.6px;
+  font-weight: 950;
+  pointer-events: none;
+}
+
+.glyph-causal-sweep {
+  fill: none;
+  stroke: rgba(23, 32, 36, 0.36);
+  stroke-width: 1.25px;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
 .glyph-sequence-shell {
   fill: #ffffff;
   stroke: rgba(23, 32, 36, 0.18);
@@ -579,6 +598,11 @@ p {
   rx: 6px;
   ry: 6px;
   vector-effect: non-scaling-stroke;
+}
+
+.glyph-sequence-shell.direct {
+  fill: color-mix(in srgb, var(--tax-color) 10%, #ffffff);
+  stroke: color-mix(in srgb, var(--tax-color) 62%, rgba(23, 32, 36, 0.16));
 }
 
 .glyph-mini-label {
@@ -1562,6 +1586,20 @@ p {
   background: #fbfcfa;
 }
 
+.model-diagram-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 10px;
+}
+
+.model-diagram-head h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1.05rem;
+  font-weight: 950;
+}
+
 .diagram.mini {
   height: 300px;
   margin: 14px 0;
@@ -2139,6 +2177,94 @@ p {
   stroke-width: 1.8px;
 }
 
+.joint-latent-core {
+  stroke-dasharray: 7 4;
+}
+
+.unified-stream-shell {
+  fill: rgba(255, 255, 255, 0.58);
+  stroke: rgba(23, 32, 36, 0.12);
+  stroke-width: 1px;
+  rx: 11px;
+  ry: 11px;
+  vector-effect: non-scaling-stroke;
+}
+
+.unified-stream-core {
+  color: #4f7fb5;
+}
+
+.unified-stream-token {
+  fill: #5d8fc5;
+  stroke: rgba(23, 32, 36, 0.15);
+  stroke-width: 0.85px;
+  rx: 5px;
+  ry: 5px;
+  vector-effect: non-scaling-stroke;
+}
+
+.unified-stream-token.state {
+  fill: #72a36e;
+}
+
+.unified-stream-token.action {
+  fill: #d49a3d;
+}
+
+.unified-stream-token.future {
+  fill: #7ca8c8;
+}
+
+.unified-stream-token.noise {
+  fill: #a9b1b8;
+}
+
+.unified-stream-tokens text {
+  fill: rgba(255, 255, 255, 0.94);
+  font-size: 10px;
+  font-weight: 950;
+  pointer-events: none;
+}
+
+.unified-stream-tokens.target {
+  opacity: 0.86;
+}
+
+.unified-token-legend {
+  pointer-events: none;
+}
+
+.unified-token-legend .unified-stream-token {
+  stroke-width: 0.75px;
+}
+
+.unified-token-legend .legend-letter {
+  fill: rgba(255, 255, 255, 0.94);
+  font-size: 8px;
+  font-weight: 950;
+}
+
+.unified-token-legend .legend-label {
+  fill: rgba(23, 32, 36, 0.68);
+  font-size: 7.7px;
+  font-weight: 850;
+}
+
+.unified-causal-sweep {
+  fill: none;
+  stroke: rgba(23, 32, 36, 0.36);
+  stroke-width: 2px;
+  stroke-linecap: round;
+  stroke-dasharray: 1 6;
+  vector-effect: non-scaling-stroke;
+}
+
+.unified-stream-mode {
+  fill: rgba(23, 32, 36, 0.58);
+  font-size: 10px;
+  font-weight: 900;
+}
+
 .unified-layer {
   fill: rgba(23, 32, 36, 0.84);
   stroke: rgba(255, 255, 255, 0.72);
@@ -2395,6 +2521,66 @@ p {
   stroke-width: 1.8px;
 }
 
+.future-pipeline-arrow path {
+  fill: none;
+  stroke: var(--future-flow);
+  stroke-width: 2.2px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.future-pipeline-arrow .future-pipeline-arrow-head {
+  fill: var(--future-flow);
+  stroke: none;
+}
+
+.future-model-box rect {
+  fill: rgba(255, 255, 255, 0.76);
+  stroke: rgba(47, 105, 112, 0.48);
+  stroke-width: 1.35px;
+  rx: 10px;
+  ry: 10px;
+  vector-effect: non-scaling-stroke;
+}
+
+.future-model-box text {
+  fill: #2f6970;
+  font-size: 8.5px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.future-mini-badge rect,
+.future-stage-chip rect {
+  fill: rgba(255, 255, 255, 0.9);
+  stroke: rgba(47, 105, 112, 0.22);
+  rx: 5px;
+  ry: 5px;
+  vector-effect: non-scaling-stroke;
+}
+
+.future-mini-badge text {
+  fill: #31484f;
+  font-size: 8px;
+  font-weight: 900;
+}
+
+.future-stage-chip rect {
+  fill: rgba(236, 248, 246, 0.9);
+  stroke: rgba(47, 135, 147, 0.32);
+}
+
+.future-stage-chip text {
+  fill: #2f6970;
+  font-size: 8.3px;
+  font-weight: 900;
+}
+
+.compact-latent-frame {
+  fill: rgba(234, 247, 246, 0.92);
+}
+
 .implicit-panel {
   fill: #f2fbfa;
   stroke: #86bfc0;
@@ -2487,6 +2673,54 @@ p {
 
 .encoder-policy-core {
   stroke-width: 1.8px;
+}
+
+.encoder-only-train rect,
+.encoder-only-runtime rect {
+  fill: rgba(255, 255, 255, 0.52);
+  stroke: rgba(23, 32, 36, 0.16);
+  stroke-width: 1.3px;
+  rx: 10px;
+  ry: 10px;
+  vector-effect: non-scaling-stroke;
+}
+
+.encoder-only-train rect {
+  fill: rgba(255, 246, 226, 0.66);
+  stroke: rgba(173, 123, 22, 0.28);
+  stroke-dasharray: 5 4;
+}
+
+.encoder-only-runtime rect {
+  fill: rgba(236, 248, 246, 0.68);
+  stroke: rgba(47, 135, 147, 0.28);
+}
+
+.encoder-only-train text,
+.encoder-only-runtime text {
+  fill: #405057;
+  font-size: 8.5px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.encoder-only-runtime-arrow,
+.encoder-only-train-link {
+  fill: none;
+  stroke: #2f8793;
+  stroke-width: 2px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.encoder-only-train-link {
+  stroke: rgba(173, 123, 22, 0.72);
+  stroke-dasharray: 5 4;
+}
+
+.encoder-only-policy-glyph {
+  color: #d08a2e;
 }
 
 .encoder-only-aux {

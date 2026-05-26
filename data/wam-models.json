@@ -7866,8 +7866,8 @@
       "day": "22",
       "paperUrl": "https://arxiv.org/abs/2601.16163",
       "localText": "cosmos-policy.txt",
-      "family": "joint_latent",
-      "category": "Shared action-observation latent space",
+      "family": "unified",
+      "category": "Unified action-observation prediction",
       "problem": "Actions, proprioception, and value-like state should enter the same geometry as video dynamics.",
       "oneLine": "Injects action/state/value information into video latent frames and pools action tokens back out after denoising.",
       "insights": {
@@ -8129,7 +8129,7 @@
         }
       },
       "diagram": {
-        "pattern": "joint_latent",
+        "pattern": "unified",
         "inputs": [
           "video latents",
           "actions",
@@ -16782,8 +16782,8 @@
       "day": "17",
       "paperUrl": "https://arxiv.org/abs/2602.15922",
       "localText": "dreamzero.txt",
-      "family": "unified",
-      "category": "Unified action-observation prediction",
+      "family": "joint_latent",
+      "category": "Shared action-observation latent space",
       "problem": "WAMs need zero-shot generalization, cross-embodiment transfer, and real-time control without separating video and action too loosely.",
       "oneLine": "A 14B autoregressive video diffusion transformer jointly denoises future video latents and action tokens in one sequence, then uses cache, async execution, and Flash distillation for real-time control.",
       "insights": {
@@ -17037,7 +17037,7 @@
         }
       },
       "diagram": {
-        "pattern": "unified",
+        "pattern": "joint_latent",
         "inputs": [
           "language",
           "visual context",

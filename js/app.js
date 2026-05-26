@@ -17,8 +17,8 @@ import {
   scoreLabel,
   wrapText,
   shortText
-} from './shared.js?v=diagram-core-glyphs-17';
-import { renderDiagram, getArchitectureSpec } from './diagrams.js?v=diagram-core-glyphs-17';
+} from './shared.js?v=diagram-core-glyphs-24';
+import { renderDiagram, getArchitectureSpec } from './diagrams.js?v=diagram-core-glyphs-24';
 
 function hasMetricsTargetBenchmark(model) {
   return Boolean(model.metrics?.comparative?.metricsEligible);
@@ -1488,6 +1488,35 @@ function drawTaxonomyFamilyGlyph(family, layout, color) {
     `,
     unified: () => `
       <g>
+        <rect class="glyph-sequence-shell" x="${sx(5)}" y="${sy(15)}" width="${53 * scaleX}" height="${40 * scaleY}"></rect>
+        ${["o", "p", "a", "o", "p"].map((text, index) => {
+          const cls = text === "a" ? "glyph-token action" : text === "p" ? "glyph-token state" : "glyph-token";
+          const tx = 12 + index * 8.2;
+          return `
+            <rect class="${cls}" x="${sx(tx)}" y="${sy(24 + (index % 2) * 7)}" width="${6 * scaleX}" height="${9 * scaleY}"></rect>
+            <text class="glyph-token-letter" x="${sx(tx + 3)}" y="${sy(31 + (index % 2) * 7)}" text-anchor="middle">${text}</text>
+          `;
+        }).join("")}
+        <path class="glyph-causal-sweep" d="M ${sx(13)} ${sy(47)} C ${sx(26)} ${sy(59)}, ${sx(46)} ${sy(58)}, ${sx(56)} ${sy(43)}" marker-end="url(#atlasArrow)"></path>
+      </g>
+      ${arrow(60, 35, 75, 35)}
+      ${stack(75, 8, 32, 45, "glyph-core", "Tr")}
+      ${arrow(109, 35, 124, 35)}
+      <g>
+        <rect class="glyph-sequence-shell direct" x="${sx(123)}" y="${sy(19)}" width="${27 * scaleX}" height="${32 * scaleY}"></rect>
+        ${["a", "o", "p"].map((text, index) => {
+          const cls = text === "a" ? "glyph-token action" : text === "p" ? "glyph-token state" : "glyph-token";
+          const tx = 128 + index * 7;
+          return `
+            <rect class="${cls}" x="${sx(tx)}" y="${sy(30)}" width="${5.5 * scaleX}" height="${8 * scaleY}"></rect>
+            <text class="glyph-token-letter" x="${sx(tx + 2.75)}" y="${sy(36.1)}" text-anchor="middle">${text}</text>
+          `;
+        }).join("")}
+      </g>
+      ${label("direct obs-proprio-action tokens")}
+    `,
+    joint_latent: () => `
+      <g>
         <rect class="glyph-sequence-shell" x="${sx(6)}" y="${sy(13)}" width="${48 * scaleX}" height="${44 * scaleY}"></rect>
         ${tokens(13, 22, 5, "glyph-token")}
         ${tokens(13, 35, 5, "glyph-token action")}
@@ -1499,17 +1528,6 @@ function drawTaxonomyFamilyGlyph(family, layout, color) {
       ${rect(132, 14, 17, 16, "glyph-world", "o")}
       ${rect(132, 42, 17, 16, "glyph-action", "a")}
       ${label("one action-observation sequence")}
-    `,
-    joint_latent: () => `
-      ${rect(6, 12, 25, 18, "glyph-sensor", "obs")}
-      ${rect(6, 42, 25, 18, "glyph-action", "act")}
-      ${arrow(33, 21, 59, 30)}
-      ${arrow(33, 51, 59, 43)}
-      <ellipse class="glyph-latent" cx="${sx(79)}" cy="${sy(36)}" rx="${32 * scaleX}" ry="${24 * scaleY}"></ellipse>
-      ${dot(72, 29)}${dot(88, 39, "glyph-dot action")}${dot(76, 48, "glyph-dot state")}
-      ${arrow(108, 36, 132, 36)}
-      ${rect(130, 24, 19, 24, "glyph-core", "dec")}
-      ${label("shared obs-action geometry")}
     `,
     multi_stream: () => `
       ${rect(7, 10, 78, 11, "glyph-world", "video stream")}
@@ -2594,6 +2612,7 @@ function renderModelCard(id) {
   $("#modelFamily").textContent = `${model.category}${spec ? " / source-backed literal architecture" : " / survey-level placeholder"}`;
   $("#modelFamily").style.setProperty("--family-color", problemColorForModel(model));
   $("#modelName").textContent = model.title;
+  $("#modelDiagramTitle").textContent = `${model.name} architecture`;
   $("#modelOneLine").textContent = model.oneLine;
   $("#modelPaperLink").href = model.paperUrl;
   $("#modelYear").textContent = `${model.month ? `${model.month}/` : ""}${model.year}`;
