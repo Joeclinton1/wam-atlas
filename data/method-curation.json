@@ -1,0 +1,2707 @@
+{
+  "version": "0.1.0",
+  "curatedOn": "2026-05-26",
+  "note": "Incremental method-section curation. Each entry is merged into data/wam-models.json as literalArchitecture.",
+  "models": {
+    "gr-1": {
+      "sourceExtract": "methods/gr1.md",
+      "sourceLines": ["gr1.txt:247-370"],
+      "inputTokens": [
+        "language instruction l encoded with a frozen CLIP text encoder and repeated at every timestep",
+        "history observation frames o_{t-h:t} encoded by a frozen MAE-pretrained ViT",
+        "ViT CLS token as global image token and patch tokens resampled with a Perceiver resampler",
+        "robot state tokens from 6D end-effector pose and binary gripper status through linear layers",
+        "learned [OBS] future-observation prediction tokens and learned [ACT] action prediction tokens"
+      ],
+      "tokenization": [
+        "all modality embeddings pass through linear layers to align dimensionality before the causal transformer",
+        "video pretraining sequence is (l, o_{t-h}, [OBS], ..., l, o_t, [OBS])",
+        "robot finetuning sequence is (l, s_{t-h}, o_{t-h}, [OBS], [ACT], ..., l, s_t, o_t, [OBS], [ACT])",
+        "learned relative timestep embeddings are added; all modalities at the same timestep share the same timestep embedding"
+      ],
+      "backbone": [
+        "simple GPT-style causal transformer over language, visual, state, [OBS], and [ACT] tokens",
+        "frozen CLIP text encoder and frozen MAE image encoder during both video pretraining and robot finetuning"
+      ],
+      "branches": [
+        "future image branch reads [OBS] token outputs and mask tokens through a transformer image decoder",
+        "action branch reads [ACT] token outputs and uses linear layers for arm and gripper actions"
+      ],
+      "attention": [
+        "causal attention is used as in generative pretrained transformers",
+        "during video pretraining, tokens can attend to previous positions except [OBS] tokens",
+        "during robot finetuning, tokens can attend to previous positions except [OBS] and [ACT] tokens",
+        "language is repeated at each timestep to avoid being overwhelmed by other modalities"
+      ],
+      "heads": [
+        "future-image decoder with self-attention blocks, MLPs, and learned mask tokens reconstructs predicted image patches",
+        "action decoder uses linear layers to predict continuous arm action and binary gripper state"
+      ],
+      "objectives": [
+        "video prediction MSE in pixel space on reconstructed future images",
+        "Smooth-L1 loss for continuous arm action",
+        "binary cross entropy for gripper action",
+        "robot finetuning loss L_finetune = L_arm + L_gripper + L_video"
+      ],
+      "trainingRecipe": [
+        "pretrain on language-conditioned video prediction from Ego4D human-object interaction clips",
+        "Ego4D preprocessing yields about 800,000 clips and 8M frames from 3-second crops",
+        "finetune on robot trajectories containing language, observations, robot state, and actions",
+        "optimize action behavior cloning and future-image prediction jointly during robot finetuning"
+      ],
+      "inferenceRecipe": [
+        "condition on language, observation history, and robot state history",
+        "use the causal transformer to produce [ACT] outputs for executable control",
+        "future-observation decoding remains available as a model output but is coupled to the heavy generative backbone"
+      ]
+    },
+    "gr-2": {
+      "sourceExtract": "methods/gr2.md",
+      "sourceLines": ["gr2.txt:516-584"],
+      "inputTokens": [
+        "language instruction tokenized by a frozen text encoder",
+        "video frame sequence tokenized into discrete image tokens by frozen VQGAN",
+        "multi-view robot image sequences during robot finetuning",
+        "robot state sequence containing end-effector position, end-effector rotation, and binary gripper state"
+      ],
+      "tokenization": [
+        "VQGAN is trained on Internet and in-domain robot data, then kept frozen",
+        "robot states are encoded with trainable linear layers during finetuning",
+        "multi-view robot frames are tokenized per view for future-image prediction"
+      ],
+      "backbone": [
+        "language-conditioned GPT-style visual manipulation policy",
+        "pretraining backbone predicts future discrete image tokens from tokenized text and images",
+        "finetuning backbone predicts future images and action trajectories in tandem"
+      ],
+      "branches": [
+        "future video branch outputs discrete VQGAN image tokens and decodes them with the VQGAN decoder",
+        "action branch uses a conditional VAE to generate a Cartesian action trajectory rather than a single action"
+      ],
+      "attention": [
+        "GPT-style autoregressive sequence model over text, image, state, future-image, and action-related tokens",
+        "method text does not specify a custom noncausal or blockwise attention mask beyond GPT-style modeling"
+      ],
+      "heads": [
+        "future-image token prediction head for each robot camera view",
+        "conditional VAE action trajectory decoder",
+        "whole-body controller converts generated Cartesian trajectory to low-level joint actions"
+      ],
+      "objectives": [
+        "video generative pretraining objective for future image token prediction",
+        "robot finetuning objective jointly predicts future images and action trajectories"
+      ],
+      "trainingRecipe": [
+        "stage 1 trains on curated large-scale video data with 38M clips and about 50B tokens",
+        "video data includes HowTo100M, Ego4D, Something-Something V2, EPIC-KITCHENS, Kinetics-700, RT-1, and Bridge",
+        "video preprocessing includes hand filtering and re-captioning for manipulation relevance",
+        "stage 2 finetunes on robot data with multi-view images, robot state sequences, and action trajectories"
+      ],
+      "inferenceRecipe": [
+        "condition on language, recent multi-view images, and robot state history",
+        "predict future views and a cVAE Cartesian action trajectory",
+        "smooth and track the Cartesian trajectory with WBC at 200 Hz low-level execution"
+      ]
+    },
+    "lapa": {
+      "sourceExtract": "methods/lapa.md",
+      "sourceLines": ["LAPA.txt:203-284", "LAPA.txt:320-336"],
+      "inputTokens": [
+        "current video frame x_t and future frame x_{t+H} for latent action quantization",
+        "current image x_t and language instruction for latent action pretraining",
+        "latent action token sequence z_t from a codebook vocabulary",
+        "robot observation and task description for downstream action finetuning"
+      ],
+      "tokenization": [
+        "latent action quantization model is an encoder-decoder variant of C-ViViT",
+        "encoder includes spatial and temporal transformers over two-frame input",
+        "decoder contains only spatial transformer because the model uses two frames",
+        "VQ-VAE objective maps continuous latent action embeddings to discrete codebook tokens",
+        "NSVQ replaces vector-quantization error with normalized noise-vector scaling, plus early codebook replacement for utilization"
+      ],
+      "backbone": [
+        "latent action quantization encoder acts as an inverse dynamics model for video frame pairs",
+        "latent action quantization decoder reconstructs future frame from current frame and latent action",
+        "latent VLA uses a pretrained 7B LWM-Chat-1M VLM backbone"
+      ],
+      "branches": [
+        "quantization branch learns discrete latent actions from observation deltas without ground-truth actions",
+        "latent pretraining branch predicts latent action tokens from image and language",
+        "robot finetuning branch replaces the latent action MLP with an action head for executable robot actions"
+      ],
+      "attention": [
+        "latent action encoder uses cross-attention to attend latent action z_t given current frame x_t",
+        "method excludes previous frames by default for computational reasons",
+        "VLM vision encoder is frozen by default while the language model is unfrozen"
+      ],
+      "heads": [
+        "single-MLP latent action head with vocabulary size |C| during latent pretraining",
+        "new robot action head during action finetuning",
+        "discretized per-dimension robot action bins for continuous low-level actions"
+      ],
+      "objectives": [
+        "VQ-VAE reconstruction and quantization objective for latent action discovery",
+        "latent action token prediction objective for VLA pretraining",
+        "downstream robot action prediction after replacing the latent action head"
+      ],
+      "trainingRecipe": [
+        "stage 1 trains latent action quantization on action-free videos",
+        "stage 2 labels frames with latent actions using the quantization encoder, then trains the VLM to predict z_t from language and image",
+        "stage 3 finetunes on a small labeled robot trajectory set with ground-truth delta end-effector actions",
+        "evaluated with BridgeV2, Open X-Embodiment, Something-Something V2, simulation tasks, and real Franka tasks"
+      ],
+      "inferenceRecipe": [
+        "VLA receives current image and instruction, then predicts latent action or executable action depending on finetuning stage",
+        "after robot finetuning, the latent action head is discarded and the new action head directly emits robot actions"
+      ]
+    },
+    "vpp": {
+      "sourceExtract": "methods/vpp.md",
+      "sourceLines": ["vpp.txt:145-194", "vpp.txt:196-296", "vpp.txt:338-340", "vpp.txt:356-375"],
+      "inputTokens": [
+        "current image s0",
+        "final noised video latent q(x_t'|x0), usually white noise",
+        "CLIP language feature l_emb used through cross-attention",
+        "static-camera and wrist-camera predictive feature tensors",
+        "learnable Video Former query tokens Q[0:T,0:L]"
+      ],
+      "tokenization": [
+        "Stable Video Diffusion 1.5B is adapted into a text-guided video prediction model",
+        "CLIP language feature is injected into SVD via cross-attention layers",
+        "initial observation s0 is concatenated channel-wise with each predicted frame condition",
+        "TVP output resolution is adjusted to 16x256x256",
+        "selected upsampling-layer features are interpolated to a common spatial size and stacked along channels"
+      ],
+      "backbone": [
+        "stage 1 fine-tuned text-guided video predictor V_theta based on SVD",
+        "stage 2 Video Former aggregates predictive visual features across spatial, temporal, and multi-view dimensions",
+        "DiT diffusion policy denoises actions conditioned on Video Former tokens"
+      ],
+      "branches": [
+        "video predictor branch is used as a one-step vision encoder rather than a full video denoiser",
+        "Video Former branch performs spatial attention per frame, temporal attention across frames, then FFN",
+        "action branch cross-attends from diffusion transformer blocks to aggregated predictive tokens Q''"
+      ],
+      "attention": [
+        "TVP model uses language cross-attention",
+        "Video Former learnable tokens perform spatial attention over static/wrist predictive features and temporal attention over frames",
+        "action DiT integrates Q'' through cross-attention layers"
+      ],
+      "heads": [
+        "Video Former produces fixed-length predictive representation Q''",
+        "DiT diffusion policy action head reconstructs original action sequence from noised action"
+      ],
+      "objectives": [
+        "video diffusion objective reconstructs the full video sequence from noised latents",
+        "dataset-weighted video loss L_video = lambda_H L_DH + lambda_R L_DR + lambda_C L_DC",
+        "action diffusion objective L_diff = E ||D_psi(a_k, l_emb, Q'') - a0||^2"
+      ],
+      "trainingRecipe": [
+        "stage 1 fine-tunes the TVP model on human manipulation, robot manipulation, and downstream task videos",
+        "reported stage-1 sources include 193,690 human manipulation trajectories and 179,074 robot manipulation trajectories",
+        "stage 2 freezes the TVP model and trains a generalist policy using Video Former features",
+        "video model fine-tuning takes about 2-3 days on eight A100 GPUs; policy training takes about 6-12 hours depending on dataset"
+      ],
+      "inferenceRecipe": [
+        "concatenate current image with final noised latent and run only the first TVP forward step",
+        "extract hidden predictive features instead of completing video denoising",
+        "aggregate predictive representations with Video Former",
+        "denoise an action sequence with the DiT policy head at high control frequency"
+      ]
+    },
+    "uva": {
+      "sourceExtract": "methods/uva.md",
+      "sourceLines": ["uva.txt:235-350"],
+      "inputTokens": [
+        "history observations {O_{t-h+1},...,O_t}",
+        "history action chunks {A_{t-h},...,A_{t-1}}",
+        "masked future observations {O_{t+1},...,O_{t+h}} during training",
+        "future action chunks {A_t,...,A_{t+h-1}}",
+        "optional CLIP language token repeated M times for language-conditioned tasks"
+      ],
+      "tokenization": [
+        "historical and future images are encoded by pretrained kl-f16 VAE into latent maps",
+        "latent maps are flattened and projected by FC layer into N visual tokens per image",
+        "history action chunks contain L high-frequency actions and are repeated M times to match visual-token count",
+        "action chunks are passed through FC layers into N action tokens",
+        "future visual tokens are randomly masked during training and consistently masked at the same positions across frames"
+      ],
+      "backbone": [
+        "Transformer fuses channel-wise concatenated visual/action tokens and temporal concatenation across h steps",
+        "output is joint video-action latent representations {Z_{t+1},...,Z_{t+h}} with N latent tokens per time step"
+      ],
+      "branches": [
+        "video diffusion decoder predicts individual future video patches from joint latent tokens and VAE-decodes them into frames",
+        "action diffusion decoder aggregates all latent tokens in Z_{t+1} with a convolutional layer and MLP before action denoising",
+        "decoupled video and action diffusion heads are trained jointly but can be run independently"
+      ],
+      "attention": [
+        "CLIP language token is appended to the N*h video-action token sequence and fused by the Transformer",
+        "first N*h Transformer outputs are retained as joint video-action latents",
+        "consistent masking across future frames reduces information leakage across different frame positions"
+      ],
+      "heads": [
+        "lightweight video diffusion decoder from DiT base predicts noise for video tokens",
+        "lightweight action diffusion decoder from DiT base predicts noise for action chunks",
+        "VAE decoder reconstructs full frames from predicted video patches"
+      ],
+      "objectives": [
+        "action diffusion noise-prediction loss L_action",
+        "video diffusion noise-prediction loss L_video averaged over visual tokens",
+        "total loss at each step combines L_action + L_video, summed over horizon h",
+        "masked training selectively applies action and video losses depending on input/output availability"
+      ],
+      "trainingRecipe": [
+        "train with history observations/actions and masked future observations",
+        "support flexible objectives by masking unused components and replacing them with learned mask tokens",
+        "use incomplete data such as videos without actions by selecting appropriate masked objectives"
+      ],
+      "inferenceRecipe": [
+        "for policy inference, skip video generation and run only action decoding from joint latent Z",
+        "for video generation, run autoregressive visual-token generation from an empty sequence and bypass action decoding",
+        "decoupled decoder design keeps denoising in lightweight heads rather than the entire Transformer"
+      ]
+    },
+    "uwm": {
+      "sourceExtract": "methods/uwm.md",
+      "sourceLines": ["uwm.txt:224-349"],
+      "inputTokens": [
+        "current observations o",
+        "noisy future observation latent o'_t_o'",
+        "noisy action chunk a_t_a",
+        "separate diffusion timesteps t_a and t_o'",
+        "randomly initialized register tokens"
+      ],
+      "tokenization": [
+        "current observations from n_c camera views and h_o frame stack are encoded by ResNet-18 and concatenated",
+        "future full-size 224x224x3 images are encoded into 28x28x4 latents by frozen SDXL VAE",
+        "future image latents are patchified with a spatiotemporal patchifier of size (4,4,2)",
+        "action chunks are encoded per timestep with a shallow MLP",
+        "action and observation diffusion timesteps are encoded with a shared sinusoidal timestep encoder"
+      ],
+      "backbone": [
+        "diffusion Transformer predicts both action noise and future-observation noise",
+        "current observation and timestep features condition the Transformer through adaptive layer normalization",
+        "register tokens provide an intermediary storage medium for modality exchange"
+      ],
+      "branches": [
+        "same model can be used as policy, video predictor, forward dynamics, or inverse dynamics by setting modality timesteps",
+        "robot trajectory batches train both action and next-observation denoising",
+        "action-free video batches set action timestep to T and impute action with random noise"
+      ],
+      "attention": [
+        "action embeddings, image patch embeddings, and register tokens share the diffusion Transformer context",
+        "conditioning is through AdaLN rather than a separate cross-attention text stream in the described architecture"
+      ],
+      "heads": [
+        "action noise prediction output epsilon_a",
+        "next-observation latent noise prediction output epsilon_o'",
+        "SDXL VAE decoder maps denoised image latents back to images"
+      ],
+      "objectives": [
+        "joint denoising score matching objective with weighted action and observation noise terms",
+        "independently sampled action and observation timesteps expose the model to all modality-noise combinations"
+      ],
+      "trainingRecipe": [
+        "sample (o, a, o') tuples from robot trajectories",
+        "sample t_a and t_o' independently from U(0,T)",
+        "optimize denoising across noisy actions and noisy next-observation latents",
+        "co-train on action-free videos by fixing missing-action timestep to T"
+      ],
+      "inferenceRecipe": [
+        "policy p(a|o): set future-observation timestep to T and denoise actions",
+        "video prediction p(o'|o): set action timestep to T and denoise future observations",
+        "forward dynamics p(o'|o,a): set action timestep to 0 and denoise future observations",
+        "inverse dynamics p(a|o,o'): set observation timestep to 0 and denoise actions"
+      ]
+    },
+    "dreamgen": {
+      "sourceExtract": "methods/dreamgen.md",
+      "sourceLines": ["dreamgen.txt:155-260", "dreamgen.txt:282-343"],
+      "inputTokens": [
+        "target-robot teleoperated video trajectories for video-model adaptation",
+        "initial frame and language instruction used as rollout prompt",
+        "generated robot video frames from the adapted video world model",
+        "frame pairs passed to IDM or LAPA for pseudo-action labeling",
+        "neural trajectory pairs of generated video and pseudo actions"
+      ],
+      "tokenization": [
+        "multi-view datasets concatenate viewpoints into a 2x2 image grid before video world model finetuning",
+        "IDM uses SigLIP-2 visual features from two image frames and does not use language or proprioception",
+        "latent-action route uses LAPA transformer encoder-decoder and pre-quantized continuous embeddings"
+      ],
+      "backbone": [
+        "offline synthetic-data pipeline rather than a deployed control-time WAM",
+        "video world model backbone is usually WAN2.1, adapted with LoRA to target robot embodiment",
+        "pseudo-action route can use a diffusion-transformer IDM or a LAPA latent action model"
+      ],
+      "branches": [
+        "video generation branch fine-tunes and rolls out robot videos from prompts",
+        "IDM branch labels generated videos with action chunks between frame pairs",
+        "latent-action branch labels generated videos with latent deltas between current and future frames",
+        "downstream policy branch trains Diffusion Policy, pi0, or GR00T N1 on neural trajectories"
+      ],
+      "attention": [
+        "paper does not introduce a new attention mask for the video world model; it reuses the selected base video generator",
+        "IDM/action-labeling details emphasize conditioning on two image frames rather than language/proprioceptive fusion"
+      ],
+      "heads": [
+        "IDM diffusion transformer action decoder trained with flow matching",
+        "LAPA latent-action extractor from frame pairs",
+        "downstream visuomotor policy action head chosen by the target policy architecture"
+      ],
+      "objectives": [
+        "LoRA video-model adaptation balances instruction following and physics following",
+        "IDM flow-matching objective predicts action chunks between two frames",
+        "LAPA VQ-VAE objective captures visual delta as latent action",
+        "downstream policy imitation objective on neural trajectories"
+      ],
+      "trainingRecipe": [
+        "step 1 fine-tunes a video world model on target robot teleoperation data",
+        "step 2 prompts the adapted video model with initial frames and language to generate synthetic robot videos",
+        "step 3 extracts pseudo actions with IDM or latent actions with LAPA",
+        "step 4 trains downstream policies on generated video-action pairs, either co-training 1:1 with real trajectories or using only neural trajectories",
+        "GR00T N1 treats real and neural trajectories as separate embodiments with separate action encoder and decoder"
+      ],
+      "inferenceRecipe": [
+        "deployed robot policy does not run the video world model online",
+        "runtime path is the downstream policy trained or co-trained on neural trajectories",
+        "video generation and pseudo-action labeling are offline data-expansion stages"
+      ]
+    },
+    "flare": {
+      "sourceExtract": "methods/flare.md",
+      "sourceLines": ["FLARE.txt:150-239", "FLARE.txt:632-710"],
+      "inputTokens": [
+        "current proprioceptive state q_t encoded by a state encoder",
+        "noised action chunk A_t^tau encoded by an action encoder",
+        "M learnable future token embeddings appended to the DiT input sequence",
+        "current robot vision-language embedding phi_t",
+        "future observation embedding phi_{t+H} used as alignment target"
+      ],
+      "tokenization": [
+        "SigLIP-2 vision and text encoders encode robot image observations and instructions",
+        "four self-attention transformer layers fuse vision-language tokens",
+        "Q-former compresses fused sequence into M=32 learnable query tokens",
+        "future-token activations at internal DiT layer L are projected by an MLP before alignment"
+      ],
+      "backbone": [
+        "DiT diffusion policy with state tokens, noised action tokens, and future tokens",
+        "action-aware future embedding model adds 8 DiT blocks during embedding pretraining",
+        "future latent tokens and action flow stream interact through DiT self-attention"
+      ],
+      "branches": [
+        "action branch performs flow matching for action chunk denoising",
+        "future-token branch predicts future latent embedding but does not decode future pixels",
+        "EMA target embedding branch adapts during policy finetuning"
+      ],
+      "attention": [
+        "future tokens and action tokens interact in DiT self-attention",
+        "embedding model uses self-attention fusion over vision-language tokens",
+        "Q-former query tokens provide compact fixed-size multi-camera representation"
+      ],
+      "heads": [
+        "MLP projection head maps future-token activations to target embedding dimension",
+        "action denoising head predicts flow-matching velocity for action chunk"
+      ],
+      "objectives": [
+        "action flow-matching loss L_fm",
+        "future latent alignment loss using negative cosine similarity to future embedding",
+        "combined loss L = L_fm + lambda L_align with lambda=0.2",
+        "pretrained embedding model is itself trained with action flow matching"
+      ],
+      "trainingRecipe": [
+        "pretrain action-aware vision-language embedding on about 2,000 hours of cross-embodiment robot data",
+        "reported data mixture totals 169.5M frames and 2,989.5 hours across GR-1, DROID, RT-1, Language Table, Bridge-v2, MUTEX, Plex, RoboSet, and GR-1 simulation",
+        "posttrain downstream policy jointly with latent world-model alignment and action prediction",
+        "use EMA update rate 0.995 for the embedding target during downstream fine-tuning"
+      ],
+      "inferenceRecipe": [
+        "sample noised action chunk and denoise actions with the DiT policy",
+        "future tokens shape hidden state but no future observation is decoded",
+        "reported FLARE runtime uses compact latent foresight rather than explicit video rollout"
+      ]
+    },
+    "clam": {
+      "sourceExtract": "methods/clam.md",
+      "sourceLines": ["CLAM.txt:125-178", "CLAM.txt:1117-1177"],
+      "inputTokens": [
+        "unlabeled observation context o_{t-H:t} plus next observation o_{t+1}",
+        "continuous latent action z_t inferred by latent IDM",
+        "current observation/context and latent action passed to latent FDM",
+        "labeled observation-action batches D_labeled for grounding z_t to executable actions"
+      ],
+      "tokenization": [
+        "continuous latent action replaces VQ-discretized action codes",
+        "latent IDM infers z_t from observation context and next observation",
+        "latent FDM reconstructs next observation from observation context and z_t",
+        "image-based variants use IMPALA-CNN features for policy input",
+        "appendix architecture includes space-time attention encoder/decoder blocks for image observations"
+      ],
+      "backbone": [
+        "latent action model made of latent IDM and latent FDM",
+        "jointly trained latent action decoder p_omega(a_t|z_t)",
+        "stage-2 latent action policy pi_theta(z_t|o_t) trained by imitation on relabeled expert data"
+      ],
+      "branches": [
+        "unlabeled branch trains latent IDM/FDM through future-observation reconstruction",
+        "labeled branch trains action decoder from latent actions to environment actions",
+        "policy branch discards FDM after relabeling and learns to predict latent actions"
+      ],
+      "attention": [
+        "space-time attention encoder alternates temporal and spatial attention for image observations",
+        "space-time decoder adds multi-head attention to condition learned representation on latent action outputs",
+        "state-based experiments use simpler MLP policies"
+      ],
+      "heads": [
+        "latent FDM reconstruction head predicts next observation",
+        "action decoder predicts executable action from latent action",
+        "latent action policy predicts z_t from observation and is followed by the action decoder at inference"
+      ],
+      "objectives": [
+        "future observation reconstruction loss L_recon = MSE(o_hat_{t+1}, o_{t+1})",
+        "action decoder loss L_action-decoder = MSE(a_hat_t, a_t)",
+        "joint CLAM objective L_CLAM = L_recon + beta L_action-decoder",
+        "stage-2 policy objective L_pi = MSE(z_hat_t, z_t)"
+      ],
+      "trainingRecipe": [
+        "alternate gradient updates on unlabeled data for LAM and labeled data for action decoder",
+        "use any behavioral policy for D_labeled, including random policy or task-agnostic play data",
+        "apply latent IDM to relabel unlabeled expert trajectories with continuous latent actions",
+        "train latent action policy on relabeled expert data; pretrained IDM image encoders can transfer to policy learning"
+      ],
+      "inferenceRecipe": [
+        "policy predicts continuous latent action from observation",
+        "action decoder converts latent action into executable environment action",
+        "latent FDM is not used in the deployed policy loop"
+      ]
+    },
+    "videorepa": {
+      "sourceExtract": "methods/videorepa.md",
+      "sourceLines": ["VideoREPA.txt:234-394", "VideoREPA.txt:441-453"],
+      "inputTokens": [
+        "video frames V encoded by a 3D VAE into latent z0 for CogVideoX",
+        "noisy latent z_t processed by denoising transformer f_theta",
+        "VideoMAEv2 video foundation model features y_v used as physics-understanding target",
+        "denoising transformer hidden state h_t projected through trainable MLP h_phi"
+      ],
+      "tokenization": [
+        "CogVideoX latent diffusion operates in pretrained 3D VAE latent space",
+        "VideoMAEv2 produces token features over temporal and spatial positions",
+        "VDM hidden states are projected to the VFM feature dimension before relation matching",
+        "VDM latent dimensions are interpolated to match VFM temporal/spatial feature dimensions where needed"
+      ],
+      "backbone": [
+        "pretrained transformer-based video latent diffusion model, CogVideoX 2B or 5B",
+        "VideoREPA finetunes the VDM rather than training a robot policy",
+        "VideoMAEv2 acts as frozen teacher/target for physics-related token relations"
+      ],
+      "branches": [
+        "diffusion branch predicts noise in CogVideoX latent space",
+        "TRD branch computes spatial and temporal pairwise token-similarity matrices for teacher and student features",
+        "LoRA branch is used for efficient finetuning of VideoREPA-5B"
+      ],
+      "attention": [
+        "method does not modify the CogVideoX attention architecture directly",
+        "TRD supervises pairwise spatial relations within frames and temporal relations across frames",
+        "relation matching is a softer alignment than direct feature-space matching"
+      ],
+      "heads": [
+        "denoising transformer noise-prediction head",
+        "MLP feature projection h_phi for dimension alignment before TRD",
+        "no action head; this paper is an alignment method for video world-model physics"
+      ],
+      "objectives": [
+        "latent diffusion MSE loss L_diff on predicted noise",
+        "Token Relation Distillation loss L_TRD with spatial and temporal relation components",
+        "final loss L = L_diff + lambda L_TRD"
+      ],
+      "trainingRecipe": [
+        "finetune CogVideoX using TRD to transfer physics understanding from VideoMAEv2",
+        "generated videos use 49 frames at 480x720",
+        "VideoREPA-2B finetuned on 32k OpenVid videos for 4,000 steps",
+        "VideoREPA-5B uses LoRA on 64k OpenVid videos for 2,000 steps",
+        "default alignment depth is 18 with total batch size 32 on 8 A100 80GB GPUs"
+      ],
+      "inferenceRecipe": [
+        "runtime remains CogVideoX-style text-to-video latent diffusion",
+        "VideoMAEv2 teacher and TRD loss are training-time alignment components only",
+        "no direct robot action inference path is introduced"
+      ]
+    },
+    "univla": {
+      "sourceExtract": "methods/univla.md",
+      "sourceLines": ["UniVLA.txt:300-620"],
+      "inputTokens": [
+        "paired video frames {o_t, o_{t+k}} about one second apart",
+        "DINOv2 patch features O_t and O_{t+k}",
+        "task instruction embedding from pretrained T5",
+        "learnable action tokens a_q and quantized latent action tokens a_z",
+        "third-view RGB, task instruction, and optional historical latent action tokens for the policy"
+      ],
+      "tokenization": [
+        "DINOv2 converts frames to object-centric spatial patch features used as inputs and reconstruction targets",
+        "IDM encoder is a spatial-temporal transformer with causal temporal masks",
+        "learnable action tokens are concatenated to video features to extract dynamics",
+        "VQ-VAE codebook quantizes action tokens; stage 2 introduces a new task-centric codebook VQ_TC",
+        "policy extends LLaMA vocabulary with special tokens <ACT_1> ... <ACT_C>"
+      ],
+      "backbone": [
+        "two-stage latent action model with IDM encoder I(a|o_t,o_{t+k}) and FDM decoder F(o_{t+k}|o_t,a)",
+        "stage 1 learns task-irrelevant latent actions conditioned on T5 task instruction",
+        "stage 2 freezes the task-irrelevant codebook and learns task-centric latent actions",
+        "generalist policy is Prismatic-7B with SigLIP + DINOv2 visual encoder, projection layer, and LLaMA-2 LLM"
+      ],
+      "branches": [
+        "IDM branch infers latent action tokens from frame pairs",
+        "FDM branch predicts future DINOv2 features using only quantized action tokens and current features",
+        "policy branch autoregressively predicts N=4 latent action tokens",
+        "post-training decoder branch maps latent actions to embodiment-specific low-level action chunks"
+      ],
+      "attention": [
+        "IDM uses spatial-temporal transformer attention with causal temporal masks",
+        "T5 instruction embeddings condition both encoder and decoder during stage 1",
+        "action decoder uses multi-head attention pooling over visual embeddings and latent action embeddings",
+        "historical latent action outputs are appended to the prompt at inference after the first step"
+      ],
+      "heads": [
+        "FDM spatial transformer future-feature prediction head",
+        "autoregressive VLM latent-action token head",
+        "action decoder with visual attention pooling, latent-action attention pooling, and linear projection to target action space"
+      ],
+      "objectives": [
+        "DINOv2 future feature reconstruction loss ||O_hat_{t+k} - O_{t+k}||^2",
+        "VQ-VAE objective for latent action quantization",
+        "next latent action negative log likelihood over N=4 action tokens",
+        "post-training L1 loss between predicted and ground-truth low-level actions"
+      ],
+      "trainingRecipe": [
+        "stage 1 learns task-irrelevant latent actions with T5 language conditioning",
+        "stage 2 copies/freeze task-irrelevant codebook and learns new task-centric latent action codebook",
+        "label videos with latent actions and pretrain Prismatic-7B policy in the latent action vocabulary",
+        "post-train with LoRA and a 12.6M-parameter action head, for about 123M trainable parameters"
+      ],
+      "inferenceRecipe": [
+        "policy receives RGB, instruction, and one step of historical latent action tokens except at the initial step",
+        "autoregressively predicts N=4 latent action tokens",
+        "specialized action decoder converts latent action embedding plus visual context into an embodiment-specific action chunk"
+      ]
+    },
+    "geometry-forcing": {
+      "sourceExtract": "methods/geometry-forcing.md",
+      "sourceLines": ["Geometry forcing.txt:193-234", "Geometry forcing.txt:236-324"],
+      "inputTokens": [
+        "video frame sequence x={x_1,...,x_I}",
+        "independent flow-matching timestep per frame t={t_1,...,t_I}",
+        "noisy/interpolated frame inputs x_t",
+        "diffusion hidden states h at frame and patch positions",
+        "VGGT intermediate geometric features y from a pretrained 3D foundation model"
+      ],
+      "tokenization": [
+        "autoregressive video diffusion corrupts each frame independently by interpolation between clean frame and Gaussian noise",
+        "VGGT target features have layer, frame, patch, and feature dimensions",
+        "lightweight projector f_phi maps diffusion hidden states to the VGGT target-feature shape",
+        "scale-alignment head g_phi predicts full target geometric features from normalized projected diffusion features"
+      ],
+      "backbone": [
+        "flow-matching video diffusion Transformer for autoregressive video generation",
+        "VGGT feed-forward geometric foundation model used as frozen geometry teacher",
+        "VGGT itself uses a Transformer backbone with alternating frame-wise and global self-attention"
+      ],
+      "branches": [
+        "standard video flow-matching branch predicts RGB/video velocity field",
+        "Angular Alignment branch matches diffusion features to VGGT direction by cosine similarity",
+        "Scale Alignment branch preserves geometric feature magnitude through prediction from normalized diffusion features"
+      ],
+      "attention": [
+        "video model is a Transformer-based autoregressive diffusion model",
+        "VGGT teacher interleaves frame-wise self-attention and global self-attention",
+        "loss does not explicitly enforce global cross-frame alignment because VGGT features already encode cross-frame geometry"
+      ],
+      "heads": [
+        "flow-matching velocity head v_theta",
+        "feature projector f_phi for angular alignment",
+        "scale prediction head g_phi for geometric magnitude reconstruction",
+        "aligned intermediate features can support explicit geometry prediction during inference"
+      ],
+      "objectives": [
+        "flow matching loss L_FM on video frames",
+        "Angular Alignment loss using negative cosine similarity between VGGT features and projected diffusion hidden states",
+        "Scale Alignment MSE loss predicting VGGT feature scale",
+        "total loss L = L_FM + lambda_Angular L_Angular + lambda_Scale L_Scale"
+      ],
+      "trainingRecipe": [
+        "freeze/preuse a pretrained video diffusion model for probing, then train with geometry forcing alignment",
+        "use VGGT intermediate features as geometric supervision instead of requiring dense 3D annotations",
+        "evaluate on camera-view-conditioned RealEstate10K and action-conditioned Minecraft generation"
+      ],
+      "inferenceRecipe": [
+        "sample videos with probability-flow ODE / Euler updates",
+        "autoregressively generate future frames from clean context and previously generated frames",
+        "aligned representation can reconstruct explicit 3D geometry, but no robot action head is introduced"
+      ]
+    },
+    "trivla": {
+      "sourceExtract": "methods/trivla.md",
+      "sourceLines": ["TriVLA.txt:345-456", "TriVLA.txt:628-632", "TriVLA.txt:1147-1167"],
+      "inputTokens": [
+        "base and wrist camera images plus task instruction for Eagle-2 VLM",
+        "robot state tokens projected into a shared space by embodiment-specific MLP",
+        "current image s0 and final noised latent q(x_t'|x0) for video-diffusion feature extraction",
+        "vision-language tokens Q_vl from Eagle-2",
+        "predictive dynamics tokens Q_p from video-diffusion features",
+        "noisy action sequence a_k"
+      ],
+      "tokenization": [
+        "Eagle-2 encodes 224x224 images through SigLIP-2 and pixel shuffle to 64 image tokens per frame",
+        "Eagle-2 combines image tokens and text through a SmolLM2 language model",
+        "Q_vl tokens are extracted from the 12th LLM layer for policy conditioning",
+        "SVD upsampling-layer features are interpolated to a common spatial size and concatenated along channels",
+        "learnable Q tokens compress static and wrist predictive features through spatial and temporal attention"
+      ],
+      "backbone": [
+        "System 2: pretrained Eagle-2 VLM for episodic multimodal perception",
+        "System 3: 1.5B Stable Video Diffusion model fine-tuned on human and robot manipulation data for episodic dynamics perception",
+        "System 1: diffusion-transformer policy module with flow matching"
+      ],
+      "branches": [
+        "VLM branch extracts high-level task and scene context Q_vl",
+        "VDM branch runs a single forward pass to provide coarse future-dynamics features instead of full video denoising",
+        "policy branch cross-attends to Q_vl and Q_p while denoising actions",
+        "embodiment-specific action decoder MLP maps final DiT tokens to motor actions"
+      ],
+      "attention": [
+        "Eagle-2 uses vision-language token interaction inside the VLM",
+        "predictive-token aggregator uses spatial attention per frame and temporal attention across frames",
+        "diffusion policy integrates Q_vl and Q_p through cross-attention layers"
+      ],
+      "heads": [
+        "Video dynamics module trained with diffusion reconstruction objective",
+        "Video Former style predictive token aggregator Q_p",
+        "DiT action denoiser D_psi",
+        "embodiment-specific action decoder A_d implemented as an MLP"
+      ],
+      "objectives": [
+        "video diffusion objective reconstructs full video sequence from noised samples with CLIP language feature",
+        "action diffusion objective L_diff = E ||A_d(D_psi(a_k,Q_vl,Q_p)) - a0||^2"
+      ],
+      "trainingRecipe": [
+        "fine-tune SVD on large-scale human, robot, and self-collected manipulation data",
+        "freeze the fine-tuned episodic dynamics module during downstream action learning",
+        "train policy to fuse VLM tokens, predictive dynamics tokens, robot state, and action history"
+      ],
+      "inferenceRecipe": [
+        "extract Eagle-2 Q_vl tokens from the 12th layer",
+        "run the video diffusion model for a single forward pass and aggregate predictive features to Q_p",
+        "denoise a 10-step action chunk with the policy module",
+        "reported modules target about 34-36 Hz control after using the shortcut representation path"
+      ]
+    },
+    "video-generators-robot-policies": {
+      "sourceExtract": "methods/video-generators.md",
+      "sourceLines": ["video-generators.txt:138-239", "video-generators.txt:244-253"],
+      "inputTokens": [
+        "initial scene image v0",
+        "task text description c",
+        "future-frame noise vectors for video diffusion",
+        "action noise vectors for action diffusion",
+        "intermediate hidden features from the video generator decoder layers"
+      ],
+      "tokenization": [
+        "CLIP encodes the task description for text cross-attention",
+        "frozen SVD VAE encodes the initial image and noisy future video frames",
+        "VAE-encoded image z0 is channel-wise concatenated with encoded noisy video frames",
+        "five evenly spaced video U-Net decoder embeddings from layers 9,14,17,20,23 are extracted",
+        "CNN adapter converts spatiotemporal video features into a single conditioning vector h_i"
+      ],
+      "backbone": [
+        "video U-Net mu_theta built from Image-to-Video Stable Video Diffusion",
+        "action U-Net alpha_theta is a 1D CNN U-Net adapted from Diffusion Policy",
+        "video and action denoising run jointly at each denoising step"
+      ],
+      "branches": [
+        "video branch predicts future rollout frames",
+        "action branch predicts robot action sequence from video-branch hidden representation",
+        "modular design permits video network and action network to be trained separately"
+      ],
+      "attention": [
+        "video U-Net is conditioned on CLIP text embedding through cross-attention",
+        "action U-Net receives global h_i conditioning from CNN-adapted video features",
+        "gradients from action loss are stopped from propagating back into the video U-Net"
+      ],
+      "heads": [
+        "video diffusion noise-prediction head mu_theta",
+        "CNN video adapter over decoder features",
+        "1D action diffusion U-Net alpha_theta"
+      ],
+      "objectives": [
+        "video diffusion MSE loss L_video = E ||epsilon - mu_theta(z_i,i,phi(c),z_i0)||^2",
+        "action diffusion MSE loss L_action = E ||epsilon - alpha_theta(a_i,i,h_i)||^2",
+        "stop-gradient from L_action to mu_theta keeps the video generator as the policy-driving representation"
+      ],
+      "trainingRecipe": [
+        "stage 1 trains/fine-tunes the video model for video prediction",
+        "stage 2 trains the action model for behavior cloning on expert demonstrations with video, text, and actions",
+        "uses three cameras by concatenating views along the temporal dimension",
+        "predicts 8 frames per camera view, 24 total frames, and pads one camera frame to match SVD expected input for 25 frames"
+      ],
+      "inferenceRecipe": [
+        "provide initial observation and task description",
+        "jointly generate predicted future frames and corresponding robot actions",
+        "execute predicted end-effector action sequence directly on the robot"
+      ]
+    },
+    "villa-x": {
+      "sourceExtract": "methods/villa-x.md",
+      "sourceLines": ["villa-X.txt:144-252"],
+      "inputTokens": [
+        "frame pair (o_t, o_{t+K}) for latent action model",
+        "current proprioceptive state q_t",
+        "embodiment context c_e from dataset ID and control frequency",
+        "language instruction l and observation o_t for actor module",
+        "latent action sequence z_{t:t+(n-1)K} and robot action chunk a_{t:t+m-1}"
+      ],
+      "tokenization": [
+        "IDM predicts latent token z_t from frame pair",
+        "visual FDM reconstructs future observation from current observation and z_t",
+        "proprio-FDM predicts future robot states and actions K steps ahead from q_t, z_t, and c_e",
+        "dataset IDs use learnable embeddings; control frequencies use sinusoidal features through an MLP",
+        "continuous vector from the VQ codebook center is adopted as the latent action"
+      ],
+      "backbone": [
+        "Latent Action Model with IDM, visual FDM, and proprioceptive FDM",
+        "ACT actor module with three experts: VLM, ACT-latent, and ACT-robot",
+        "conditional flow matching network jointly models latent actions and robot actions"
+      ],
+      "branches": [
+        "LAM branch grounds latent actions in both visual changes and robot dynamics",
+        "ACT-latent branch predicts mid-level latent action tokens from VLM features",
+        "ACT-robot branch predicts low-level action chunks from VLM features, predicted latents, proprioception, and embodiment context"
+      ],
+      "attention": [
+        "ACT uses a blockwise causal attention mask to implement the latent/action factorization",
+        "robot-to-latent attention is stochastically masked: either all robot-to-latent attention is masked or half the latent tokens are randomly masked",
+        "stochastic masking prevents the robot-action branch from learning shortcut dependence on latent actions"
+      ],
+      "heads": [
+        "visual FDM future-observation reconstruction head",
+        "proprio-FDM future state/action prediction head",
+        "ACT-latent flow-matching expert",
+        "ACT-robot low-level action chunk expert"
+      ],
+      "objectives": [
+        "LAM jointly optimizes image reconstruction loss, proprioceptive prediction loss, and VQ commitment terms",
+        "ACT optimizes conditional flow matching over grouped future latent and robot actions",
+        "noisy target x_tau = tau x + (1-tau) epsilon, with velocity field target epsilon - x"
+      ],
+      "trainingRecipe": [
+        "stage 1 pretrains LAM on diverse datasets, omitting proprioceptive loss for human videos without robot states",
+        "stage 2 pretrains ACT with joint latent-robot modeling",
+        "stage 3 finetunes for each embodiment"
+      ],
+      "inferenceRecipe": [
+        "use VLM features to plan latent actions and robot actions through ACT",
+        "ACT-robot conditions on predicted latent actions, proprioceptive state, and embodiment context to emit low-level action chunks",
+        "latent actions serve as a mid-level bridge rather than the final control signal"
+      ]
+    },
+    "mowm": {
+      "sourceExtract": "methods/mowm.md",
+      "sourceLines": ["mowm.txt:210-306", "mowm.txt:367-379"],
+      "inputTokens": [
+        "initial RGB frame x0",
+        "language instruction l",
+        "pixel-space future-video noisy latents z_t",
+        "V-JEPA 2 visual state tokens s_i",
+        "text instruction tokens c",
+        "initial noisy action vector a_t"
+      ],
+      "tokenization": [
+        "pixel-space world model is SVD with text conditioning injected through cross-attention",
+        "SVD VAE latents represent future frames for iterative denoising",
+        "latent-space world model uses V-JEPA 2 ViT-g encoder to tokenize each video frame into visual tokens",
+        "pixel U-Net upsampling-layer features are bilinearly resized and concatenated across channels",
+        "pixel and latent feature streams are linearly projected into a shared dimension D"
+      ],
+      "backbone": [
+        "Mixture of World Models with a pixel-space SVD world model and a latent-space transformer world model",
+        "latent world model is a 24-layer transformer with attention and SwiGLU FFN, about 400M parameters",
+        "end-to-end action planner uses Diffusion Policy conditioned on fused future-state features"
+      ],
+      "branches": [
+        "pixel world model predicts future video sequence from initial frame and language",
+        "latent world model forecasts future V-JEPA state tokens from text and past visual tokens",
+        "fusion branch concatenates latent motion-aware features and low-level pixel features, then applies residual gating",
+        "action decoding branch denoises an action vector conditioned on final fused features"
+      ],
+      "attention": [
+        "pixel world model uses SVD cross-attention for text conditioning",
+        "latent world model uses transformer attention over instruction tokens and visual state tokens",
+        "the final fusion is projection/gating rather than a separately specified cross-attention module"
+      ],
+      "heads": [
+        "pixel denoising head epsilon_theta",
+        "latent next-state token predictor F",
+        "linear projection and learnable residual gate W_gate",
+        "Diffusion Policy action denoiser"
+      ],
+      "objectives": [
+        "pixel-world-model diffusion loss L_Pixel-WM",
+        "latent-world-model teacher-forced L1 loss L_Latent-WM",
+        "action denoising loss L_denoise = E ||epsilon - epsilon_theta(a_t, Phi_final, t)||^2"
+      ],
+      "trainingRecipe": [
+        "train pixel and latent world models on the same embodied datasets with aligned temporal sampling and action frequency",
+        "latent world model training reported as 75 epochs on four H20 GPUs",
+        "second-stage action planning module trained for 7,000 steps on four H20 GPUs"
+      ],
+      "inferenceRecipe": [
+        "run both world models in a single forward pass to produce future features",
+        "aggregate multi-scale pixel features and latent transition features",
+        "condition Diffusion Policy on Phi_final to denoise the action"
+      ]
+    },
+    "dust": {
+      "sourceExtract": "methods/dust.md",
+      "sourceLines": ["DUST.txt:231-430", "DUST.txt:1125-1361"],
+      "inputTokens": [
+        "VLM semantic conditioning features Phi_t from current observation and task instruction",
+        "robot proprioceptive state o_t^s",
+        "noised action sequence A_t^{tau_A}",
+        "noised future observation embedding o_t+k^{tau_o}",
+        "separate action and vision timestep embeddings"
+      ],
+      "tokenization": [
+        "Eagle-2 processes image observations and task instructions and supplies 12th-layer semantic features",
+        "future world-model target is a SIGLIP-2/Eagle-2 semantic image embedding rather than pixels",
+        "action chunk tokens and future image embedding tokens are noised independently",
+        "each modality receives its own timestep embedding through AdaLN"
+      ],
+      "backbone": [
+        "dual-stream diffusion model with multimodal diffusion transformer blocks",
+        "12 MMDiT blocks for joint-modal processing",
+        "4 modality-specific DiT blocks for both action and vision streams",
+        "alternating self-attention and cross-attention layers condition on VLM features"
+      ],
+      "branches": [
+        "action stream and vision stream propagate separately through most operations",
+        "streams are concatenated only temporarily during shared cross-modal attention, then split",
+        "modality-specific DiT tails specialize final denoising for actions and future embeddings"
+      ],
+      "attention": [
+        "shared cross-modal attention exchanges information between action and vision tokens",
+        "separate streams preserve modality-specific pathways before and after shared attention",
+        "independent per-modality timesteps allow learning inverse and forward causal dependencies"
+      ],
+      "heads": [
+        "action velocity-field head V_theta^A",
+        "world-model/future-embedding velocity-field head V_theta^o",
+        "asynchronous Euler sampler for joint action/vision inference"
+      ],
+      "objectives": [
+        "action flow-matching loss L_A",
+        "world-model future-embedding flow-matching loss L_WM",
+        "joint objective L_Joint = L_A + lambda_WM L_WM"
+      ],
+      "trainingRecipe": [
+        "sample action and future-embedding noise timesteps independently from [0,1]",
+        "train over combinations such as clean future/noisy action and clean action/noisy future to learn inverse and forward relations",
+        "pretraining can use action-free video data and finetuning robot data"
+      ],
+      "inferenceRecipe": [
+        "initialize action noise and future observation embedding noise",
+        "sample actions and vision embeddings in parallel with asynchronous forward Euler",
+        "vision tokens update every fine-grained step; action tokens update every q steps",
+        "default q=1 uses N_o=N_A=4, while larger q trades speed for predictive accuracy"
+      ]
+    },
+    "ud-vla": {
+      "sourceExtract": "methods/ud-vla.md",
+      "sourceLines": ["UD-VLA.txt:351-521"],
+      "inputTokens": [
+        "text tokens",
+        "current image tokens",
+        "future image tokens",
+        "action tokens",
+        "special delimiters <BOI>, <EOI>, <BOA>, <EOA>, and <MASK>"
+      ],
+      "tokenization": [
+        "language tokens follow Emu3-style design",
+        "visual observations are discretized by a VQ tokenizer into V_v visual vocabulary tokens",
+        "actions are represented with FAST tokens in V_a action vocabulary",
+        "complete sequence is [text tokens; current image tokens; future image tokens; action tokens]",
+        "future image tokens have fixed length while action tokens have variable length"
+      ],
+      "backbone": [
+        "pretrained VLM backbone initialized from Emu3-like autoregressive model",
+        "Joint Discrete Denoising Diffusion Process (JD3P) reformulates future-image and action decoding as masked discrete diffusion",
+        "single Transformer handles language, current vision, future-image, and action tokens"
+      ],
+      "branches": [
+        "foresight branch predicts next visual state tokens",
+        "inverse-kinematics/action branch predicts action tokens conditioned on input and visual prediction",
+        "two-stage training first injects future-image modeling, then jointly optimizes image and action generation"
+      ],
+      "attention": [
+        "input text follows causal attention",
+        "current image tokens use bidirectional attention",
+        "future-image generation blocks and action blocks use bidirectional attention internally",
+        "blocks connect causally: generation attends to input, action attends to input and generation, with no backward flow",
+        "action-to-vision pathways are prohibited to prevent coarse action leakage into visual prediction"
+      ],
+      "heads": [
+        "masked visual-token prediction distribution pi_theta^v",
+        "masked action-token prediction distribution pi_theta^a",
+        "parallel decoding head over all masked positions during inference"
+      ],
+      "objectives": [
+        "mask-predict cross-entropy on masked visual and action sites",
+        "visual token loss is down-weighted by omega to avoid dominating action learning",
+        "shift operation preserves next-token prediction capability while gaining bidirectional context"
+      ],
+      "trainingRecipe": [
+        "stage i post-trains on large-scale video data with [text; current image; future image] sequences",
+        "stage ii fine-tunes on downstream robot action data with [text; current image; future image; action] sequences",
+        "single-step mask-predict training replaces explicit multi-step diffusion-chain optimization"
+      ],
+      "inferenceRecipe": [
+        "initialize all future-image and action positions as <MASK>",
+        "predict token distributions for all positions in parallel for a small number of iterations",
+        "use prefix KV cache for prompt/current-visual tokens",
+        "pre-fill <BOI>, <EOI>, and <BOA> delimiters to guide denoising of fixed visual tokens and variable action tokens"
+      ]
+    },
+    "rynnvla-002": {
+      "sourceExtract": "methods/rynnvla-002.md",
+      "sourceLines": ["RynnVLA-002.txt:246-366"],
+      "inputTokens": [
+        "language goal l",
+        "proprioceptive state s_{t-1}",
+        "observation history o_{t-h:t} from front/wrist images",
+        "discrete action tokens for K-step action chunks",
+        "world-model current image/action context and next-image targets",
+        "learnable action queries for continuous Action Transformer"
+      ],
+      "tokenization": [
+        "model is initialized from Chameleon unified image-text model",
+        "VQ-GAN image tokenizer has compression ratio 16 and codebook size 8192",
+        "image tokenizer produces 256 tokens for 256x256 images and 1024 tokens for 512x512 images",
+        "text uses the inherited BPE tokenizer",
+        "state and action tokenizers discretize each continuous dimension into 256 bins",
+        "image, text, state, and discrete action tokens share a 65,536-token vocabulary"
+      ],
+      "backbone": [
+        "integrated model M_psi shares parameters for VLA action prediction and world-model next-frame prediction",
+        "VLA query maps language, state, and image history to K actions",
+        "world-model query maps current image/action context to next image frames",
+        "continuous Action Transformer augments the architecture for real-world action chunks"
+      ],
+      "branches": [
+        "VLA branch sequence: text, state, image-front-wrist history, then K action tokens",
+        "world-model branch sequence: fixed text prefix, current front/wrist images, action, then N future image tokens",
+        "continuous Action Transformer branch consumes full context and emits whole action chunk in parallel"
+      ],
+      "attention": [
+        "proposed VLA action mask lets each current action rely on textual and visual input but not prior actions",
+        "world-model branch keeps conventional autoregressive attention",
+        "continuous Action Transformer avoids isolated autoregressive action generation by using learnable action queries"
+      ],
+      "heads": [
+        "cross-entropy discrete action-token head",
+        "cross-entropy image-token head",
+        "continuous Action Transformer action-chunk head for real-world deployment"
+      ],
+      "objectives": [
+        "mixed training loss L_dis = L_dis_action + L_img",
+        "L_dis_action supervises discrete action-token generation",
+        "L_img supervises next-image token generation"
+      ],
+      "trainingRecipe": [
+        "mix VLA model data and world-model data in one training process",
+        "VLA text prompt asks what action the robot should take for the task",
+        "world-model text prefix is fixed: generate next frame based on current image and action",
+        "continuous Action Transformer is added because discrete chunking overfits real-world small data and causes non-smooth actions"
+      ],
+      "inferenceRecipe": [
+        "query as a VLA to produce actions from language/state/image history",
+        "query as a world model to autoregressively predict next frames from images and actions",
+        "for real-world control, use Action Transformer to output an entire continuous action chunk in parallel"
+      ]
+    },
+    "motus": {
+      "sourceExtract": "methods/motus.md",
+      "sourceLines": ["Motus.txt:271-441", "Motus.txt:1169-1360"],
+      "inputTokens": [
+        "condition frame o_t",
+        "future observation chunk o_{t+1:t+k}",
+        "future action chunk a_{t+1:t+k}",
+        "language instruction l",
+        "separate rectified-flow timesteps tau_o and tau_a",
+        "latent action tokens derived from optical flow"
+      ],
+      "tokenization": [
+        "generative expert uses Wan2.2 5B video foundation model",
+        "understanding expert uses Qwen3-VL-2B last-layer corresponding tokens",
+        "action expert uses a Transformer block of the same depth as Wan",
+        "optical flow is computed with DPFlow, converted to RGB images, and compressed by DC-AE",
+        "DC-AE encodes flow into four 512-dimensional tokens, then a lightweight encoder projects them to a 14-dimensional latent action vector"
+      ],
+      "backbone": [
+        "Mixture-of-Transformers architecture with generative, understanding, and action experts",
+        "each expert maintains its own Transformer module",
+        "multi-head self-attention layers are concatenated into Tri-model Joint Attention",
+        "action expert blocks include AdaLN for rectified-flow timesteps, FFN, and Tri-model Joint Attention"
+      ],
+      "branches": [
+        "VGM/generative branch imagines future video",
+        "VLM understanding branch supplies scene, instruction, 3D grounding, spatial understanding, and object localization features",
+        "action expert predicts action chunks",
+        "latent-action branch pretrains action expert from unlabeled motion data"
+      ],
+      "attention": [
+        "Tri-model Joint Attention fuses features across video, language/understanding, and action experts",
+        "expert-specific modules preserve role specialization while sharing attention context",
+        "Action-Dense Video-Sparse Prediction down-samples video frames to balance video and action token counts"
+      ],
+      "heads": [
+        "observation velocity-field head v_theta^o",
+        "action velocity-field head v_theta^a",
+        "latent action VAE decoder and alignment projection for optical-flow actions"
+      ],
+      "objectives": [
+        "rectified-flow action loss on v_theta^a versus epsilon_a - action",
+        "rectified-flow observation loss on v_theta^o versus epsilon_o - observation",
+        "total unified loss L = L_action + L_obs",
+        "latent action loss combines flow reconstruction, weak real-action alignment, and KL regularization"
+      ],
+      "trainingRecipe": [
+        "jointly predict video chunks and action chunks with separate timesteps/noise scales for each modality",
+        "use action-dense/video-sparse sampling, e.g. video frame rate one-sixth of action frame rate",
+        "latent action training mixes 90% unlabeled data for self-supervised reconstruction and 10% labeled trajectories for weak action supervision"
+      ],
+      "inferenceRecipe": [
+        "VGM mode: set observations/actions to noisy, denoise observations while keeping actions noisy",
+        "World Model mode: condition on clean actions and denoise future observations",
+        "IDM mode: condition on clean observation sequence and denoise actions",
+        "VLA mode: condition on current observation/language and denoise actions while future observations stay noisy",
+        "joint prediction mode: denoise future observations and actions together"
+      ]
+    },
+    "videovla": {
+      "sourceExtract": "methods/videovla.md",
+      "sourceLines": ["videovla.txt:172-285", "videovla.txt:335-343"],
+      "inputTokens": [
+        "text instruction T",
+        "current visual observation O",
+        "first-frame latent V_1 from the video encoder",
+        "future frame latents {V_j}_{j=2:n}",
+        "7-D action chunk A={a_i}_{i=1:K}"
+      ],
+      "tokenization": [
+        "T5 text encoder converts instruction into a fixed-length sequence of 226 tokens",
+        "CogVideoX 3D-causal VAE encodes video clip into temporally downsampled frame latents",
+        "causal video encoder makes first latent V_1 encode only the current observation",
+        "future frame latents and current latent are flattened in raster order",
+        "all modalities are projected into a common embedding dimension before the DiT backbone"
+      ],
+      "backbone": [
+        "Diffusion Transformer initialized from pretrained CogVideoX",
+        "CogVideoX-5B is the default pretrained backbone",
+        "self-attention stack models interactions across language, current visual latent, future visual latents, and actions"
+      ],
+      "branches": [
+        "future-frame branch denoises future video latents",
+        "action branch denoises 7-D robot action chunk",
+        "optional video decoder branch visualizes imagined future frames but is not required for action output"
+      ],
+      "attention": [
+        "DiT self-attention operates over the unified token sequence",
+        "language tokens and first-frame latent are clean conditioning inputs",
+        "future-frame latents and action tokens are noised targets"
+      ],
+      "heads": [
+        "future latent denoising output",
+        "action denoising output",
+        "optional CogVideoX VAE decoder for future-frame visualization"
+      ],
+      "objectives": [
+        "DDPM diffusion loss on noisy future-frame latents",
+        "DDPM diffusion loss on noisy action chunks",
+        "dual prediction is critical; ablations show removing video loss or using action-only drops performance"
+      ],
+      "trainingRecipe": [
+        "pretrain on Open X-Embodiment subset with 22.5M frames from over 1M trajectories across 60 datasets and 22 embodiments",
+        "fine-tune on a Realman dataset with 5,824 samples across pick, stack, and place tasks",
+        "train for 100K iterations during pretraining and 15K iterations during finetuning on 32 AMD MI300X GPUs"
+      ],
+      "inferenceRecipe": [
+        "encode only current observation to V_1 and use language tokens as conditions",
+        "predict 13 future video latents corresponding to 49 frames and 6 action steps in simulation",
+        "for real-world efficiency predict 4 future latents corresponding to 13 frames",
+        "execute only the first 3 of 6 predicted actions during deployment",
+        "use DDIM sampling with 50 denoising steps"
+      ]
+    },
+    "act2goal": {
+      "sourceExtract": "methods/act2goal.md",
+      "sourceLines": ["Act2Goal.txt:285-443", "Act2Goal.txt:391-404"],
+      "inputTokens": [
+        "multi-view current observation frames",
+        "multi-view visual goal frames",
+        "VAE-compressed current observation latent z_t",
+        "VAE-compressed goal latent z_g",
+        "random/noisy latent frames for transition trajectory",
+        "proprioceptive state condition c_p",
+        "noisy action trajectory for action flow matching"
+      ],
+      "tokenization": [
+        "goal visual condition is concatenated with current observation along the hidden-state sequence",
+        "language-conditioning components from Genie Envisioner are removed for a purely vision-based goal model",
+        "world model produces MSTH-distributed latent frames between current observation and goal",
+        "multi-scale features c_w are taken from layered transition features of the world model"
+      ],
+      "backbone": [
+        "goal-conditioned world model built on Genie Envisioner architecture",
+        "Video DiT blocks refine noisy latents into goal-conditioned transition frames",
+        "action expert is isomorphic to the world model with the same number of DiT blocks but reduced network width",
+        "Action DiT blocks generate MSTH-structured actions conditioned through cross-attention"
+      ],
+      "branches": [
+        "visual transition branch predicts latent frames between current observation and goal",
+        "action branch predicts action trajectory from world-model features and proprioception",
+        "MSTH branch partitions imagined trajectory into dense proximal and sparse distal states/actions",
+        "online improvement branch relabels achieved future observations as goals"
+      ],
+      "attention": [
+        "action expert consumes multi-scale world-model features through cross-attention",
+        "visual goal and current observation are concatenated in the world-model hidden sequence",
+        "MSTH aligns distal action predictions with distal visual states for long-horizon guidance"
+      ],
+      "heads": [
+        "world-model vector-field head v_theta for visual latent flow matching",
+        "VAE decoder can decode completed latent frames into visual states",
+        "action vector-field head u_phi for action flow matching"
+      ],
+      "objectives": [
+        "visual flow matching loss L_v",
+        "action flow matching loss L_a",
+        "stage-1 joint objective L_stage1 = L_v + lambda L_a with lambda=0.1",
+        "stage-2 behavioral-cloning objective L_stage2 = L_a",
+        "online autonomous improvement uses achieved visual state relabeling and action MSE"
+      ],
+      "trainingRecipe": [
+        "stage 1 fine-tunes a pretrained world model for transition trajectory prediction with MSTH frame distribution",
+        "jointly trains transition trajectory prediction and action generation so visual rollouts are actionable",
+        "stage 2 fine-tunes the entire model end-to-end with action flow matching on expert demonstrations",
+        "online improvement stores rollouts, relabels achieved observation o' as goal g', and updates LoRA parameters"
+      ],
+      "inferenceRecipe": [
+        "given current observation and visual goal, iteratively refine latent transition frames through deterministic flow",
+        "predict proximal actions densely and distal actions sparsely under MSTH",
+        "execute only proximal actions while distal predictions remain latent long-horizon guidance"
+      ]
+    },
+    "mimic-video": {
+      "sourceExtract": "methods/mimic-video.md",
+      "sourceLines": ["Mimic-Video.txt:284-307", "Mimic-Video.txt:308-378", "Mimic-Video.txt:399-410"],
+      "inputTokens": [
+        "multiple RGB observation images or history frames",
+        "language instruction l",
+        "robot proprioceptive state q_t",
+        "clean past video latents z_past^0",
+        "noisy future video latents z_future^tau_v",
+        "noisy action chunk A_t^tau_a"
+      ],
+      "tokenization": [
+        "video backbone operates on past and future video latent patches",
+        "language is encoded by a T5 text encoder and injected into video transformer layers through cross-attention",
+        "proprioceptive state and future action sequence are encoded by separate MLPs before concatenation into the action-decoder token sequence",
+        "learned absolute position embeddings add temporal information to action tokens",
+        "the proprioceptive soft token is randomly replaced with a learned mask token during training to reduce low-dimensional overfitting"
+      ],
+      "backbone": [
+        "two flow-matching models: a video model v_phi and an action policy pi_theta",
+        "video model induces p_phi(z_future^0 | z_past^0, l) from clean past latents, noisy future latents, language, and video flow time",
+        "video transformer layers alternate full-sequence self-attention, T5 language cross-attention, and MLP blocks",
+        "action decoder is a DiT trained from scratch while the adapted video backbone is frozen in stage two",
+        "action decoder conditions on intermediate hidden states h^tau_v extracted after the kth video-model layer"
+      ],
+      "branches": [
+        "video branch partially denoises future latent video during action inference",
+        "action branch denoises an action chunk from noisy action tokens",
+        "proprioception branch provides state tokens through an MLP",
+        "optional visualization branch can fully decode the latent video plan, but this is not required for autonomous execution"
+      ],
+      "attention": [
+        "each action decoder layer cross-attends to intermediate video-model representations h^tau_v",
+        "action decoder self-attends over the action token sequence",
+        "video backbone self-attends over the full video sequence and cross-attends to T5 language tokens",
+        "action-decoder residual components are modulated by AdaLN using a low-rank bilinear-affine encoding of video and action flow times tau_v and tau_a"
+      ],
+      "heads": [
+        "video flow-field head for future video latent denoising",
+        "action flow-field head for denoising A_t^tau_a to a clean action chunk",
+        "MLP encoders for proprioceptive state and noisy action tokens",
+        "optional VAE/video decoder for visualizing the latent plan outside the real-time control path"
+      ],
+      "objectives": [
+        "flow matching objective for video latent prediction",
+        "flow matching objective for action chunk prediction",
+        "stage-two action decoder regresses the action velocity field conditioned on frozen video hidden states",
+        "independent video and action flow times are sampled during action decoder training"
+      ],
+      "trainingRecipe": [
+        "stage 1 fine-tunes the generalist video backbone with LoRA on robotics video datasets to adapt visual dynamics",
+        "stage 2 freezes the video backbone and trains the action DiT from scratch on action-labeled robot data",
+        "video flow times follow a logit-normal distribution matching video pretraining",
+        "action flow times use the action flow distribution described in the method",
+        "real bimanual experiments use a global workspace camera, four wrist cameras, and full proprioception; task-specific action decoders are trained on small datasets of hundreds of episodes"
+      ],
+      "inferenceRecipe": [
+        "sample future video latent noise and action noise",
+        "integrate the video flow only to an intermediate tau_v instead of fully reconstructing future video",
+        "run the first k video layers on the partially denoised future latents and past context",
+        "feed the extracted video activations h^tau_v to the action decoder",
+        "fully denoise the action chunk while bypassing full video reconstruction",
+        "tau_v = 1 reduces the expensive video path to a single forward pass and is reported as a good default"
+      ]
+    },
+    "clap": {
+      "sourceExtract": "methods/clap.md",
+      "sourceLines": ["CLAP.txt:262-299", "CLAP.txt:303-370", "CLAP.txt:392-438", "CLAP.txt:461-507"],
+      "inputTokens": [
+        "continuous robot action trajectory a_{t:t+H-1}",
+        "visual state pair or transition o_t to o_{t+H}",
+        "frozen visual features f_t and f_{t+H}",
+        "instruction and current observations for VLA training",
+        "discrete subtask tokens",
+        "discrete latent action tokens z_a",
+        "noisy continuous action chunk for rectified flow"
+      ],
+      "tokenization": [
+        "Act-VAE uses a Transformer encoder and decoder to map continuous action chunks into a VQ codebook",
+        "each action latent vector is replaced by its nearest codebook entry, yielding a discrete physical action token sequence",
+        "VD-VAE quantizes action-relevant video dynamics with the frozen Act-VAE codebook and action-irrelevant dynamics with a separate environment codebook",
+        "CLAP-NTP adds new tokenizer entries for the learned action codebook and predicts subtask/action-token sequences autoregressively",
+        "CLAP-RF keeps continuous actions and uses a DiT action expert with rectified-flow interpolation"
+      ],
+      "backbone": [
+        "Act-VAE Transformer encoder-decoder learns executable robot action codes",
+        "VD-VAE inverse-dynamics encoder decomposes visual transitions into action-relevant z_v,a and action-irrelevant z_v,i latents",
+        "VD-VAE forward-dynamics decoder reconstructs future visual features from current features and both quantized latent streams",
+        "Qwen3VL-4B serves as the VLM backbone for both CLAP-NTP and CLAP-RF",
+        "CLAP-RF uses a DiT continuous action expert connected to the VLM through cross-attention"
+      ],
+      "branches": [
+        "robot-action branch trains the Act-VAE codebook on labeled robot trajectories",
+        "human/robot video branch infers pseudo action latents from visual transitions",
+        "nuisance branch captures background and other action-irrelevant variation",
+        "CLAP-NTP branch performs discrete reasoning and planning over subtask plus latent action tokens",
+        "CLAP-RF branch performs high-frequency continuous control"
+      ],
+      "attention": [
+        "VD-VAE inverse-dynamics encoder uses spatiotemporal attention for motion cues",
+        "VD-VAE forward-dynamics decoder uses spatial attention for feature reconstruction",
+        "CLAP-RF DiT queries the VLM key/value cache via cross-attention",
+        "stop-gradient on the VLM K/V cache creates a one-way bridge from VLM context into the action expert",
+        "early and middle VLM features are fused for the action expert because they worked better than deeper features"
+      ],
+      "heads": [
+        "Act-VAE decoder reconstructs continuous robot action trajectories from quantized action latents",
+        "VD-VAE forward dynamics decoder reconstructs f_{t+H}",
+        "CLAP-NTP language-model head predicts subtask and discrete action-token logits",
+        "CLAP-RF DiT predicts rectified-flow velocity for the continuous action chunk"
+      ],
+      "objectives": [
+        "Act-VAE reconstruction loss plus VQ codebook and commitment losses",
+        "VD-VAE feature reconstruction loss in DINO feature space",
+        "VQ losses for action-relevant and action-irrelevant codebooks",
+        "SigLIP-style contrastive loss aligning continuous vision dynamics z_v,a with continuous action latent z_a",
+        "L1 regularization on action-irrelevant z_v,i to encourage nuisance sparsity",
+        "next-token prediction loss for CLAP-NTP",
+        "rectified flow loss for CLAP-RF",
+        "Knowledge Matching KL regularization against a frozen reference policy plus RF loss"
+      ],
+      "trainingRecipe": [
+        "train Act-VAE on labeled robot action trajectories to establish an executable action codebook",
+        "train VD-VAE on robot and human visual transitions with the Act-VAE codebook frozen",
+        "for robot videos use Act-VAE action latents as alignment targets; for human videos use VD-VAE pseudo action latents",
+        "pretrain CLAP-NTP on robot demonstrations and human-video pseudo labels for 150k steps",
+        "train CLAP-RF action expert for 80k steps with rectified flow and Qwen3VL-4B context",
+        "data includes a curated AgiBot subset of about 100k episodes/1500 hours, 27k Astribot S1 episodes/about 50 hours, and 90 hours of Ego4D manipulation clips"
+      ],
+      "inferenceRecipe": [
+        "CLAP-NTP can autoregressively emit subtask and discrete latent action tokens for reasoning/planning",
+        "CLAP-RF uses VLM observations/instruction as context and denoises a continuous action chunk in parallel",
+        "the DiT action expert receives VLM K/V context through the stop-gradient cross-attention bridge",
+        "Knowledge Matching is used during adaptation to preserve high-level VLM reasoning while updating low-level control"
+      ]
+    },
+    "cosmos-policy": {
+      "sourceExtract": "methods/cosmos-policy.md",
+      "sourceLines": ["cosmos-policy.txt:216-383"],
+      "inputTokens": [
+        "blank latent placeholder frame",
+        "current robot proprioception latent frame",
+        "current wrist camera latent frame",
+        "current third-person camera latent frames",
+        "action chunk latent frame",
+        "future robot proprioception latent frame",
+        "future camera latent frames",
+        "future state value latent frame",
+        "task text or task description condition"
+      ],
+      "tokenization": [
+        "Cosmos video latent sequence is repurposed as an ordered multimodal latent-frame sequence",
+        "low-dimensional proprioception, action, future proprioception, and value scalars are written into H' x W' x C' latent volumes by normalization, duplication, and scaling to [-1, 1]",
+        "camera views are inserted as separate video latent frames rather than channel-concatenated images",
+        "the latent-frame order follows (s, a, s', V(s')) so masking can instantiate policy, world model, and value functions",
+        "additional camera latent frames can be removed for simpler robots"
+      ],
+      "backbone": [
+        "fine-tuned Cosmos video diffusion model over a latent-frame sequence",
+        "same denoising backbone is used for direct policy prediction, forward world modeling, and value prediction depending on masks",
+        "policy mode models p(a, s', V(s') | s)",
+        "world-model mode models p(s', V(s') | s, a)",
+        "value mode models p(V(s') | s, a, s') or related masked variants"
+      ],
+      "branches": [
+        "policy branch predicts action, future state, and value from current state",
+        "world model branch predicts future state and value conditioned on current state and action",
+        "value branch predicts future value from masked state-action-future inputs",
+        "planning branch samples candidate actions and evaluates them with world and value predictions"
+      ],
+      "attention": [
+        "all modalities are placed in one video-latent sequence so the Cosmos transformer can attend across state, action, future-state, camera, and value frames",
+        "conditional masks determine which latent frames are known context and which are denoising targets",
+        "autoregressive decoding can be used to improve future/value quality for planning, while parallel decoding is used for direct policy evaluation"
+      ],
+      "heads": [
+        "latent denoising outputs for the action latent frame",
+        "latent denoising outputs for future proprioception and future image frames",
+        "latent denoising output for the value latent frame",
+        "post-processing extracts normalized low-dimensional actions, proprioception, and value from their filled latent volumes"
+      ],
+      "objectives": [
+        "joint denoising objective over masked latent-frame targets",
+        "demonstration batches train p(a, s', V(s') | s)",
+        "rollout batches train p(s', V(s') | s, a) and value prediction",
+        "fine-tuning uses a rollout-heavy mix for world/value learning with a smaller policy fraction"
+      ],
+      "trainingRecipe": [
+        "sample tuples (s, a, s', V(s')) from demonstrations and rollouts",
+        "use about half demonstration data for policy training in the initial joint setup",
+        "split rollout data between world-model and value-mask objectives",
+        "during later fine-tuning use around 90 percent world/value batches and 10 percent policy batches",
+        "ALOHA setup uses 14 joint-angle state, 3 cameras, task descriptions, and 50-step action chunks covering about 2 seconds"
+      ],
+      "inferenceRecipe": [
+        "direct policy evaluation can decode only action-related targets in parallel",
+        "planning samples multiple candidate action chunks",
+        "the world model predicts future state and value for each candidate action",
+        "best-of-N selects actions using predicted values, optionally with ensembles of world and value models",
+        "deployment maintains separate policy and planning checkpoints when appropriate"
+      ]
+    },
+    "wog": {
+      "sourceExtract": "methods/wog.md",
+      "sourceLines": ["WoG.txt:139-278"],
+      "inputTokens": [
+        "current observation image",
+        "language instruction",
+        "future observation frames during training",
+        "VLM latent z from the final learnable token",
+        "noisy action chunk for rectified flow",
+        "future condition tokens O^c"
+      ],
+      "tokenization": [
+        "Prismatic/OpenVLA-style VLM encodes current observation and language into latent z",
+        "future observations are encoded by frozen vision foundation models rather than pixel prediction",
+        "default future encoders include DINOv2 semantic/discriminative features and Wan VAE generative features",
+        "teacher future features are projected to a unified dimension",
+        "Q-former future encoder uses learnable queries to compress teacher features into low-dimensional condition tokens O^c"
+      ],
+      "backbone": [
+        "Prismatic VLM backbone supplies current-state/language latent z",
+        "DiT action head models P(A | z, O^c) with rectified flow",
+        "future condition predictor models P(O^c | z) for runtime use",
+        "stage-I future encoder is frozen in stage II while the model learns to predict its condition space"
+      ],
+      "branches": [
+        "stage-I future-condition extraction branch maps real future observations into O^c",
+        "stage-I action branch trains action generation conditioned on z and extracted future condition",
+        "stage-II condition prediction branch predicts O^c from current observation/language only",
+        "human-video branch can train condition prediction without robot actions by masking the action loss"
+      ],
+      "attention": [
+        "Q-former queries action-relevant future features from teacher visual representations",
+        "future condition O^c is injected into each DiT action block through cross-attention together with z",
+        "stage-II learnable queries cross-attend to VLM last hidden states and align to the frozen future condition",
+        "runtime action prediction uses self-predicted condition tokens rather than encoded future frames"
+      ],
+      "heads": [
+        "DiT action vector-field head for rectified-flow action chunks",
+        "future condition predictor head f_q(O, l)",
+        "projectors from DINOv2 and Wan VAE features into the unified condition dimension"
+      ],
+      "objectives": [
+        "rectified-flow action loss for P(A | z, O^c)",
+        "cosine alignment loss between predicted condition and frozen future condition",
+        "stage-II combined loss is action RF loss plus 1 - cosine(O^c, f_q(O,l))",
+        "human-video action branch can be masked so only condition prediction is trained"
+      ],
+      "trainingRecipe": [
+        "stage I trains future condition extraction and action prediction using future observations",
+        "stage II freezes the Q-former and projectors and trains current-context prediction of O^c",
+        "human videos can be used either with small action-annotated data in stage I or as unlabeled condition-prediction data in stage II",
+        "the method intentionally moves world modeling into condition space instead of requiring future video generation"
+      ],
+      "inferenceRecipe": [
+        "encode current observation and language with the VLM to get z",
+        "predict future condition tokens O^c from current context",
+        "generate an action chunk with the DiT action head conditioned on z and predicted O^c",
+        "no future pixels or VAE video latents are decoded at runtime"
+      ]
+    },
+    "vla-jepa": {
+      "sourceExtract": "methods/vla-jepa.md",
+      "sourceLines": ["VLA-JEPA.txt:245-521"],
+      "inputTokens": [
+        "multi-view initial frames",
+        "language instruction",
+        "V-JEPA2 world-state feature sequences from videos",
+        "learned <latent_i> tokens",
+        "replicated latent action tokens for variable-length encoding",
+        "learned <action> token for robot action conditioning",
+        "noisy continuous action trajectory for flow matching"
+      ],
+      "tokenization": [
+        "V-JEPA2 encodes each video view into timestep-aware feature sequences",
+        "multi-view world state is formed by concatenating per-view V-JEPA features",
+        "Qwen3-VL maps special latent tokens inserted into the language/vision sequence into latent action representations",
+        "each latent token can be replicated K times to support variable-length latent action encoding",
+        "robot data appends embodied action tokens after latent tokens"
+      ],
+      "backbone": [
+        "Qwen3-VL backbone combines Qwen3 language model and SigLIP-2 vision encoder",
+        "V-JEPA2 provides frozen world-state targets from human and robot videos",
+        "latent world model predicts future V-JEPA state chunks from past states and latent tokens",
+        "conditional flow-matching action head generates continuous robot trajectories"
+      ],
+      "branches": [
+        "human-video latent world-model branch learns transition tokens without robot actions",
+        "robot-data branch jointly trains latent world-model reconstruction and continuous action generation",
+        "world state encoder branch produces multi-view V-JEPA feature targets",
+        "action branch consumes action conditioning z_a from the VLM and denoises continuous actions"
+      ],
+      "attention": [
+        "V-JEPA features are processed with time-causal attention to relate feature sequences and latent actions",
+        "world model uses full bidirectional attention among latent and world-state tokens within each timestep",
+        "attention across timesteps is strictly causal",
+        "VLM special latent and action tokens condition the world model and action head"
+      ],
+      "heads": [
+        "world-model head predicts next V-JEPA world-state chunk",
+        "conditional flow-matching action head predicts velocity for continuous action trajectories",
+        "VLM latent-token projection maps special tokens to z_ti and z_a conditioning vectors"
+      ],
+      "objectives": [
+        "V-JEPA latent reconstruction loss for predicted world states",
+        "conditional flow-matching loss for robot action trajectories",
+        "joint robot-data loss L = L_FM + beta L_WM",
+        "human-video pretraining uses the world-model objective without action labels"
+      ],
+      "trainingRecipe": [
+        "encode human videos with V-JEPA2 to produce time-indexed world-state feature sequences",
+        "train latent tokens to capture state transitions in the V-JEPA feature space",
+        "on robot data, add embodied action tokens and train the same latent world objective alongside action flow matching",
+        "use multi-view state representation when multiple robot cameras are available"
+      ],
+      "inferenceRecipe": [
+        "encode current multi-view frames and instruction with Qwen3-VL",
+        "use learned latent/action tokens as conditioning",
+        "integrate the action vector field from noise to continuous action trajectories",
+        "future V-JEPA reconstruction remains a training/alignment signal rather than a rendered runtime video requirement"
+      ]
+    },
+    "frappe": {
+      "sourceExtract": "methods/frappe.md",
+      "sourceLines": ["FRAPPE.txt:220-338", "FRAPPE.txt:351-355"],
+      "inputTokens": [
+        "RDT low-dimensional state tokens including proprioception z_t",
+        "noisy action chunk tokens",
+        "control frequency token c",
+        "diffusion timestep k",
+        "future prefix tokens p",
+        "SigLIP visual tokens from current observations",
+        "T5 language tokens",
+        "future observation teacher features e_{t+h}"
+      ],
+      "tokenization": [
+        "RDT action input sequence contains noisy actions, proprioception, control frequency, and diffusion timestep",
+        "learnable future prefix tokens are concatenated with the RDT input sequence",
+        "future observations are not predicted in pixels; frozen visual foundation encoders produce teacher embeddings",
+        "mid-training uses a distilled 86M teacher encoder derived from CLIP, DINOv2, and ViT",
+        "post-training uses multiple dedicated prefix-and-LoRA expert sets, one per visual teacher"
+      ],
+      "backbone": [
+        "base policy is RDT-1B, a diffusion transformer for bimanual action chunks",
+        "RDT conditions on SigLIP visual tokens and T5 language tokens through cross-attention layers",
+        "future representation alignment adds future prefix tokens to the RDT input",
+        "Mixture-of-Prefix-and-LoRA (MiPA) attaches multiple trainable prefix/LoRA experts to a shared RDT backbone",
+        "lightweight router aggregates latent action representations from the experts"
+      ],
+      "branches": [
+        "single-stream mid-training branch aligns one future prefix with a distilled multi-VFM teacher",
+        "post-training branch has M = 3 expert streams supervised by CLIP, DINOv2, and ViT teachers",
+        "router branch computes gating weights across experts",
+        "shared action head decodes the weighted latent action representation"
+      ],
+      "attention": [
+        "RDT cross-attends low-dimensional action/state tokens to high-dimensional SigLIP visual tokens and T5 language tokens",
+        "future prefix tokens participate in the DiT input sequence so the policy learns future-state aligned hidden features",
+        "each MiPA expert activates its own prefix and LoRA parameters while sharing the RDT backbone",
+        "router gating weights combine expert latent representations before the final action MLP"
+      ],
+      "heads": [
+        "RDT denoising action decoder predicts clean action chunks from noisy action inputs",
+        "future prefix projection is aligned to frozen teacher future visual embeddings by cosine loss",
+        "router network outputs expert weights",
+        "shared MLP action head maps weighted expert latents to executable action chunks"
+      ],
+      "objectives": [
+        "RDT action MSE denoising loss",
+        "cosine alignment loss between predicted future prefix p_t and stop-gradient teacher embedding e_{t+h}",
+        "sum of alignment losses across M visual foundation teachers",
+        "router load-balancing loss to prevent expert collapse",
+        "label smoothing on expert weights to keep every expert active",
+        "total loss L_action + lambda_1 L_align + lambda_2 L_balance"
+      ],
+      "trainingRecipe": [
+        "start from official RDT-1B pretrained weights",
+        "mid-training performs full/single-stream future representation alignment with the distilled 86M teacher for initialization",
+        "post-training trains only prefixes and LoRAs for memory-efficient multi-teacher alignment",
+        "experiments use 15k mid-training steps and 5k post-training steps from 50 task trajectories on two H100 GPUs"
+      ],
+      "inferenceRecipe": [
+        "run the RDT policy with the learned future prefixes and MiPA expert adapters",
+        "router combines expert latent representations",
+        "shared action MLP outputs the action chunk",
+        "future visual teacher encoders supervise training only and are not part of deployment"
+      ]
+    },
+    "ldamodel": {
+      "sourceExtract": "methods/lda-1b.md",
+      "sourceLines": ["LDA-1B.txt:271-488"],
+      "inputTokens": [
+        "current visual observations",
+        "language instruction",
+        "frozen VLM tokens",
+        "diffusion timestep embedding",
+        "learned task embedding for policy, forward dynamics, inverse dynamics, or visual forecasting",
+        "noisy action tokens",
+        "noisy future DINO visual-state tokens",
+        "register tokens for absent action or visual modalities"
+      ],
+      "tokenization": [
+        "visual targets are DINO latent features rather than VAE latents or pixels",
+        "actions are normalized into a unified hand-centric action space based on end-effector motion, wrist pose deltas, and finger configurations",
+        "parallel grippers use one degree of freedom while dexterous fingers are represented by keypoints in the wrist frame",
+        "four task embeddings specify which objective is active",
+        "two register tokens stand in for missing action or visual-state modalities so one architecture can train all objectives"
+      ],
+      "backbone": [
+        "latent dynamics action model extends UWM with language conditioning",
+        "conditioning inputs are current observation, language, diffusion timestep, and task specification",
+        "frozen VLM encodes observation and language",
+        "MM-DiT denoises action and future visual tokens in parallel",
+        "action and visual experts have modality-specific QKV/FFN parameters while interacting through shared multimodal self-attention"
+      ],
+      "branches": [
+        "policy branch predicts action chunks from observation and language",
+        "forward dynamics branch predicts future visual DINO states from current context and action",
+        "inverse dynamics branch predicts action from current/future visual states",
+        "visual forecasting branch predicts future DINO states without action labels",
+        "universal ingestion branch routes data according to available labels and quality"
+      ],
+      "attention": [
+        "MM-DiT uses shared multimodal self-attention over concatenated action and visual tokens",
+        "modality-specific experts retain separate QKV and feed-forward networks for action and visual streams",
+        "language tokens are injected by cross-attention",
+        "diffusion timestep plus task embedding modulates blocks through AdaLN",
+        "register tokens let the same attention stack handle objectives with absent modalities"
+      ],
+      "heads": [
+        "modality-specific output head for action velocity or denoised action",
+        "modality-specific output head for future DINO visual-state prediction",
+        "action encoder/decoder for the unified hand-centric command space",
+        "task-conditioned diffusion/vector-field output heads shared across objectives"
+      ],
+      "objectives": [
+        "flow matching loss on action tokens when action targets are available",
+        "flow matching or denoising loss on future DINO observation tokens",
+        "policy, forward dynamics, inverse dynamics, and visual forecasting objectives are selectively activated by task",
+        "high-quality robot/human demonstrations use all applicable objectives",
+        "lower-quality trajectories use dynamics and visual forecasting objectives",
+        "action-free human manipulation videos use visual forecasting only"
+      ],
+      "trainingRecipe": [
+        "co-train on heterogeneous embodied data through universal data ingestion",
+        "freeze the VLM and DINO encoders while training MM-DiT and action encoder/decoder",
+        "visual stream runs at about 3 Hz and action stream at about 10 Hz",
+        "pretraining reported with 48 H800 GPUs for 400k iterations and about 4608 GPU-hours"
+      ],
+      "inferenceRecipe": [
+        "for policy use the policy task embedding and provide current observation, language, timestep, and noisy action tokens",
+        "use a visual register token when future visual prediction is not required",
+        "denoise/generate the action chunk through the MM-DiT action stream",
+        "dynamics and forecasting modes can be invoked by swapping task embeddings and modality/register inputs"
+      ]
+    },
+    "adaworldpolicy": {
+      "sourceExtract": "methods/adaworldpolicy.md",
+      "sourceLines": ["AdaWorldPolicy.txt:229-305", "AdaWorldPolicy.txt:309-422", "AdaWorldPolicy.txt:434-483"],
+      "inputTokens": [
+        "static-camera image history x_static,t-Tc+1:t",
+        "gripper-camera image history x_gripper,t-Tc+1:t",
+        "force-torque history f_t-Tc+1:t",
+        "robot state vector q",
+        "T5-XXL text embeddings",
+        "diffusion noise level sigma",
+        "action token, either noise or known action depending on mode",
+        "future observation targets for imagination mode"
+      ],
+      "tokenization": [
+        "Cosmos-Predict2 VAE encodes visual camera streams into latent tokens",
+        "multi-view video is represented by concatenating VAE token sequences from each camera along the temporal dimension",
+        "each camera view receives an independent RoPE embedding to preserve view-specific spatial-temporal coherence",
+        "binary masks mark known condition tokens with 1 and prediction targets with 0",
+        "robot state and diffusion noise level are processed through MLPs and combined with text embeddings for AdaLN conditioning"
+      ],
+      "backbone": [
+        "three parallel Flow Matching DiT modules: World Model, Force Predictor, and Action Model",
+        "World Model builds on pretrained Cosmos-Predict2 and predicts future static/gripper visual states",
+        "Force Predictor is a lightweight DiT, about 0.4B parameters, for future force-torque prediction",
+        "Action Model is a lightweight DiT for action chunk generation",
+        "modules exchange information through Multi-modal Self-Attention while preserving specialized representations"
+      ],
+      "branches": [
+        "World Model branch predicts future camera observations",
+        "Force Predictor branch predicts future force-torque readings",
+        "Action Model branch predicts future robot actions",
+        "Mode I action-generation branch uses noise action tokens as targets",
+        "Mode II future-imagination branch treats the known executed action as a condition and predicts future observations",
+        "AdaOL branch computes prediction error after execution and updates LoRA parameters online"
+      ],
+      "attention": [
+        "MMSA concatenates world, force, and action queries/keys/values token-wise inside shared self-attention",
+        "each module can query information from the others while maintaining its own representation space",
+        "text, robot state, and noise-level conditioning are injected into all three backbones through AdaLN",
+        "input masks switch the role of the action token between denoising target and known condition"
+      ],
+      "heads": [
+        "visual future vector-field head for noised future observation latents",
+        "force vector-field head for future force-torque readings",
+        "action vector-field head for noised action chunks",
+        "VAE encoder used to compute online prediction error between real and imagined future observations",
+        "LoRA adapters for low-overhead online updates"
+      ],
+      "objectives": [
+        "Flow Matching action-generation loss L1 on noised actions conditioned on current observation",
+        "Flow Matching future-imagination loss L2 on noised future observations conditioned on current observation and action",
+        "joint training randomly switches between action generation and future imagination with probability p_a",
+        "total loss p_a L1 + (1 - p_a) L2",
+        "AdaOL online loss is squared VAE-latent error between real future observation and imagined future observation"
+      ],
+      "trainingRecipe": [
+        "offline training uses source-domain robot trajectories with static/gripper cameras and force sensors",
+        "train the three DiT modules end-to-end under random mode switching",
+        "condition all modules on T5-XXL text embeddings, MLP robot state, and MLP noise embedding",
+        "during deployment, use interaction tuples (o_t, a_t, o_{t+1}) for self-supervised test-time adaptation",
+        "only a small set of LoRA matrices, less than 0.1 percent of parameters, is updated online"
+      ],
+      "inferenceRecipe": [
+        "run Mode I with observation history and noise action tokens to generate an action sequence",
+        "execute the action on the robot",
+        "observe the real next state",
+        "run Mode II with the same observation and executed action to imagine the future observation",
+        "compute VAE-latent discrepancy between imagined and real future observations",
+        "apply a LoRA update before the next control iteration"
+      ]
+    },
+    "say-dream-act": {
+      "sourceExtract": "methods/say-dream-act.md",
+      "sourceLines": ["Say-Dream-Act.txt:252-425", "Say-Dream-Act.txt:502-548", "Say-Dream-Act.txt:707-726"],
+      "inputTokens": [
+        "language instruction",
+        "current real observation",
+        "historical real observation frames",
+        "clean first-frame video latent",
+        "noisy future video latent x_t",
+        "generated future keyframes",
+        "action query tokens for the action model"
+      ],
+      "tokenization": [
+        "COSMOS-PREDICT2 encodes video into 16-dimensional latent video variables",
+        "image-to-video conditioning replaces the first latent frame with a clean observation latent",
+        "arbitrary-length robot trajectories are uniformly compressed into a fixed number of keyframes",
+        "the paper sets the keyframe count n to 93 for length-agnostic imagination",
+        "the action model receives generated future frames plus real historical observations through separate vision encoders"
+      ],
+      "backbone": [
+        "world model backbone is selected from video generators and uses COSMOS-PREDICT2",
+        "domain-adapted video diffusion transformer predicts denoised future video latents",
+        "few-step distilled generator uses latent adversarial supervision and reconstruction loss",
+        "discriminator is initialized from COSMOS-PREDICT2 DiT weights with lightweight 3D convolutional heads on intermediate features",
+        "action model uses a transformer-based ACT-style backbone with separated vision encoders"
+      ],
+      "branches": [
+        "Say branch selects and adapts a spatially consistent video world model",
+        "Dream branch generates fixed-keyframe long-horizon future videos independent of execution length",
+        "Act branch treats generated future videos as in-context examples while grounding on real observations",
+        "domain-adaptation branch preserves the video prior while adapting to target robot videos",
+        "few-step distillation branch accelerates denoising for deployment"
+      ],
+      "attention": [
+        "COSMOS-PREDICT2 DiT conditions on auxiliary image-to-video inputs through its latent denoising stack",
+        "action transformer attends over encoded generated future frames, encoded real observations, and action query tokens",
+        "real observation context lets the action model correct spatial errors in generated videos rather than blindly executing them"
+      ],
+      "heads": [
+        "video DiT denoising head predicts clean latent x_0 from noisy latent x_t",
+        "3D convolutional discriminator heads output pixel-wise score maps from intermediate DiT feature maps",
+        "ACT-style action decoder outputs an action chunk for each observation",
+        "separate vision encoders embed real observations and generated future frames"
+      ],
+      "objectives": [
+        "COSMOS reconstruction loss weighted by noise level for domain adaptation",
+        "latent adversarial discriminator loss separating clean latents from denoised predictions",
+        "latent adversarial generator loss encouraging high-fidelity few-step denoising",
+        "generator objective lambda * adversarial loss plus reconstruction loss, with lambda reported as 0.1",
+        "action model is trained with generated future video predictions as contextual inputs and real trajectories as supervision"
+      ],
+      "trainingRecipe": [
+        "select COSMOS-PREDICT2 after benchmarking video generators on embodiment consistency, task completion, and spatial referring",
+        "domain-adapt the world model on robot manipulation videos",
+        "distill the adapted model with an 8-step target noise schedule for efficient denoising",
+        "train the world model for 10k iterations on LIBERO and 1k iterations for real-world training",
+        "initialize the action VLM with Qwen2.5 and apply LoRA rank 64",
+        "train the action model on 8 GPUs with batch size 128 for 20k steps, using future video predictions plus 8 uniformly sampled historical frames"
+      ],
+      "inferenceRecipe": [
+        "encode the current observation and instruction into the video world model",
+        "generate a fixed-keyframe dreamed future trajectory with few-step denoising",
+        "feed dreamed future frames and real historical observations to the ACT-style action model",
+        "predict action chunks while using real observations to correct generated-video errors",
+        "execute in closed loop with new real observations after each action chunk"
+      ]
+    },
+    "cowvla": {
+      "sourceExtract": "methods/cowvla.md",
+      "sourceLines": ["CoWVLA.txt:330-429", "CoWVLA.txt:430-556", "CoWVLA.txt:577-615"],
+      "inputTokens": [
+        "language instruction T",
+        "raw visual observation sequence V_1:t",
+        "raw action sequence A_1:t",
+        "first frame and terminal frame visual tokens during pretraining",
+        "learnable motion query token Q",
+        "sparse keyframe visual tokens",
+        "FAST-discretized action chunk tokens"
+      ],
+      "tokenization": [
+        "raw action sequence is partitioned into fixed-length chunks l_a",
+        "each action chunk is discretized into action tokens with FAST",
+        "the first frame of each action chunk is extracted as a keyframe",
+        "keyframes are quantized into visual tokens with VQGAN",
+        "a learnable motion query token Q aggregates latent dynamics for the window",
+        "pretraining sequence is [T, v_1^q, Q, v_f^q]",
+        "co-finetuning sequence is [T, keyframe_1^q, Q, A_1^q, keyframe_2^q, A_2^q, ...]"
+      ],
+      "backbone": [
+        "latent motion extractor is a pretrained video VAE following VidTwin",
+        "video VAE decomposes each video segment into a structure latent z_s and directional motion latents z_m^h and z_m^w",
+        "VLA decoder is a Transformer decoder for unified autoregressive next-token prediction",
+        "implementation follows UniVLA and uses an 8.5B Emu3 VLM backbone",
+        "MLP on the hidden state at Q predicts the continuous latent motion vector z_m"
+      ],
+      "branches": [
+        "structure branch uses a Q-Former with learnable queries to aggregate global semantics and low-frequency temporal dynamics",
+        "motion branch uses convolutions and height/width spatial averaging to produce directional motion embeddings",
+        "decoder branch reconstructs video from summed upsampled structure and motion components",
+        "pretraining branch predicts latent motion and terminal visual tokens from language plus first-frame context",
+        "co-finetuning branch autoregressively predicts action tokens and sparse visual checkpoints while supervising Q with latent motion"
+      ],
+      "attention": [
+        "causal masking prevents Q from attending to the terminal frame during pretraining",
+        "co-finetuning causal masking prevents Q from attending to future keyframes and action tokens",
+        "the VLA decoder autoregressively predicts visual and action tokens under the same sequence model",
+        "single-Q design forces one latent dynamics aggregator to summarize the full temporal horizon"
+      ],
+      "heads": [
+        "VAE decoder reconstructs video from structure and directional motion latents",
+        "MLP latent-motion head predicts z_m from Q hidden state",
+        "autoregressive token head predicts visual VQGAN tokens",
+        "autoregressive token head predicts FAST action tokens"
+      ],
+      "objectives": [
+        "video VAE objective with reconstruction, perceptual, adversarial, and KL losses",
+        "pretraining latent motion MSE on z_m plus cross-entropy for first and terminal visual tokens",
+        "co-finetuning action token cross-entropy",
+        "co-finetuning latent motion MSE from Q to extractor-produced z_m(V_1:f)",
+        "co-finetuning sparse visual checkpoint cross-entropy"
+      ],
+      "trainingRecipe": [
+        "fine-tune the VidTwin-based latent motion extractor on 237k robot-centric videos",
+        "sample each video segment to 16 frames resized to 224 x 224 for extractor training",
+        "pretrain the Emu3-based VLA decoder on 237k videos for 10k steps with batch size 256",
+        "LIBERO co-finetuning uses mixed OpenVLA-curated data from four suites with third-person and wrist views, batch size 128 for 8k iterations, image size 200 x 200, and action chunk length 10",
+        "SimplerEnv co-finetuning uses Bridge V2, batch size 128 for 12k iterations, image size 256 x 256, and action chunk length 5"
+      ],
+      "inferenceRecipe": [
+        "provide instruction and initial/current visual tokens to the autoregressive VLA decoder",
+        "use the Q token hidden state as an implicit latent motion chain",
+        "autoregressively decode FAST action tokens and optional sparse visual tokens",
+        "decode or map predicted action tokens to executable action chunks"
+      ]
+    },
+    "fast-wam": {
+      "sourceExtract": "methods/fast-wam.md",
+      "sourceLines": ["fast-wam.txt:241-284", "fast-wam.txt:285-402", "fast-wam.txt:431-446"],
+      "inputTokens": [
+        "current observation image or multi-camera concatenated image",
+        "language instruction",
+        "clean first-frame latent video tokens",
+        "noisy future video latent tokens used only during training",
+        "noisy action chunk tokens",
+        "T5 language embeddings"
+      ],
+      "tokenization": [
+        "Wan2.2-5B video VAE maps visual observations and future frames to latent video tokens",
+        "built-in T5 text encoder supplies language embeddings to all token groups through cross-attention",
+        "input tokens are organized into clean first-frame anchors, noisy future video latents, and action tokens",
+        "action horizon is 32",
+        "multiple cameras are concatenated into a single image before VAE encoding"
+      ],
+      "backbone": [
+        "Fast-WAM is built on the Wan2.2-5B video Diffusion Transformer",
+        "an action expert DiT is added for action chunk generation",
+        "full model is a Mixture-of-Transformer architecture with shared attention between video and action branches",
+        "action expert shares the video branch architecture but uses reduced hidden dimension 1024",
+        "reported total model size is 6B with a 1B action expert"
+      ],
+      "branches": [
+        "video branch denoises future video latents during training only",
+        "action branch denoises action tokens for direct action generation",
+        "clean first-frame anchor branch supplies shared current visual context",
+        "controlled Fast-WAM-Joint variant allows video/action token attention for joint denoising",
+        "controlled Fast-WAM-IDM variant generates future video first and conditions action prediction on it",
+        "no-video-cotraining variant removes only the video modeling loss"
+      ],
+      "attention": [
+        "all token groups cross-attend to language embeddings",
+        "future noisy video tokens attend bidirectionally within the video branch and can access clean first-frame tokens",
+        "action tokens attend bidirectionally within the action branch and can access clean first-frame tokens",
+        "action tokens cannot attend to future video tokens, preventing future leakage into the action branch",
+        "clean first-frame tokens do not attend to any other tokens",
+        "inference mask removes future video tokens entirely"
+      ],
+      "heads": [
+        "video flow-matching head predicts future video latent velocity",
+        "action flow-matching head predicts action chunk velocity",
+        "single-pass latent world representation z(o,l) parameterizes the action distribution at runtime"
+      ],
+      "objectives": [
+        "flow matching loss over action chunks",
+        "flow matching loss over future video latents",
+        "overall loss L = L_act + lambda L_vid",
+        "logit-normal noise schedule follows Wan2.2 practice for training and inference",
+        "controlled variants isolate video co-training from explicit test-time future imagination"
+      ],
+      "trainingRecipe": [
+        "train jointly on robot trajectories with future video and action chunks",
+        "use pretrained Wan2.2-5B video DiT, text encoder, and video VAE",
+        "future video frames are temporally downsampled by 4x, yielding 9 video frames per chunk",
+        "use AdamW with learning rate 1e-4, weight decay 0.01, cosine schedule, mixed precision, and gradient clipping at 1.0",
+        "Fast-WAM-Joint relaxes the attention mask to allow video/action attention",
+        "Fast-WAM-IDM applies noise augmentation to ground-truth video tokens with probability 0.5"
+      ],
+      "inferenceRecipe": [
+        "remove the future video branch entirely",
+        "retain only clean first-frame latent tokens and language embeddings",
+        "run the video backbone once to produce latent world features",
+        "denoise action tokens with the action expert for 10 steps with CFG scale 1.0",
+        "do not instantiate future noisy video tokens and do not explicitly denoise or decode future observations"
+      ]
+    },
+    "svam": {
+      "sourceExtract": "methods/s-vam.md",
+      "sourceLines": ["S-VAM.txt:214-390", "S-VAM.txt:393-465"],
+      "inputTokens": [
+        "reference observation frame",
+        "task description text",
+        "SVD one-step denoising noise input",
+        "multi-layer one-step denoising features from up-sampling blocks",
+        "DPAv3 reference and teacher features for geometry",
+        "DINOv2 reference and teacher features for semantics",
+        "learnable Uni-Perceiver query tokens",
+        "noisy action sequence a_j"
+      ],
+      "tokenization": [
+        "Stable Video Diffusion VAE encodes video into compressed latent frames",
+        "one-step denoising features are extracted from multiple up-sampling layers at the first denoising step",
+        "multi-resolution diffusion features are linearly interpolated to a unified spatial size and concatenated channel-wise",
+        "current-frame VFM reference features are temporally repeated and concatenated with one-step diffusion features",
+        "geometric and semantic foresight are represented in DPAv3 and DINOv2 feature spaces",
+        "Uni-Perceiver compresses spatiotemporal feature maps into N condensed latent tokens using learnable queries"
+      ],
+      "backbone": [
+        "video generation backbone is Stable Video Diffusion initialized from embodied-scene weights",
+        "geometric decoupler is a spatiotemporal transformer targeting DPAv3 future representations",
+        "semantic decoupler is a spatiotemporal transformer targeting DINOv2 future representations",
+        "each decoupler uses a linear embedding, K factorized spatial-then-temporal transformer blocks, and an output projection",
+        "action expert is a DiT diffusion policy conditioned on aggregated foresight and text"
+      ],
+      "branches": [
+        "one-step feature branch extracts fast but entangled predictive features from SVD",
+        "geometric branch self-distills DPAv3 future geometry from multi-step generated videos",
+        "semantic branch self-distills DINOv2 future semantics from multi-step generated videos",
+        "Uni-Perceiver branch concatenates geometric foresight, semantic foresight, and original one-step features",
+        "diffusion policy branch predicts executable robot actions"
+      ],
+      "attention": [
+        "decoupler blocks apply spatial transformer aggregation followed by temporal transformer aggregation",
+        "Uni-Perceiver first cross-attends learnable queries to the holistic context C",
+        "Uni-Perceiver then applies self-attention among condensed query tokens and an FFN",
+        "Diffusion policy receives F_agg and task text through cross-attention layers",
+        "geometric and semantic branches are optimized independently against their own VFM teacher spaces"
+      ],
+      "heads": [
+        "DPAv3 geometric foresight projection head",
+        "DINOv2 semantic foresight projection head",
+        "Uni-Perceiver token condensation head",
+        "DiT noise-prediction action head epsilon_phi(a_j, F_agg, E, j)",
+        "optional DPT probing head maps geometric foresight to depth maps for qualitative analysis"
+      ],
+      "objectives": [
+        "geometric foresight L2 self-distillation loss to DPAv3 features extracted from multi-step generated video",
+        "semantic foresight L2 self-distillation loss to DINOv2 features extracted from multi-step generated video",
+        "diffusion action loss predicting added action noise from noisy action sequence",
+        "teacher targets come from the diffusion model's own multi-step generations to avoid trajectory misalignment with ground-truth future frames"
+      ],
+      "trainingRecipe": [
+        "stage 1 fine-tunes the SVD backbone on embodied robot scenes",
+        "stage 2 freezes the video generation model and trains geometric and semantic decouplers for self-distilled foresight",
+        "stage 3 freezes SVD and decouplers and trains only the action expert",
+        "reported training uses 100k SVD steps on MetaWorld, 40k SVD steps on real tasks, 50k decoupler steps, and 40k-60k action-expert steps depending on benchmark"
+      ],
+      "inferenceRecipe": [
+        "run only a single SVD denoising forward pass to extract one-step diffusion features",
+        "convert these features into geometric and semantic foresight through the decouplers",
+        "aggregate foresight plus original diffusion features with Uni-Perceiver queries",
+        "condition the DiT diffusion policy on the condensed foresight and text embedding",
+        "avoid iterative video generation while retaining distilled multi-step foresight"
+      ]
+    },
+    "sim-distill": {
+      "sourceExtract": "methods/sim-distil.md",
+      "sourceLines": ["Sim Distil.txt:230-348", "Sim Distil.txt:349-386", "Sim Distil.txt:391-409"],
+      "inputTokens": [
+        "raw real or simulated observation o_t",
+        "history window of observations o_{t-H:t-1}",
+        "history window of actions a_{t-H:t-1}",
+        "candidate future action sequence a_{t:t+T-1}",
+        "simulator reward r_t",
+        "expert value target v_t",
+        "base-policy action chunk target"
+      ],
+      "tokenization": [
+        "encoder E_theta maps raw observation o_t to latent state z_t",
+        "history encoder C_theta encodes a compact history h_t from proprioceptive history, action history, and the most recent exteroceptive observation",
+        "latent dynamics model predicts a chunk of T future latent states in one forward pass",
+        "reward and value models operate over predicted latent trajectories rather than pixels",
+        "manipulation observations use three 224 x 224 RGB views encoded by pretrained ResNet-18 and fused with proprioception into a 64-dimensional latent state"
+      ],
+      "backbone": [
+        "planning-oriented latent world model with encoder, history encoder, latent dynamics, reward model, value model, and base policy",
+        "latent dynamics f_theta predicts z_hat_{t+1:t+T} from current latent z_t, candidate action sequence, and history h_t",
+        "reward model R_theta predicts dense rewards over predicted latent trajectory and actions",
+        "value model V_theta predicts future values over predicted latent trajectory",
+        "base policy pi_theta predicts action chunks to seed MPPI sampling"
+      ],
+      "branches": [
+        "simulation pretraining branch learns representation, dynamics, reward, value, and base policy from simulator-generated data",
+        "real adaptation branch freezes encoder, history encoder, reward model, value model, and policy while updating only dynamics",
+        "planning branch evaluates candidate action sequences with predicted rewards and terminal values",
+        "data generation branch alternates expert and suboptimal policies and injects random action perturbations for off-policy coverage"
+      ],
+      "attention": [
+        "chunked latent dynamics transformer uses cross-attention between encoded history tokens and candidate action sequence",
+        "causal masking lets the dynamics predict the future latent chunk in a single parallelized forward pass",
+        "transformer reward and value models attend over the entire predicted latent trajectory rather than scoring each timestep independently"
+      ],
+      "heads": [
+        "latent dynamics prediction head",
+        "reward prediction head",
+        "trajectory value prediction head",
+        "base-policy action chunk head",
+        "MPPI planner converts predicted returns into executed controls"
+      ],
+      "objectives": [
+        "simulation loss sums latent dynamics prediction to stop-gradient encoder targets",
+        "reward regression to privileged simulator rewards",
+        "value regression to expert value targets",
+        "behavior cloning loss only on uncorrupted expert-policy actions",
+        "real-world adaptation loss updates only dynamics by matching predicted future latents to frozen encoder targets"
+      ],
+      "trainingRecipe": [
+        "train a privileged state-based expert policy and save expert value plus intermediate checkpoints",
+        "generate diverse simulation rollouts from expert, suboptimal policies, and random perturbation windows",
+        "pretrain the full world model on simulated observations, rewards, values, and actions",
+        "initialize real dataset with optional offline real data",
+        "iterate real-world rollouts under MPPI and fine-tune only f_theta on supervised latent prediction",
+        "manipulation setup uses 100k simulated trajectories, H = T = 5, and 5 Hz control; quadruped setup uses 100M simulated trajectories, H = T = 25, and 50 Hz planning"
+      ],
+      "inferenceRecipe": [
+        "encode current observation and compact history",
+        "sample candidate future action sequences for MPPI",
+        "predict latent future chunks, reward sequence, and terminal value for each candidate",
+        "compute trajectory returns and importance-weight candidates",
+        "warm-start part of the candidate set from noisy base-policy action chunks",
+        "after collecting real rollouts, adapt only the latent dynamics model as system identification"
+      ]
+    },
+    "vampo": {
+      "sourceExtract": "methods/vampo.md",
+      "sourceLines": ["VAMPO.txt:131-204", "VAMPO.txt:267-413", "VAMPO.txt:442-446"],
+      "inputTokens": [
+        "current observation o",
+        "language instruction l",
+        "expert future video clip N",
+        "VAE-encoded expert future latent x_0",
+        "VPM condition c_v = (o, l)",
+        "intermediate predictive hidden states h_hat",
+        "noisy action sequence a_k",
+        "grouped denoising rollouts for GRPO"
+      ],
+      "tokenization": [
+        "Stable Video Diffusion VAE encodes future demonstration clips into latent targets",
+        "video prediction model adds continuous EDM-style Gaussian noise x_sigma = x_0 + sigma epsilon",
+        "predictive visual representation h_hat is extracted from multi-layer hidden states at the first denoising step",
+        "action generation model uses h_hat plus language as condition c_a",
+        "diffusion policy noising creates action tokens a_k from ground-truth actions"
+      ],
+      "backbone": [
+        "base video action model contains a video prediction model and an action generation model",
+        "VPM is Stable Video Diffusion with EDM-style denoising and Euler discrete ODE sampling",
+        "AGM is a diffusion policy action head with DDIM-style denoising",
+        "VAMPO post-trains only the VPM by viewing multi-step denoising as a stochastic sequential policy",
+        "policy optimization uses a hybrid sampler with stochasticity only at the first denoising step"
+      ],
+      "branches": [
+        "pretraining branch trains VPM and AGM on expert demonstrations",
+        "rollout branch samples G candidate future latents from the VPM",
+        "reward branch compares generated future latents to expert future latents with L1 and cosine rewards",
+        "GRPO branch updates the VPM toward high-reward visual dynamics",
+        "downstream action branch consumes improved first-step hidden features"
+      ],
+      "attention": [
+        "the action diffusion policy conditions on VPM hidden features and language",
+        "the hybrid denoising trajectory applies Euler Ancestral stochastic transition only for the first step before the action-relevant representation is captured",
+        "remaining VPM denoising steps are deterministic Euler ODE updates to preserve temporal consistency and reduce credit assignment noise"
+      ],
+      "heads": [
+        "VPM denoiser D_theta^v predicts clean future latent x_0 from noisy x_sigma",
+        "AGM denoiser D_theta^a reconstructs clean action sequence from noisy action a_k",
+        "verifiable reward head is not learned; it computes L1 and cosine agreement with expert latents",
+        "GRPO objective updates VPM denoiser policy ratios for the first stochastic transition"
+      ],
+      "objectives": [
+        "supervised VPM latent denoising loss",
+        "supervised AGM action denoising loss",
+        "terminal verifiable reward r = -lambda_L1 ||x_sigma0 - x_0||_1 + lambda_cos cosine(x_sigma0, x_0)",
+        "group-normalized advantages over G rollouts",
+        "clipped GRPO objective for the stochastic first denoising action"
+      ],
+      "trainingRecipe": [
+        "initialize from the VPP released VPM checkpoint",
+        "post-train the VPM on CALVIN ABC videos with 129454 video samples",
+        "train around 1.5k VPM post-training steps on 64 NVIDIA H20 GPUs",
+        "train the AGM on the whole CALVIN dataset for about 10 epochs on 8 NVIDIA H20 GPUs",
+        "no architectural changes are required to the base VPM-based VLA"
+      ],
+      "inferenceRecipe": [
+        "use the optimized VPM to produce more accurate future latent representations",
+        "extract h_hat from early denoising hidden states as before",
+        "condition the diffusion policy AGM on h_hat and language",
+        "denoise the action sequence with the standard action sampler",
+        "benefit is improved control-relevant visual dynamics rather than extra runtime modules"
+      ]
+    },
+    "eva": {
+      "sourceExtract": "methods/eva.md",
+      "sourceLines": ["EVA.txt:271-337", "EVA.txt:338-388"],
+      "inputTokens": [
+        "current observation history",
+        "language instruction",
+        "generated future video rollout",
+        "short temporal frame window I_{t-k:t+k}",
+        "IDM-decoded action sequence",
+        "robot velocity and acceleration limits",
+        "GRPO rollout group"
+      ],
+      "tokenization": [
+        "video model operates in latent space through a 3D VAE",
+        "flow matching linearly interpolates between Gaussian noise x_0 and latent video sample x_1",
+        "IDM stacks temporal frames in the channel dimension before convolutional feature extraction",
+        "spatial softmax converts each IDM feature channel into a 2D coordinate",
+        "decoded action trajectories are transformed into velocity, acceleration, and jerk sequences by finite differences"
+      ],
+      "backbone": [
+        "base video world model is a latent video diffusion/flow model with a DiT backbone",
+        "implementation instantiates Wan2.1-14B with diffusion forcing and initializes from Large Video Planner",
+        "inverse dynamics model is a supervised visuomotor network with convolutional backbone, spatial softmax, and MLP action regressor",
+        "EVA keeps the IDM frozen during generator post-training and uses it as an executability reward model",
+        "GRPO/Flow-GRPO fine-tunes the video generator with stochastic flow trajectories"
+      ],
+      "branches": [
+        "video rollout branch generates future visual trajectories from observation and instruction",
+        "IDM branch decodes generated frames into per-step actions",
+        "executability reward branch scores smoothness and embodiment-limit compliance",
+        "post-training branch updates the video generator with LoRA under GRPO",
+        "deployment branch uses generated video plus frozen IDM actions for execution"
+      ],
+      "attention": [
+        "video DiT uses conditional latent flow matching over video tokens",
+        "IDM does not use transformer attention; it uses convolutional features plus spatial softmax keypoint-like coordinates",
+        "GRPO constructs a stochastic trajectory distribution for the flow model during training while inference returns to the original flow sampler"
+      ],
+      "heads": [
+        "video velocity-field head v_theta(x_t, t, c)",
+        "IDM MLP action head f_phi(I_{t-k:t+k})",
+        "spatial-softmax coordinate head inside IDM",
+        "executability reward function over IDM-decoded action smoothness and limits"
+      ],
+      "objectives": [
+        "IDM supervised regression loss to ground-truth robot actions",
+        "Huber acceleration penalty",
+        "Huber jerk penalty",
+        "velocity-limit violation penalty",
+        "acceleration-limit violation penalty",
+        "bounded executability reward R(V) = (1 + P(A)/P0)^(-gamma)",
+        "GRPO objective with KL regularization to reference flow policy"
+      ],
+      "trainingRecipe": [
+        "train IDM on real robot trajectories and freeze it",
+        "SFT the Wan/LVP video world model on embodiment-specific data",
+        "sample G = 8 rollouts per prompt during GRPO fine-tuning",
+        "update video generator with LoRA rank 32 on 8 NVIDIA A800 GPUs, batch size 32",
+        "RoboTwin setup uses 21 tasks and 1050 video trajectories for fine-tuning"
+      ],
+      "inferenceRecipe": [
+        "generate a future visual rollout from current observation and language",
+        "apply the IDM over short temporal frame windows to decode actions",
+        "execute actions in receding horizon",
+        "for long-horizon tasks condition each new rollout on the most recent 4 camera frames",
+        "the aligned generator should produce future videos whose IDM-implied actions are smoother and within robot limits"
+      ]
+    },
+    "vtam": {
+      "sourceExtract": "methods/vtam.md",
+      "sourceLines": ["VTAM.txt:209-375", "VTAM.txt:388-434", "VTAM.txt:763-780"],
+      "inputTokens": [
+        "two RGB camera streams",
+        "GelSight tactile image stream",
+        "future multi-view visual and tactile frames",
+        "robot proprioceptive state",
+        "6-DoF end-effector pose plus gripper-width action",
+        "deformation-derived virtual force vector",
+        "flow-matching time and noise"
+      ],
+      "tokenization": [
+        "pretrained video VAE encodes RGB and tactile frames into a shared continuous latent space",
+        "view index v = 1,2 denotes visual camera views and v = 3 denotes GelSight tactile stream",
+        "tactile deformation uses optical flow from no-contact reference frame to current tactile frame",
+        "virtual force proxy F = [f_x, f_y, f_z] uses mean optical-flow shear components and flow divergence for normal compression",
+        "stage-II joint denoising target concatenates action, virtual force, and proprioceptive state"
+      ],
+      "backbone": [
+        "pretrained video backbone is initialized from Genie Envisioner / LTX-Video style checkpoint",
+        "multi-view diffusion process alternates intra-view self-attention and cross-view attention",
+        "shared visuo-tactile latent world model captures visual scene dynamics and tactile deformation dynamics",
+        "conditional diffusion/flow action head cross-attends to multimodal world representations",
+        "action expert is initialized after stage-I world-model adaptation"
+      ],
+      "branches": [
+        "visual view branch models third-person and first-person RGB latents",
+        "tactile branch models high-resolution GelSight deformation latents",
+        "cross-view fusion branch builds joint visuo-tactile predictive representation",
+        "virtual-force branch provides deformation-aware auxiliary supervision",
+        "action-state-force branch jointly predicts actions, future state, and virtual force"
+      ],
+      "attention": [
+        "each block first applies intra-view self-attention independently to each modality",
+        "updated tokens from all views are concatenated and processed by cross-view self-attention",
+        "action head receives multimodal representations through cross-attention",
+        "virtual-force joint target keeps tactile gradients active and prevents visual dominance during action training"
+      ],
+      "heads": [
+        "visuo-tactile latent flow vector-field head",
+        "conditional action velocity head",
+        "proprioceptive state velocity head",
+        "virtual force velocity head",
+        "VAE decoder for reconstructing predicted visual/tactile streams when needed"
+      ],
+      "objectives": [
+        "stage-I flow matching over future multi-view visual and tactile VAE latents, excluding initial conditioning frames",
+        "stage-II action flow-matching loss",
+        "stage-II proprioceptive state flow-matching loss",
+        "stage-II virtual force regularization loss",
+        "total stage-II objective L_action + lambda_1 L_state + lambda_2 L_force"
+      ],
+      "trainingRecipe": [
+        "stage I fine-tunes the video backbone exclusively for joint visuo-tactile latent dynamics",
+        "stage II trains the action expert with conditional joint action-state-force denoising",
+        "real dataset includes 100 chip pick-and-place, 105 whiteboard wiping, and 61 cucumber peeling trajectories collected by teleoperation",
+        "training uses 4 NVIDIA A100 40GB GPUs with DeepSpeed ZeRO Stage 2 and bf16 mixed precision",
+        "action head stage is trained for 20000 steps using flow matching"
+      ],
+      "inferenceRecipe": [
+        "encode synchronized RGB and GelSight streams with the shared VAE",
+        "run alternating in-view and cross-view attention to build predictive contact representation",
+        "condition the action diffusion head on multimodal latent features",
+        "predict action chunks, future state, and virtual force without external force-torque hardware",
+        "deploy at low-frequency closed loop for contact-rich tasks requiring force modulation"
+      ]
+    },
+    "gigaworld-policy": {
+      "sourceExtract": "methods/gigaworld-policy.md",
+      "sourceLines": ["GigaWorld-Policy.txt:221-342", "GigaWorld-Policy.txt:375-464"],
+      "inputTokens": [
+        "multi-view RGB observations from left, front, and right cameras",
+        "natural-language instruction",
+        "proprioceptive state",
+        "action chunk",
+        "action latent conditioning signal c_t",
+        "sparse future observation frames",
+        "future video VAE latents"
+      ],
+      "tokenization": [
+        "three camera views are merged into one composite image at standard input resolution",
+        "current and sparse future composite observations are encoded by the pretrained VAE into spatiotemporal visual tokens",
+        "proprioceptive states and actions are embedded into the pretrained hidden dimension with linear projections",
+        "language instruction is encoded by a pretrained language encoder and provided through cross-attention",
+        "visual tokens use 2D image-grid positional encodings while state/action tokens use 1D temporal positional encodings"
+      ],
+      "backbone": [
+        "unified 5B diffusion Transformer initialized from Wan video generation weights",
+        "single shared stack of transformer blocks processes observation, state, action, and future-video tokens",
+        "all token types share QKV projection matrices at every layer",
+        "model parameterizes action chunk prediction and visual feedforward dynamics in one architecture",
+        "future-video branch is optional at inference"
+      ],
+      "branches": [
+        "action modeling branch samples action chunk and action latent conditioning signal from observation, state, and language",
+        "visual dynamics branch predicts sparse future observations conditioned on observation, state, language, and action conditioning signal",
+        "pretraining branch learns visual dynamics from embodied video data",
+        "post-training branch learns target-robot action prediction and auxiliary video dynamics"
+      ],
+      "attention": [
+        "all modalities are packed into one token sequence [T_obs, T_state, T_action, T_future]",
+        "blockwise causal mask allows state and observation tokens to attend to each other but not action or future tokens",
+        "action tokens attend to state and current observation tokens but not future-video tokens",
+        "future-video tokens attend to state, current observation, and action tokens",
+        "language tokens are external cross-attention conditioning and are not part of the causal sequence"
+      ],
+      "heads": [
+        "action flow-matching head for action-token velocity",
+        "future-video flow-matching head for VAE latent velocity",
+        "linear state and action projectors",
+        "VAE decoder for optional future video visualization"
+      ],
+      "objectives": [
+        "pretraining optimizes only the video flow-matching objective",
+        "post-training combines video and action flow-matching objectives with scalar weights",
+        "future video objective predicts velocity field for VAE future latents conditioned on history and executed action chunk",
+        "action objective predicts velocity field for action tokens conditioned on history and language"
+      ],
+      "trainingRecipe": [
+        "initialize from a web-video pretrained Wan model",
+        "perform embodied data pretraining on about 10000 hours of robot-centered video and egocentric human video",
+        "robot-side sources include Agibot, RDT, RoboMind, ATARA, Open X-Embodiment, and DROID",
+        "human video sources include EgoDex, Ego4D, and Something-Something V2",
+        "post-train on target-robot trajectories pairing images, language, and actions"
+      ],
+      "inferenceRecipe": [
+        "form context from language, current proprioceptive state, and composite multi-view observation",
+        "sample only the action chunk tokens from the learned action flow model",
+        "do not instantiate future-video tokens for low-latency policy execution",
+        "optionally enable video prediction by jointly denoising future video tokens or by reusing the KV cache from action denoising",
+        "execute the decoded continuous action chunk and repeat after receiving new observations"
+      ]
+    },
+    "aim": {
+      "sourceExtract": "methods/aim.md",
+      "sourceLines": ["AIM.txt:160-272", "AIM.txt:276-365", "AIM.txt:990-990"],
+      "inputTokens": [
+        "three onboard RGB camera views",
+        "language instruction",
+        "packed RGB observation canvas",
+        "packed aligned spatial value map canvas",
+        "recent observation history",
+        "recent action history",
+        "future RGB noise tokens",
+        "future value-map noise tokens plus learned value noise token",
+        "future action noise tokens"
+      ],
+      "tokenization": [
+        "three camera views are packed into a T-pose canvas with head camera at top and wrist cameras on the sides",
+        "future RGB frames and aligned spatial value maps share the Wan2.2 VAE encoder so their token grids are geometrically aligned",
+        "the value-map stream starts from a pure black image/null value prior and denoises task-relevant spatial structure",
+        "dual-arm continuous action vectors are projected into action tokens with a lightweight MLP",
+        "T5 encodes language tokens, which are injected only into the video stream through cross-attention",
+        "autoregressive prefix contains recent observation tokens, recent action tokens, and instruction tokens"
+      ],
+      "backbone": [
+        "video generation model initialized from Wan2.2-TI2V-5B predicts future RGB and value maps",
+        "action head has the same depth as the video model but smaller hidden width",
+        "mixture-of-transformers architecture uses separate RGB, value-map, and action streams",
+        "each stream has its own QKV projections, shared masked attention after projection to common attention dimension, and stream-specific feed-forward transformations",
+        "action head receives task semantics only through shared world and value representations, not direct language conditioning"
+      ],
+      "branches": [
+        "future RGB branch denoises visual future tokens",
+        "future ASVM/value-map branch denoises aligned spatial intent maps",
+        "action branch denoises continuous dual-arm actions",
+        "intent-causal attention branch forces future information to pass through value maps before reaching actions",
+        "self-distillation RL branch updates only the action head while freezing video and value branches"
+      ],
+      "attention": [
+        "future video tokens attend to current observation, instruction tokens, past observations/actions, and future video tokens",
+        "future value tokens attend to current observation, past observations, future video tokens, and value tokens",
+        "future action tokens attend to current observation, historical action tokens, future value tokens, and action tokens",
+        "action tokens are explicitly prevented from attending directly to future RGB tokens",
+        "T5 language cross-attention enters the video stream; task semantics then propagate through video and value streams"
+      ],
+      "heads": [
+        "RGB flow-matching velocity head",
+        "value-map flow-matching velocity head",
+        "inverse-dynamics action head for continuous actions",
+        "GRPO-updated action policy head",
+        "VAE decoders for future RGB and ASVM outputs"
+      ],
+      "objectives": [
+        "weighted supervised loss L = L_rgb + lambda_m L_map + lambda_a L_act",
+        "L_rgb supervises future RGB flow velocity",
+        "L_map supervises future value-map flow velocity",
+        "L_act supervises inverse-dynamics action prediction",
+        "RL post-training reward combines environment sparse success and dense reward from predicted value map at projected action landing point",
+        "GRPO updates only the action head during self-distillation"
+      ],
+      "trainingRecipe": [
+        "construct 30K simulation manipulation trajectories with synchronized multi-view video, action sequences, and value-map annotations",
+        "stage 1 jointly trains future frame generation, value-map estimation, and action prediction",
+        "post-training freezes video and value-map branches and updates only the action head",
+        "dense reward is derived from the frozen predicted value maps, so the value head self-distills action learning without additional human labels",
+        "evaluation is reported on 50 RoboTwin 2.0 tasks under Easy and Hard settings"
+      ],
+      "inferenceRecipe": [
+        "pack current multi-view observations into the T-pose canvas",
+        "autoregressively denoise future RGB, value maps, and actions with KV caching for prior history",
+        "route action generation through the predicted value-map stream rather than raw future RGB",
+        "use the value map as the compact future-facing interface for action selection",
+        "execute continuous dual-arm actions and append new observations/tokens to the cached rollout context"
+      ]
+    },
+    "wav": {
+      "sourceExtract": "methods/wav-world-value-action.md",
+      "sourceLines": ["WAV-World-Value-Action.txt:165-357", "WAV-World-Value-Action.txt:358-525"],
+      "inputTokens": [
+        "past multi-view observations",
+        "language instruction",
+        "T5-XXL language embeddings",
+        "view-specific visual latent noise",
+        "sparse visual memory tokens",
+        "latent value noise token",
+        "latent action tokens",
+        "predicted future video feature chunks"
+      ],
+      "tokenization": [
+        "frozen T5-XXL encoder maps instruction into language embeddings for cross-attention",
+        "camera views such as head, left, and right are encoded as separate visual latent streams",
+        "video generator samples view-specific latent noise variables and conditions on initial observation plus sparse visual memory",
+        "trajectory value module initializes latent value tokens from noise",
+        "action decoder initializes latent action tokens and refines them using video and value features"
+      ],
+      "backbone": [
+        "WAV decomposes control into language-conditioned video generation, trajectory value evaluation, and action decoding",
+        "video generation module is a DiT backbone with T5 cross-attention",
+        "trajectory value module is a DiT-based autoregressive module over latent trajectory representations",
+        "action module is a DiT-based autoregressive decoder that cross-attends to video and value features",
+        "latent planning performs iterative inference by updating video and value noise distributions"
+      ],
+      "branches": [
+        "world/video branch predicts future visual trajectory features",
+        "trajectory value branch evaluates predicted futures with latent value tokens",
+        "action branch decodes executable robot actions from selected video/value latents",
+        "iterative latent planning branch reweights video and value noise distributions toward elite samples"
+      ],
+      "attention": [
+        "T5 language embeddings are injected into the video DiT through cross-attention",
+        "trajectory value tokens cross-attend to video features at each block",
+        "action tokens first cross-attend to video features and then cross-attend to latent value embeddings",
+        "planning loop uses value estimates to concentrate latent sampling probability mass on high-value feasible futures"
+      ],
+      "heads": [
+        "video flow head for future visual trajectory latent velocity",
+        "trajectory value flow head for cumulative discounted return/value token",
+        "action flow head for robot action velocity",
+        "SNR-based trajectory scoring function for planning"
+      ],
+      "objectives": [
+        "three-stage flow matching training",
+        "video flow loss predicts x1 - x0 for target video trajectories",
+        "with video frozen, value flow loss predicts v1 - v0 where v1 is cumulative discounted return",
+        "joint action flow loss predicts a1 - a0 conditioned on video and value latents",
+        "dense rule-based reward supplies return targets for value training"
+      ],
+      "trainingRecipe": [
+        "stage 1 trains the language-conditioned video generation module",
+        "stage 2 freezes the video model and trains trajectory value prediction",
+        "stage 3 jointly trains all modules with action flow matching",
+        "model is evaluated as a single WAV model across LIBERO Spatial, Object, Goal, and Long suites"
+      ],
+      "inferenceRecipe": [
+        "maintain Gaussian noise distributions for video latents and value latents",
+        "sample M video latent candidates and denoise each with the video generator",
+        "for each video candidate sample N value latent candidates and evaluate state values",
+        "score each video candidate by the best value SNR among its value samples",
+        "update video and value noise distributions from top elite samples with smoothing and variance decay",
+        "after K iterations sample optimized video/value latents and feed them to the action decoder"
+      ]
+    },
+    "dexworldmodel": {
+      "sourceExtract": "methods/dexworldmodel.md",
+      "sourceLines": ["DexWorldModel.txt:190-413", "DexWorldModel.txt:414-508", "DexWorldModel.txt:620-685"],
+      "inputTokens": [
+        "historical observation sequence",
+        "historical action sequence",
+        "language instruction",
+        "DINOv3 feature map f_t",
+        "future latent video noise",
+        "future action noise",
+        "TTT memory hidden state",
+        "EmbodiChain-generated trajectories"
+      ],
+      "tokenization": [
+        "raw observations are converted to DINOv3 semantic feature maps with patch size P = 16",
+        "CLWM avoids pixel or VAE texture reconstruction and generates DINO latent feature states",
+        "action chunks use tau = 16 actions per latent visual step",
+        "action representation follows LingBot-VA-style unified continuous actions; dual-arm systems use compact 30-dimensional actions",
+        "TTT memory internalizes historical context into dynamically updated layer weights instead of explicit KV tokens"
+      ],
+      "backbone": [
+        "Causal Latent World Model uses a MoT architecture unifying latent video model and action model",
+        "latent video model and action model share core transformer blocks initialized from Wan2.2-5B",
+        "domain-specific linear input/output projections and flow timestep embeddings separate video and action streams",
+        "DINOv3 base model is frozen as semantic feature extractor",
+        "Dual-State TTT Memory replaces unbounded KV cache for long-horizon conditioning"
+      ],
+      "branches": [
+        "stage-1 latent video flow branch denoises future DINO feature f_{t+1}",
+        "stage-2 action flow branch denoises action chunks conditioned on predicted future semantics",
+        "history augmentation branch corrupts historical latent features during training for robustness",
+        "long-term TTT memory branch updates only on real observations/actions",
+        "working TTT memory branch is forked during generation and can absorb predicted future features",
+        "EmbodiChain branch supplies physics-grounded generated data streams"
+      ],
+      "attention": [
+        "shared MoT transformer blocks enforce cross-modal alignment between latent video and action streams",
+        "TTT-MLP layer uses key/value/query-like low-rank projections and a self-supervised reconstruction inner loop",
+        "gated TTT output is added residually to avoid destabilizing pretrained predictions",
+        "working TTT memory is frozen during continuous ODE integration and updated only at the intermediate predicted future state",
+        "SAI conditions early pre-denoising on speculative predicted future semantics, then swaps to calibrated long-term memory when real observation arrives"
+      ],
+      "heads": [
+        "latent video vector-field head",
+        "action vector-field head",
+        "DINOv3 feature extraction target",
+        "TTT-MLP memory update head",
+        "EmbodiChain online data streaming/generation interface"
+      ],
+      "objectives": [
+        "conditional flow matching loss for latent video DINO feature prediction",
+        "conditional flow matching loss for action chunks",
+        "TTT self-supervised reconstruction loss for memory updates",
+        "history augmentation trains robustness to noisy latent histories",
+        "online data streaming maintains high novelty of generated physics-grounded trajectories"
+      ],
+      "trainingRecipe": [
+        "pretrain on aggregated manipulation datasets such as RoboMind, Agibot World Beta, and InternData-A1",
+        "extract DINOv3 feature maps from raw video frames before WAM training",
+        "post-training/task adaptation can use EmbodiChain-generated physics-grounded trajectories instead of manual downstream demonstrations",
+        "EmbodiChain creates assets, scenes, reachability-aware trajectories, recovery data, visual augmentations, and online streaming batches",
+        "reported implementation uses AdamW, learning rate 1e-4, batch size 128, about 20 epochs, 64 H100 GPUs, and about 20 days"
+      ],
+      "inferenceRecipe": [
+        "long-term TTT memory absorbs each real observation/action pair with O(1) spatial memory",
+        "stage 1 predicts future DINO semantic feature from current memory and language",
+        "working memory absorbs predicted future feature before action decoding",
+        "stage 2 predicts the action chunk conditioned on updated working memory and predicted future semantics",
+        "Speculative Asynchronous Inference pre-denoises next-step latents during physical action execution using speculative future features",
+        "when the real next observation arrives, calibrate long-term memory and finish only the remaining denoising interval"
+      ]
+    },
+    "x-wam": {
+      "sourceExtract": "methods/x-wam.md",
+      "sourceLines": ["X-WAM.txt:258-435", "X-WAM.txt:436-446"],
+      "inputTokens": [
+        "language instruction",
+        "initial proprioceptive state",
+        "multi-view initial RGB observations",
+        "future RGB video noise",
+        "future depth video targets/noise",
+        "future proprioceptive state tokens",
+        "future action tokens",
+        "view embeddings and temporal RoPE"
+      ],
+      "tokenization": [
+        "Wan2.2 causal VAE encodes RGB video frames into latent representations",
+        "proprioceptive states and actions are projected into latent space with learnable MLPs and decoded back with symmetric MLPs",
+        "unified denoising sequence concatenates initial RGB latent, future RGB latents, initial state, future states, and future actions",
+        "depth maps are replicated to three channels as pseudo-RGB and encoded by the same VAE",
+        "multi-view compatibility is added with learnable view embeddings on top of pretrained 3D RoPE",
+        "state/action tokens use temporal RoPE aligned to video-frame timing"
+      ],
+      "backbone": [
+        "X-WAM fine-tunes Wan2.2-TI2V-5B video DiT into a unified 4D world action model",
+        "main branch jointly denoises RGB video, proprioceptive states, and actions",
+        "lightweight depth adaptation branch replicates the final M DiT blocks rather than doubling the sequence",
+        "depth branch reads main-branch features by unilateral cross-attention while the main branch is unaffected",
+        "asynchronous noise sampling trains video and action/state streams under matched test-time noise distributions"
+      ],
+      "branches": [
+        "RGB video branch predicts H future RGB frames",
+        "state branch predicts H future proprioceptive states",
+        "action branch predicts K high-frequency future actions",
+        "depth branch predicts inverse depth for RGB frames",
+        "4D reconstruction branch fuses multi-view RGB-D using static camera poses and wrist pose from predicted end-effector pose"
+      ],
+      "attention": [
+        "main unified sequence uses bidirectional full attention across RGB, state, and action latents",
+        "initial observation and initial state are kept clean with timestep t = 0",
+        "depth branch cross-attends to same-layer main-branch inputs but depth tokens do not feed back into the main branch",
+        "view embeddings identify different camera views while preserving pretrained positional geometry",
+        "ANS enforces t_video >= t_action during coupled training to match asynchronous inference"
+      ],
+      "heads": [
+        "RGB/video flow velocity head",
+        "state flow velocity head",
+        "action flow velocity head",
+        "inverse-depth MSE regression head",
+        "state/action MLP decoders to physical spaces",
+        "VAE decoder for RGB and pseudo-depth outputs"
+      ],
+      "objectives": [
+        "flow matching loss for future RGB latents",
+        "flow matching loss for future state tokens",
+        "flow matching loss for future action tokens",
+        "direct inverse-depth MSE loss for the depth branch",
+        "total loss L_total = L_O + lambda_s L_s + lambda_a L_a + lambda_D L_depth"
+      ],
+      "trainingRecipe": [
+        "conditions include one initial RGB frame and one initial state",
+        "default prediction uses H = 8 future RGB frames, H = 8 future states, and K = 32 future actions",
+        "actions run at 4x the video/state frame rate",
+        "train on over 5800 hours of real-robot and simulated manipulation data",
+        "unify state/action interface as dual-arm end-effector poses and gripper positions; single-arm robots supervise the left arm only"
+      ],
+      "inferenceRecipe": [
+        "use separate UniPC scheduler instances and step sizes for video and state/action modalities",
+        "denoise actions and states for T_a steps and dispatch the action chunk immediately",
+        "continue video denoising for T_O - T_a additional steps if high-quality video or 4D reconstruction is desired",
+        "after actions become clean they condition the remaining video denoising as an action-conditioned world model",
+        "depth branch can be toggled off on some denoising steps to reduce rollout overhead"
+      ]
+    },
+    "motubrain": {
+      "sourceExtract": "methods/motubrain.md",
+      "sourceLines": ["MotuBrain.txt:87-176", "MotuBrain.txt:180-348", "MotuBrain.txt:350-573"],
+      "inputTokens": [
+        "text instruction tokens",
+        "condition-image latents from Vidu VAE",
+        "noisy future video latents",
+        "noisy action tokens",
+        "multi-view video latents",
+        "relative end-effector action chunks",
+        "clean teacher-forced past video tokens for AR mode",
+        "latency-constrained previous action chunk"
+      ],
+      "tokenization": [
+        "condition image is represented as the first video latent frame and teacher-forced in the video stream",
+        "remaining video latents and action tokens are denoised by separate streams",
+        "multi-view inputs are independently encoded by Vidu VAE and concatenated at token level",
+        "view-dependent 3D RoPE offsets are added along spatial dimensions while temporal dimension is shared",
+        "actions use relative end-effector coordinates against the conditioned frame",
+        "each end-effector action has 10 dimensions: position, 6D rotation, and gripper state; only gripper is normalized to [-1, 1]"
+      ],
+      "backbone": [
+        "unified video-action backbone follows UniDiffuser for continuous video and action modalities",
+        "three-stream Mixture-of-Transformers has text, video, and action streams",
+        "text stream participates in attention but has no output head",
+        "video and action streams are trained with flow matching",
+        "H-bridge attention applies full video-action joint attention only in the middle 50 percent of layers while bottom/top 25 percent use decoupled attention",
+        "base video model is Vidu"
+      ],
+      "branches": [
+        "text branch conditions instruction following",
+        "video branch models future video/world dynamics",
+        "action branch models action-token velocity fields",
+        "non-autoregressive post-training branch denoises full video/action window in one forward pass",
+        "autoregressive post-training branch uses chunk-level block-causal factorization for long horizons",
+        "V2A inference branch uses a short joint prefix followed by action-only suffix"
+      ],
+      "attention": [
+        "joint attention over video, action, and text tokens enables cross-modal interaction",
+        "H-bridge keeps shallow and deep layers modality-specific while allowing middle-layer grounding",
+        "stage-1 pretraining updates only video branch",
+        "stage-2 pretraining uses full joint attention over language, conditioned video, video, and action tokens",
+        "non-AR post-training disables video-to-action leakage pattern according to the V2A-style mask",
+        "AR post-training uses a causal mask so chunk k attends only to clean visual context from preceding chunks",
+        "V2A attention lets action tokens attend to video/language while video tokens do not attend to actions"
+      ],
+      "heads": [
+        "video velocity output head",
+        "action velocity output head",
+        "relative end-effector action decoder",
+        "DiT cache for velocity reuse",
+        "FP8-quantized linear projections for inference",
+        "action chunk smoothing and frequency-aware interpolation module"
+      ],
+      "objectives": [
+        "stage-1 video-only flow loss",
+        "stage-2 weighted video and action MSE/flow losses L = lambda_v L_v + lambda_a L_a",
+        "separate SNR-based timestep sampling with timeshift 6 for video and 1 for action",
+        "post-training under Non-AR and AR settings on target embodiment data",
+        "inference optimizations reduce denoising steps and reuse cached DiT outputs without changing training objective"
+      ],
+      "trainingRecipe": [
+        "data pyramid spans internet videos, egocentric videos, heterogeneous embodiment data, and target embodiment data",
+        "start from pretrained Vidu weights",
+        "stage 1 trains only video branch on egocentric and heterogeneous embodiment data while leaving action branch unchanged",
+        "use noisy-conditioning augmentation with probability 0.5 and multiview auxiliary-view dropout probability 0.1",
+        "stage 2 freezes video branch and trains only action branch on heterogeneous embodiment data while optimizing both video/action objectives",
+        "post-train from stage-2 checkpoint on specific-embodiment data in separate Non-AR and AR settings",
+        "RoboTwin setup uses 2500 clean demonstrations and 25000 randomized demonstrations, with video at 5 Hz and actions at 10 Hz"
+      ],
+      "inferenceRecipe": [
+        "apply separate SNR-trained noise schedules to reduce denoising steps from 50 to 30",
+        "compile the pure PyTorch single-GPU inference graph with torch.compile",
+        "apply FP8 quantization to eligible linear layers",
+        "use DiT cache when consecutive velocity predictions are similar",
+        "run V2A-style schedule with a short joint video/action prefix and an action-only suffix using cached visual-language K/V",
+        "smooth action chunks with Savitzky-Golay filtering and frequency-aware interpolation",
+        "run model inference asynchronously from robot execution and constrain the next chunk with the unexecuted remainder of the previous chunk using a latency-aware fusion window"
+      ]
+    }
+  }
+}

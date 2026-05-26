@@ -1,0 +1,715 @@
+{
+  "version": "0.1.0",
+  "purpose": "Source-backed literal architecture specs for generated WAM diagrams. Each spec should be grounded in method-section extracts, not only survey-level taxonomy.",
+  "curationStatus": {
+    "completeEnoughForRendering": [
+      "fast-wam",
+      "x-wam",
+      "univla",
+      "flare",
+      "dust",
+      "gigaworld-policy",
+      "uwm",
+      "gr-2",
+      "vpp"
+    ],
+    "nextToCurate": [
+      "motus",
+      "motubrain",
+      "videovla",
+      "ud-vla",
+      "vla-jepa",
+      "dreamzero",
+      "genie",
+      "mimic-video",
+      "vtam",
+      "aim"
+    ],
+    "note": "High-level cards exist for the full atlas. Literal architecture diagrams should be trusted first for models listed in completeEnoughForRendering until the rest are curated from methods."
+  },
+  "models": {
+    "fast-wam": {
+      "sourceExtract": "methods/fast-wam.md",
+      "sourceLines": ["Fast-WAM.txt:286-402", "Fast-WAM.txt:431-444"],
+      "inputTokens": [
+        "task language encoded by Wan2.2 built-in T5 text encoder",
+        "clean latent tokens of the first observation frame from the pretrained video VAE",
+        "noisy future-video latent tokens used only during training",
+        "action chunk tokens processed by an action expert DiT"
+      ],
+      "tokenization": [
+        "visual observations -> pretrained Wan2.2 video VAE latent tokens",
+        "language -> T5 embeddings supplied to all token groups through cross-attention",
+        "actions -> action encoder tokens for chunk horizon h=32"
+      ],
+      "backbone": [
+        "Wan2.2-5B video Diffusion Transformer used as single-pass world encoder",
+        "Mixture-of-Transformer layout with shared attention between video and action branches",
+        "1B action expert DiT with reduced hidden dimension da=1024"
+      ],
+      "branches": [
+        "video branch denoises future video latents during training",
+        "action branch denoises action tokens",
+        "future video branch is removed entirely at inference"
+      ],
+      "attention": [
+        "all token groups cross-attend to language embeddings",
+        "future video tokens attend bidirectionally within video branch and to clean first-frame tokens",
+        "action tokens attend bidirectionally within action branch and to clean first-frame tokens",
+        "action tokens cannot attend to future video tokens",
+        "clean first-frame tokens do not attend to other tokens"
+      ],
+      "heads": [
+        "action expert DiT predicts action chunk velocity field",
+        "video DiT predicts future latent-frame velocity field during co-training"
+      ],
+      "objectives": [
+        "flow matching over action chunk a_1:H",
+        "flow matching over future video latents z_1:T",
+        "joint loss L = L_act + lambda L_vid"
+      ],
+      "trainingRecipe": [
+        "train with clean first-frame tokens, noisy future video latents, and noisy action tokens",
+        "use structured mask to prevent future-video leakage into action branch",
+        "same flow-matching formulation for video and action branches"
+      ],
+      "inferenceRecipe": [
+        "keep only clean first-frame latent tokens",
+        "run video DiT once to produce latent world representation",
+        "denoise action tokens with action expert",
+        "do not instantiate future video tokens or perform future video denoising"
+      ],
+      "diagramModules": [
+        { "id": "lang", "lane": "inputs", "label": "Language", "type": "input", "details": "Task instruction", "source": "Fast-WAM.txt:297-300" },
+        { "id": "frame", "lane": "inputs", "label": "Current Frame", "type": "input", "details": "First observation frame", "source": "Fast-WAM.txt:304-306" },
+        { "id": "future", "lane": "inputs", "label": "Future Frames", "type": "training", "details": "Training-only noisy latents", "source": "Fast-WAM.txt:304-306" },
+        { "id": "actions", "lane": "inputs", "label": "Action Chunk", "type": "input", "details": "Noisy action tokens", "source": "Fast-WAM.txt:306-307" },
+        { "id": "t5", "lane": "tokenization", "label": "T5 Text Encoder", "type": "tokenizer", "details": "Cross-attention condition", "source": "Fast-WAM.txt:297-300" },
+        { "id": "vae", "lane": "tokenization", "label": "Wan2.2 Video VAE", "type": "tokenizer", "details": "Image -> latent video tokens", "source": "Fast-WAM.txt:297-300" },
+        { "id": "actenc", "lane": "tokenization", "label": "Action Encoder", "type": "tokenizer", "details": "Chunk tokens", "source": "Fast-WAM.txt:304-307" },
+        { "id": "videodit", "lane": "backbone", "label": "Video DiT", "type": "backbone", "details": "Wan2.2-5B world backbone", "source": "Fast-WAM.txt:296-303" },
+        { "id": "mask", "lane": "backbone", "label": "Structured Mask", "type": "attention", "details": "No future->action leakage", "source": "Fast-WAM.txt:308-369" },
+        { "id": "actiondit", "lane": "heads", "label": "Action Expert DiT", "type": "head", "details": "1B, da=1024", "source": "Fast-WAM.txt:431-434" },
+        { "id": "vidloss", "lane": "training", "label": "Video Flow Loss", "type": "objective", "details": "L_vid on z_1:T", "source": "Fast-WAM.txt:395-402" },
+        { "id": "actloss", "lane": "training", "label": "Action Flow Loss", "type": "objective", "details": "L_act on a_1:H", "source": "Fast-WAM.txt:375-402" },
+        { "id": "out", "lane": "outputs", "label": "Actions", "type": "output", "details": "Action chunk only at runtime", "source": "Fast-WAM.txt:370-373" }
+      ],
+      "diagramEdges": [
+        { "from": "lang", "to": "t5", "label": "encode" },
+        { "from": "frame", "to": "vae", "label": "latent tokens" },
+        { "from": "future", "to": "vae", "label": "training latents", "kind": "training" },
+        { "from": "actions", "to": "actenc", "label": "tokenize" },
+        { "from": "t5", "to": "videodit", "label": "cross-attn" },
+        { "from": "vae", "to": "videodit", "label": "clean anchor + future" },
+        { "from": "videodit", "to": "mask", "label": "masked shared attention" },
+        { "from": "mask", "to": "actiondit", "label": "latent world features" },
+        { "from": "actenc", "to": "actiondit", "label": "noisy actions" },
+        { "from": "actiondit", "to": "out", "label": "denoise" },
+        { "from": "videodit", "to": "vidloss", "label": "training only", "kind": "training" },
+        { "from": "actiondit", "to": "actloss", "label": "train", "kind": "training" }
+      ]
+    },
+    "x-wam": {
+      "sourceExtract": "methods/x-wam.md",
+      "sourceLines": ["X-WAM.txt:269-407"],
+      "inputTokens": [
+        "language instruction c",
+        "initial proprioceptive state s0",
+        "multi-view initial RGB observations O0",
+        "future RGB/video latents, future state latents, and action latents during denoising"
+      ],
+      "tokenization": [
+        "RGB videos -> original Wan2.2 causal VAE encoder E",
+        "proprioceptive states -> learnable MLP_s latent projection",
+        "actions -> learnable MLP_a latent projection",
+        "depth maps -> pseudo-RGB replicated channels encoded in same VAE latent space",
+        "view embeddings mark camera index; temporal RoPE aligns state/action/video time"
+      ],
+      "backbone": [
+        "Wan2.2-TI2V-5B video generation Diffusion Transformer",
+        "unified denoising sequence Z = [zO0, zO1:H, zs0, zs1:H, za1:K]",
+        "bidirectional full attention over unified denoising sequence"
+      ],
+      "branches": [
+        "main RGB/state/action branch",
+        "auxiliary depth branch made by replicating final M DiT blocks",
+        "depth branch reads main branch through unilateral cross-attention"
+      ],
+      "attention": [
+        "depth branch attends to same-layer main branch input",
+        "main branch is unaffected by depth tokens",
+        "initial observation and state remain clean with timestep t=0"
+      ],
+      "heads": [
+        "VAE decoder reconstructs RGB and depth",
+        "symmetric MLP decoders recover state and action latents",
+        "action output is available after Ta denoising steps"
+      ],
+      "objectives": [
+        "flow matching velocity prediction for O, s, and a modalities",
+        "depth branch inverse-depth MSE loss",
+        "coupled asynchronous noise-level sampling with tO >= ta"
+      ],
+      "trainingRecipe": [
+        "fine-tune from Wan2.2-5B with multi-view RGB, states, actions, and depth supervision",
+        "sample video/action noise from a joint distribution that matches asynchronous inference",
+        "predict H=8 future RGB frames, H=8 future states, and K=32 actions"
+      ],
+      "inferenceRecipe": [
+        "start video and action from noise",
+        "run Ta action/state denoising steps and dispatch actions",
+        "optionally continue video denoising to TO steps for high-fidelity RGB-D future",
+        "depth branch can be toggled to reduce rollout overhead"
+      ],
+      "diagramModules": [
+        { "id": "rgb", "lane": "inputs", "label": "Multi-view RGB", "type": "input", "details": "O0 plus future targets", "source": "X-WAM.txt:269-275" },
+        { "id": "state", "lane": "inputs", "label": "Proprio State", "type": "input", "details": "s0 and s1:H", "source": "X-WAM.txt:270-277" },
+        { "id": "act", "lane": "inputs", "label": "Actions", "type": "input", "details": "a1:K, K=32", "source": "X-WAM.txt:270-289" },
+        { "id": "lang", "lane": "inputs", "label": "Instruction", "type": "input", "details": "language c", "source": "X-WAM.txt:269-274" },
+        { "id": "vae", "lane": "tokenization", "label": "Causal VAE", "type": "tokenizer", "details": "RGB/depth latent space", "source": "X-WAM.txt:274-277" },
+        { "id": "mlps", "lane": "tokenization", "label": "State MLP", "type": "tokenizer", "details": "s -> z_s", "source": "X-WAM.txt:276-280" },
+        { "id": "mlpa", "lane": "tokenization", "label": "Action MLP", "type": "tokenizer", "details": "a -> z_a", "source": "X-WAM.txt:276-280" },
+        { "id": "viewrope", "lane": "tokenization", "label": "View Embeds + RoPE", "type": "tokenizer", "details": "view index and temporal alignment", "source": "X-WAM.txt:290-300" },
+        { "id": "dit", "lane": "backbone", "label": "Wan2.2 DiT", "type": "backbone", "details": "Unified sequence, full attention", "source": "X-WAM.txt:273-282" },
+        { "id": "depth", "lane": "backbone", "label": "Depth Blocks x M", "type": "branch", "details": "replicated final DiT blocks", "source": "X-WAM.txt:319-342" },
+        { "id": "unilat", "lane": "backbone", "label": "Unilateral Attention", "type": "attention", "details": "depth reads main; main unchanged", "source": "X-WAM.txt:332-340" },
+        { "id": "ans", "lane": "heads", "label": "ANS Sampler", "type": "runtime", "details": "Ta action steps, TO video steps", "source": "X-WAM.txt:355-407" },
+        { "id": "rgbout", "lane": "outputs", "label": "RGB-D Future", "type": "output", "details": "4D reconstruction/generation", "source": "X-WAM.txt:318-351" },
+        { "id": "actout", "lane": "outputs", "label": "Actions", "type": "output", "details": "dispatch after Ta", "source": "X-WAM.txt:361-371" }
+      ],
+      "diagramEdges": [
+        { "from": "rgb", "to": "vae", "label": "encode" },
+        { "from": "state", "to": "mlps", "label": "project" },
+        { "from": "act", "to": "mlpa", "label": "project" },
+        { "from": "vae", "to": "viewrope", "label": "view/time tokens" },
+        { "from": "viewrope", "to": "dit", "label": "unified sequence" },
+        { "from": "mlps", "to": "dit", "label": "state latents" },
+        { "from": "mlpa", "to": "dit", "label": "action latents" },
+        { "from": "dit", "to": "depth", "label": "shared first N-M blocks" },
+        { "from": "dit", "to": "unilat", "label": "main branch" },
+        { "from": "unilat", "to": "depth", "label": "cross-attn" },
+        { "from": "dit", "to": "ans", "label": "denoise" },
+        { "from": "depth", "to": "rgbout", "label": "depth decode" },
+        { "from": "ans", "to": "actout", "label": "Ta steps" },
+        { "from": "ans", "to": "rgbout", "label": "TO steps" }
+      ]
+    },
+    "univla": {
+      "sourceExtract": "methods/univla.md",
+      "sourceLines": ["UniVLA.txt:300-620"],
+      "inputTokens": [
+        "paired frames o_t and o_t+k",
+        "DINOv2 patch features O_t and O_t+k",
+        "task instruction embedding from T5",
+        "latent action tokens ACT_i",
+        "third-view RGB and language for policy"
+      ],
+      "tokenization": [
+        "DINOv2 converts video frames to object-centric patch features",
+        "spatial-temporal transformer IDM encoder infers latent action tokens",
+        "VQ codebooks quantize task-irrelevant and task-centric latent actions",
+        "Prismatic-7B VLM vocabulary is extended with ACT_1..ACT_C tokens"
+      ],
+      "backbone": [
+        "two-stage latent action model with IDM encoder and FDM decoder",
+        "Prismatic-7B policy: SigLIP + DINOv2 visual encoder, projection layer, LLaMA-2 LLM",
+        "auto-regressive latent action prediction"
+      ],
+      "branches": [
+        "Stage 1 learns task-irrelevant action code conditioned on language",
+        "Stage 2 freezes task-irrelevant codebook and learns task-centric codebook",
+        "post-training action decoder maps latent actions to low-level controls"
+      ],
+      "attention": [
+        "IDM encoder is a spatial-temporal transformer with causal temporal masks",
+        "post-training decoder uses multi-head attention pooling over visual and latent action embeddings"
+      ],
+      "heads": [
+        "FDM spatial transformer predicts future DINOv2 features",
+        "auto-regressive VLM predicts next latent action token",
+        "lightweight action decoder projects latent action embeddings to embodiment-specific action chunks"
+      ],
+      "objectives": [
+        "DINOv2 feature reconstruction ||O_hat_t+k - O_t+k||^2",
+        "VQ-VAE objective for latent action quantization",
+        "next-latent-action negative log likelihood",
+        "post-training L1 loss on low-level actions"
+      ],
+      "trainingRecipe": [
+        "Stage 1: learn task-irrelevant latent action with T5 instruction conditioning",
+        "Stage 2: copy/freeze Stage 1 codebook and learn new task-centric latent action codebook",
+        "pretrain generalist policy by labeling videos with latent action tokens",
+        "post-train with LoRA and a small action head for target embodiment"
+      ],
+      "inferenceRecipe": [
+        "policy receives RGB, task instruction, and optional history latent actions",
+        "auto-regressively predicts N=4 latent action tokens",
+        "action decoder converts latent action embedding plus visual context into low-level action chunk"
+      ],
+      "diagramModules": [
+        { "id": "frames", "lane": "inputs", "label": "Frame Pair", "type": "input", "details": "o_t, o_t+k", "source": "UniVLA.txt:308-316" },
+        { "id": "instr", "lane": "inputs", "label": "Instruction", "type": "input", "details": "T5 embedding", "source": "UniVLA.txt:350-366" },
+        { "id": "dino", "lane": "tokenization", "label": "DINOv2 Features", "type": "tokenizer", "details": "patch targets and inputs", "source": "UniVLA.txt:333-345" },
+        { "id": "idm", "lane": "backbone", "label": "IDM Encoder", "type": "backbone", "details": "spatial-temporal transformer", "source": "UniVLA.txt:316-322" },
+        { "id": "vqti", "lane": "backbone", "label": "VQ TI Codebook", "type": "branch", "details": "task-irrelevant code", "source": "UniVLA.txt:367-389" },
+        { "id": "vqtc", "lane": "backbone", "label": "VQ TC Codebook", "type": "branch", "details": "task-centric code", "source": "UniVLA.txt:391-418" },
+        { "id": "fdm", "lane": "heads", "label": "FDM Decoder", "type": "head", "details": "future DINO feature prediction", "source": "UniVLA.txt:316-345" },
+        { "id": "vlm", "lane": "backbone", "label": "Prismatic-7B VLM", "type": "backbone", "details": "SigLIP+DINOv2 -> LLaMA-2", "source": "UniVLA.txt:425-442" },
+        { "id": "acttok", "lane": "heads", "label": "ACT Tokens", "type": "head", "details": "ACT_1..ACT_C vocabulary", "source": "UniVLA.txt:442-455" },
+        { "id": "decoder", "lane": "heads", "label": "Action Decoder", "type": "head", "details": "attention pooling + linear projection", "source": "UniVLA.txt:492-520" },
+        { "id": "out", "lane": "outputs", "label": "Robot Actions", "type": "output", "details": "embodiment-specific chunk", "source": "UniVLA.txt:515-527" }
+      ],
+      "diagramEdges": [
+        { "from": "frames", "to": "dino", "label": "features" },
+        { "from": "instr", "to": "idm", "label": "condition" },
+        { "from": "dino", "to": "idm", "label": "transition" },
+        { "from": "idm", "to": "vqti", "label": "stage 1" },
+        { "from": "vqti", "to": "vqtc", "label": "freeze + specialize" },
+        { "from": "vqtc", "to": "fdm", "label": "decode future" },
+        { "from": "vqtc", "to": "acttok", "label": "label videos", "kind": "training" },
+        { "from": "acttok", "to": "vlm", "label": "AR targets" },
+        { "from": "vlm", "to": "decoder", "label": "latent embeddings" },
+        { "from": "decoder", "to": "out", "label": "decode" }
+      ]
+    },
+    "flare": {
+      "sourceExtract": "methods/flare.md",
+      "sourceLines": ["FLARE.txt:120-250"],
+      "inputTokens": [
+        "robot vision-language embedding phi_t",
+        "current proprioceptive state q_t",
+        "noised action chunk A_t^tau",
+        "M learnable future tokens"
+      ],
+      "tokenization": [
+        "SigLIP-2 vision/text encoders produce image and instruction tokens",
+        "four self-attention transformer layers fuse vision-language tokens",
+        "Q-former compresses fused sequence into M=32 query tokens",
+        "state encoder and action encoder feed the DiT policy sequence"
+      ],
+      "backbone": [
+        "Diffusion Transformer policy with alternating cross-attention and self-attention layers",
+        "future tokens interact with action stream through DiT self-attention",
+        "action-aware future embedding model is pretrained with 8 DiT blocks"
+      ],
+      "branches": [
+        "action flow-matching branch predicts denoising direction for action chunk",
+        "future-token branch is sliced from internal DiT layer L and aligned to future observation embedding"
+      ],
+      "attention": [
+        "DiT alternates self-attention and cross-attention to condition on robot vision-language embedding",
+        "learnable future tokens and action stream interact through self-attention"
+      ],
+      "heads": [
+        "MLP projection maps future-token activations to teacher embedding dimension",
+        "action denoising head outputs flow velocity for action chunk"
+      ],
+      "objectives": [
+        "flow matching loss L_fm for action chunk",
+        "future latent alignment loss using cosine similarity",
+        "combined loss L = L_fm + lambda L_align with lambda=0.2"
+      ],
+      "trainingRecipe": [
+        "pretrain compact action-aware embedding model on about 2,000 hours of cross-embodiment robot data",
+        "post-train policy jointly with action flow matching and future latent alignment",
+        "EMA update adapts embedding target with policy encoder during finetuning"
+      ],
+      "inferenceRecipe": [
+        "sample initial action chunk noise",
+        "perform K=4 forward Euler denoising steps",
+        "future tokens shape hidden state but no future pixels are decoded"
+      ],
+      "diagramModules": [
+        { "id": "obs", "lane": "inputs", "label": "Vision + Text", "type": "input", "details": "robot observation and instruction", "source": "FLARE.txt:190-205" },
+        { "id": "state", "lane": "inputs", "label": "State q_t", "type": "input", "details": "proprioceptive state", "source": "FLARE.txt:130-138" },
+        { "id": "noiseact", "lane": "inputs", "label": "Noisy Action", "type": "input", "details": "A_t^tau", "source": "FLARE.txt:130-138" },
+        { "id": "siglip", "lane": "tokenization", "label": "SigLIP-2 Encoders", "type": "tokenizer", "details": "vision/text tokens", "source": "FLARE.txt:190-197" },
+        { "id": "qformer", "lane": "tokenization", "label": "Q-Former", "type": "tokenizer", "details": "M=32 compact tokens", "source": "FLARE.txt:197-200" },
+        { "id": "dit", "lane": "backbone", "label": "Action DiT", "type": "backbone", "details": "self/cross-attn blocks", "source": "FLARE.txt:120-126" },
+        { "id": "futuretokens", "lane": "backbone", "label": "Future Tokens", "type": "branch", "details": "M learnable slots at layer L", "source": "FLARE.txt:130-147" },
+        { "id": "align", "lane": "training", "label": "Future Alignment", "type": "objective", "details": "cosine to future embedding", "source": "FLARE.txt:147-167" },
+        { "id": "fm", "lane": "training", "label": "Action Flow Loss", "type": "objective", "details": "denoising direction", "source": "FLARE.txt:120-126" },
+        { "id": "out", "lane": "outputs", "label": "Action Chunk", "type": "output", "details": "K=4 denoising steps", "source": "FLARE.txt:120-126" }
+      ],
+      "diagramEdges": [
+        { "from": "obs", "to": "siglip", "label": "encode" },
+        { "from": "siglip", "to": "qformer", "label": "compress" },
+        { "from": "qformer", "to": "dit", "label": "condition" },
+        { "from": "state", "to": "dit", "label": "state token" },
+        { "from": "noiseact", "to": "dit", "label": "action token" },
+        { "from": "dit", "to": "futuretokens", "label": "internal layer L" },
+        { "from": "futuretokens", "to": "align", "label": "align", "kind": "training" },
+        { "from": "dit", "to": "fm", "label": "train", "kind": "training" },
+        { "from": "dit", "to": "out", "label": "denoise" }
+      ]
+    },
+    "dust": {
+      "sourceExtract": "methods/dust.md",
+      "sourceLines": ["DUST.txt:250-430"],
+      "inputTokens": [
+        "frozen Eagle-2 VLM features Phi_t from current observation and task instruction",
+        "robot proprioceptive state o_t^s",
+        "noised action sequence A_t^tau",
+        "noised future observation embedding o_t+k^tau"
+      ],
+      "tokenization": [
+        "Eagle-2 layer-12 semantic features condition diffusion module",
+        "future image embedding target comes from SIGLIP-2 representations produced by Eagle-2",
+        "each image yields 256 tokens, reduced to 64 tokens via 2x2 average pooling",
+        "diffusion module processes 1 state token, 16 action tokens, and 64 future image tokens"
+      ],
+      "backbone": [
+        "12 MMDiT blocks for joint-modal processing",
+        "4 modality-specific DiT blocks for action stream",
+        "4 modality-specific DiT blocks for vision stream"
+      ],
+      "branches": [
+        "action stream denoises low-level motor trajectories",
+        "vision stream denoises future image embedding",
+        "streams concatenate only temporarily inside shared cross-modal attention"
+      ],
+      "attention": [
+        "separate action and vision pathways inside each MMDiT block",
+        "shared cross-modal attention exchanges information",
+        "streams split back for other operations",
+        "interleaved VLM conditioning with alternating self-attention and cross-attention"
+      ],
+      "heads": [
+        "action velocity prediction head V_theta^A",
+        "future embedding velocity prediction head V_theta^o"
+      ],
+      "objectives": [
+        "independent per-modality noising for actions and future image embeddings",
+        "flow matching action loss L_A",
+        "world-modeling embedding loss L_WM",
+        "joint loss L_joint = L_A + lambda_WM L_WM"
+      ],
+      "trainingRecipe": [
+        "frozen VLM backbone; diffusion expert randomly initialized",
+        "independently sample tau_A and tau_o to learn forward and inverse dependencies",
+        "world-model target avoids direct pixel prediction"
+      ],
+      "inferenceRecipe": [
+        "jointly sample actions and future embeddings in parallel",
+        "vision tokens can update every fine step while action tokens update every q steps",
+        "q controls test-time speed/accuracy scaling"
+      ],
+      "diagramModules": [
+        { "id": "obs", "lane": "inputs", "label": "Obs + Instruction", "type": "input", "details": "current context", "source": "DUST.txt:250-256" },
+        { "id": "state", "lane": "inputs", "label": "State Token", "type": "input", "details": "1 proprio token", "source": "DUST.txt:395-430" },
+        { "id": "act", "lane": "inputs", "label": "Noisy Actions", "type": "input", "details": "16 action tokens", "source": "DUST.txt:395-430" },
+        { "id": "future", "lane": "inputs", "label": "Noisy Future Emb.", "type": "input", "details": "64 image tokens", "source": "DUST.txt:395-430" },
+        { "id": "eagle", "lane": "tokenization", "label": "Frozen Eagle-2", "type": "tokenizer", "details": "layer-12 VLM features", "source": "DUST.txt:395-430" },
+        { "id": "mmdits", "lane": "backbone", "label": "12 MMDiT Blocks", "type": "backbone", "details": "joint-modal shared attention", "source": "DUST.txt:250-268" },
+        { "id": "astream", "lane": "backbone", "label": "Action Stream", "type": "branch", "details": "4 DiT blocks", "source": "DUST.txt:265-268" },
+        { "id": "vstream", "lane": "backbone", "label": "Vision Stream", "type": "branch", "details": "4 DiT blocks", "source": "DUST.txt:265-268" },
+        { "id": "jointloss", "lane": "training", "label": "Decoupled Flow Loss", "type": "objective", "details": "L_A + lambda L_WM", "source": "DUST.txt:270-350" },
+        { "id": "sampler", "lane": "heads", "label": "Async Euler Sampler", "type": "runtime", "details": "N_o = q x N_A", "source": "DUST.txt:360-391" },
+        { "id": "out", "lane": "outputs", "label": "Actions + Future Emb.", "type": "output", "details": "parallel samples", "source": "DUST.txt:360-391" }
+      ],
+      "diagramEdges": [
+        { "from": "obs", "to": "eagle", "label": "Phi_t" },
+        { "from": "eagle", "to": "mmdits", "label": "condition" },
+        { "from": "state", "to": "mmdits", "label": "state" },
+        { "from": "act", "to": "mmdits", "label": "action stream" },
+        { "from": "future", "to": "mmdits", "label": "vision stream" },
+        { "from": "mmdits", "to": "astream", "label": "split" },
+        { "from": "mmdits", "to": "vstream", "label": "split" },
+        { "from": "astream", "to": "jointloss", "label": "L_A", "kind": "training" },
+        { "from": "vstream", "to": "jointloss", "label": "L_WM", "kind": "training" },
+        { "from": "astream", "to": "sampler", "label": "action velocity" },
+        { "from": "vstream", "to": "sampler", "label": "vision velocity" },
+        { "from": "sampler", "to": "out", "label": "sample" }
+      ]
+    },
+    "gigaworld-policy": {
+      "sourceExtract": "methods/gigaworld-policy.md",
+      "sourceLines": ["GigaWorld-Policy.txt:250-430"],
+      "inputTokens": [
+        "composited multi-view observation tokens T_o",
+        "proprioceptive state tokens T_s",
+        "action tokens T_a",
+        "sparse future video tokens T_f",
+        "language instruction tokens supplied through cross-attention"
+      ],
+      "tokenization": [
+        "three camera views merged into one composite image at standard resolution",
+        "current and sparse future composite observations encoded with pretrained VAE",
+        "proprioceptive states and actions linearly projected to hidden dimension",
+        "visual tokens use 2D positional encoding; state/action tokens use 1D temporal positional encoding"
+      ],
+      "backbone": [
+        "5B Wan diffusion Transformer adapted with action-centered objective",
+        "single shared stack of Transformer blocks, not MoE",
+        "all token types share Q/K/V projection matrices at every layer"
+      ],
+      "branches": [
+        "action branch reads current observations and states",
+        "future-video branch reads observations, states, and action chunks",
+        "language instruction is external cross-attention condition"
+      ],
+      "attention": [
+        "blockwise causal mask: state and current observation attend to each other",
+        "action tokens attend to state/current observation but not future video",
+        "future-video tokens attend to state/current observation/action",
+        "prevents future-frame leakage into action generation"
+      ],
+      "heads": [
+        "action flow head predicts action-token velocity field",
+        "video flow head predicts future VAE-latent velocity field"
+      ],
+      "objectives": [
+        "pretraining optimizes only video flow-matching objective",
+        "post-training combines video and action flow objectives with scalar weights"
+      ],
+      "trainingRecipe": [
+        "initialize from Wan pretrained video model",
+        "embodied pretraining on about 10,000 hours of robot-centered and egocentric human video",
+        "post-train on target-robot trajectories pairing images, language, and actions"
+      ],
+      "inferenceRecipe": [
+        "drop future visual tokens from deployed action path",
+        "generate action tokens from current observation/state/language",
+        "future video can be modeled as feedforward dynamics conditioned on action chunks when needed"
+      ],
+      "diagramModules": [
+        { "id": "views", "lane": "inputs", "label": "3 Camera Views", "type": "input", "details": "left/front/right composite", "source": "GigaWorld-Policy.txt:264-279" },
+        { "id": "state", "lane": "inputs", "label": "State", "type": "input", "details": "proprio tokens", "source": "GigaWorld-Policy.txt:287-295" },
+        { "id": "act", "lane": "inputs", "label": "Action Chunk", "type": "input", "details": "T_a", "source": "GigaWorld-Policy.txt:287-295" },
+        { "id": "lang", "lane": "inputs", "label": "Language", "type": "input", "details": "cross-attention only", "source": "GigaWorld-Policy.txt:350-353" },
+        { "id": "compose", "lane": "tokenization", "label": "Composite View", "type": "tokenizer", "details": "multi-view image at standard resolution", "source": "GigaWorld-Policy.txt:264-279" },
+        { "id": "vae", "lane": "tokenization", "label": "Pretrained VAE", "type": "tokenizer", "details": "visual VAE latents", "source": "GigaWorld-Policy.txt:281-289" },
+        { "id": "proj", "lane": "tokenization", "label": "Linear Projections", "type": "tokenizer", "details": "state/action -> hidden dim", "source": "GigaWorld-Policy.txt:287-295" },
+        { "id": "shared", "lane": "backbone", "label": "Shared Wan Transformer", "type": "backbone", "details": "shared QKV stack", "source": "GigaWorld-Policy.txt:291-305" },
+        { "id": "mask", "lane": "backbone", "label": "Blockwise Causal Mask", "type": "attention", "details": "future cannot inform action", "source": "GigaWorld-Policy.txt:320-353" },
+        { "id": "videoobj", "lane": "training", "label": "Video Flow Obj.", "type": "objective", "details": "future latent velocity", "source": "GigaWorld-Policy.txt:376-405" },
+        { "id": "actobj", "lane": "training", "label": "Action Flow Obj.", "type": "objective", "details": "action velocity", "source": "GigaWorld-Policy.txt:396-412" },
+        { "id": "out", "lane": "outputs", "label": "Action Tokens", "type": "output", "details": "action-centered runtime", "source": "GigaWorld-Policy.txt:320-353" }
+      ],
+      "diagramEdges": [
+        { "from": "views", "to": "compose", "label": "merge" },
+        { "from": "compose", "to": "vae", "label": "encode" },
+        { "from": "state", "to": "proj", "label": "project" },
+        { "from": "act", "to": "proj", "label": "project" },
+        { "from": "vae", "to": "shared", "label": "T_o, T_f" },
+        { "from": "proj", "to": "shared", "label": "T_s, T_a" },
+        { "from": "lang", "to": "shared", "label": "cross-attn" },
+        { "from": "shared", "to": "mask", "label": "causal flow" },
+        { "from": "mask", "to": "out", "label": "action path" },
+        { "from": "mask", "to": "videoobj", "label": "future branch", "kind": "training" },
+        { "from": "mask", "to": "actobj", "label": "action branch", "kind": "training" }
+      ]
+    },
+    "uwm": {
+      "sourceExtract": "methods/uwm.md",
+      "sourceLines": ["uwm.txt:142-349", "uwm.txt:841-907"],
+      "inputTokens": [
+        "current observations o",
+        "noisy future observation latent o'_t_o'",
+        "noisy action chunk a_t_a",
+        "separate diffusion timesteps t_a and t_o'",
+        "learnable register tokens"
+      ],
+      "tokenization": [
+        "current observations encoded by ResNet-18 conditioner",
+        "future observations encoded into SDXL VAE latents and patchified",
+        "actions encoded into tokens with shallow MLP",
+        "diffusion timesteps encoded with shared sinusoidal timestep encoder"
+      ],
+      "backbone": [
+        "diffusion Transformer with observation and timestep conditioning via AdaLN",
+        "register tokens provide intermediary medium for action and image modalities",
+        "implementation uses 12 layers, embed dim 768, 12 heads, action length 16"
+      ],
+      "branches": [
+        "same model can act as policy, video predictor, inverse dynamics, or forward dynamics by setting modality timesteps",
+        "robot trajectory batches train both action and next-observation prediction",
+        "action-free video batches mask out actions via diffusion timestep"
+      ],
+      "attention": [
+        "tokens share Transformer context with register tokens",
+        "conditioning is through AdaLN rather than cross-attention in the main implementation"
+      ],
+      "heads": [
+        "action noise prediction head",
+        "future observation latent noise prediction head",
+        "VAE decoder can decode future image latents"
+      ],
+      "objectives": [
+        "standard diffusion denoising loss across action and next-observation noise predictions",
+        "independent modality-specific timesteps enable marginalization/conditioning"
+      ],
+      "trainingRecipe": [
+        "sample transition tuples (o, a, o')",
+        "sample action and observation diffusion timesteps independently",
+        "co-train with action-free video by setting action diffusion timestep to fully noisy/masked"
+      ],
+      "inferenceRecipe": [
+        "policy: set image diffusion timestep to T and denoise actions",
+        "inverse dynamics: condition on clean future observation and denoise actions",
+        "forward dynamics: condition on action and denoise future observations",
+        "video prediction: denoise future observation marginal"
+      ],
+      "diagramModules": [
+        { "id": "obs", "lane": "inputs", "label": "Current Obs", "type": "input", "details": "conditioning o", "source": "uwm.txt:142-185" },
+        { "id": "act", "lane": "inputs", "label": "Noisy Actions", "type": "input", "details": "a_ta", "source": "uwm.txt:242-248" },
+        { "id": "future", "lane": "inputs", "label": "Noisy Future Obs", "type": "input", "details": "o'_to", "source": "uwm.txt:242-248" },
+        { "id": "resnet", "lane": "tokenization", "label": "ResNet-18 Conditioner", "type": "tokenizer", "details": "current obs features", "source": "uwm.txt:326-335" },
+        { "id": "vae", "lane": "tokenization", "label": "SDXL VAE", "type": "tokenizer", "details": "future image latents", "source": "uwm.txt:339-347" },
+        { "id": "mlp", "lane": "tokenization", "label": "Action MLP", "type": "tokenizer", "details": "action tokens", "source": "uwm.txt:336-341" },
+        { "id": "time", "lane": "tokenization", "label": "t_a, t_o Encoders", "type": "tokenizer", "details": "sinusoidal timestep embeddings", "source": "uwm.txt:326-335" },
+        { "id": "regs", "lane": "backbone", "label": "Register Tokens", "type": "branch", "details": "modality exchange medium", "source": "uwm.txt:312-349" },
+        { "id": "dit", "lane": "backbone", "label": "Diffusion Transformer", "type": "backbone", "details": "AdaLN conditioned", "source": "uwm.txt:277-349" },
+        { "id": "ahead", "lane": "heads", "label": "Action Noise Head", "type": "head", "details": "policy / inverse", "source": "uwm.txt:231-259" },
+        { "id": "ohead", "lane": "heads", "label": "Future Noise Head", "type": "head", "details": "video / forward", "source": "uwm.txt:231-259" },
+        { "id": "modes", "lane": "outputs", "label": "4 Inference Modes", "type": "output", "details": "policy, inverse, forward, video", "source": "uwm.txt:225-277" }
+      ],
+      "diagramEdges": [
+        { "from": "obs", "to": "resnet", "label": "condition" },
+        { "from": "future", "to": "vae", "label": "latent" },
+        { "from": "act", "to": "mlp", "label": "tokenize" },
+        { "from": "resnet", "to": "dit", "label": "AdaLN" },
+        { "from": "time", "to": "dit", "label": "AdaLN" },
+        { "from": "vae", "to": "dit", "label": "future tokens" },
+        { "from": "mlp", "to": "dit", "label": "action tokens" },
+        { "from": "regs", "to": "dit", "label": "registers" },
+        { "from": "dit", "to": "ahead", "label": "noise pred" },
+        { "from": "dit", "to": "ohead", "label": "noise pred" },
+        { "from": "ahead", "to": "modes", "label": "actions" },
+        { "from": "ohead", "to": "modes", "label": "future obs" }
+      ]
+    },
+    "gr-2": {
+      "sourceExtract": "methods/gr2.md",
+      "sourceLines": ["gr2.txt:524-584"],
+      "inputTokens": [
+        "language instruction tokenized by frozen text encoder",
+        "sequence of video frames tokenized by VQGAN",
+        "multi-view robot image sequences during finetuning",
+        "robot state sequence containing end-effector/gripper state",
+        "action trajectory generated by cVAE"
+      ],
+      "tokenization": [
+        "VQGAN converts each image into discrete tokens and is frozen",
+        "frozen text encoder tokenizes instruction",
+        "robot states are embedded as sequence inputs"
+      ],
+      "backbone": [
+        "GPT-style transformer visual manipulation policy",
+        "pretrained on text-video next future image token prediction",
+        "fine-tuned for future image generation and action trajectory prediction"
+      ],
+      "branches": [
+        "video generation branch predicts future image tokens for each view",
+        "cVAE action trajectory branch generates Cartesian action chunks"
+      ],
+      "attention": [
+        "GPT-style causal sequence modeling over text, image, state, future image, and action-related tokens"
+      ],
+      "heads": [
+        "future image token output decoded with VQGAN decoder",
+        "conditional VAE action trajectory decoder",
+        "whole-body controller converts Cartesian trajectory to low-level joint actions"
+      ],
+      "objectives": [
+        "video generative pretraining on 38 million clips / about 50B tokens",
+        "robot finetuning for future images and action trajectory"
+      ],
+      "trainingRecipe": [
+        "Stage 1: large-scale video-language pretraining predicts future images",
+        "Stage 2: robot data finetuning accepts multi-view frames, state sequence, and predicts future views plus action trajectory"
+      ],
+      "inferenceRecipe": [
+        "condition on language, image history, and robot state",
+        "predict future image tokens and cVAE action trajectory",
+        "execute Cartesian trajectory via WBC to joint commands"
+      ],
+      "diagramModules": [
+        { "id": "lang", "lane": "inputs", "label": "Instruction", "type": "input", "details": "frozen text encoder", "source": "gr2.txt:529-531" },
+        { "id": "frames", "lane": "inputs", "label": "Video Frames", "type": "input", "details": "history and multi-view robot frames", "source": "gr2.txt:529-572" },
+        { "id": "state", "lane": "inputs", "label": "Robot State", "type": "input", "details": "state sequence", "source": "gr2.txt:529-536" },
+        { "id": "vqgan", "lane": "tokenization", "label": "Frozen VQGAN", "type": "tokenizer", "details": "images -> discrete tokens", "source": "gr2.txt:530-533" },
+        { "id": "gpt", "lane": "backbone", "label": "GPT-style Transformer", "type": "backbone", "details": "video-language-action policy", "source": "gr2.txt:524-540" },
+        { "id": "future", "lane": "heads", "label": "Future Image Tokens", "type": "head", "details": "per-view future images", "source": "gr2.txt:537-572" },
+        { "id": "cvae", "lane": "heads", "label": "cVAE Action Decoder", "type": "head", "details": "Cartesian action trajectory", "source": "gr2.txt:571-584" },
+        { "id": "wbc", "lane": "outputs", "label": "WBC", "type": "output", "details": "Cartesian -> low-level joints", "source": "gr2.txt:580-584" }
+      ],
+      "diagramEdges": [
+        { "from": "lang", "to": "gpt", "label": "text tokens" },
+        { "from": "frames", "to": "vqgan", "label": "tokenize" },
+        { "from": "vqgan", "to": "gpt", "label": "image tokens" },
+        { "from": "state", "to": "gpt", "label": "state sequence" },
+        { "from": "gpt", "to": "future", "label": "predict" },
+        { "from": "gpt", "to": "cvae", "label": "condition" },
+        { "from": "cvae", "to": "wbc", "label": "trajectory" }
+      ]
+    },
+    "vpp": {
+      "sourceExtract": "methods/vpp.md",
+      "sourceLines": ["vpp.txt:145-296", "vpp.txt:356-374"],
+      "inputTokens": [
+        "current image s0",
+        "final noised latent q(x_t'|x0)",
+        "language condition",
+        "static and wrist predictive feature maps",
+        "learnable Video Former tokens"
+      ],
+      "tokenization": [
+        "SVD-based text-guided video prediction model encodes future visual sequence",
+        "first denoising/forward step exposes latent predictive features",
+        "features from selected up-sampling layer are resized and stacked",
+        "Video Former aggregates high-dimensional frame features into fixed tokens"
+      ],
+      "backbone": [
+        "Stable Video Diffusion foundation model adapted as text-guided video predictor",
+        "Video Former feature aggregator",
+        "DiT diffusion policy action head"
+      ],
+      "branches": [
+        "video predictor branch produces hidden predictive representations",
+        "action policy branch consumes aggregated Video Former tokens"
+      ],
+      "attention": [
+        "video model uses language feature through cross-attention",
+        "Video Former uses learnable tokens with spatial attention over static/wrist predictive features",
+        "policy DiT uses cross-attention to aggregated predictive representation"
+      ],
+      "heads": [
+        "Video Former aggregation head outputs Q''",
+        "diffusion Transformer policy denoises action sequence"
+      ],
+      "objectives": [
+        "video diffusion objective reconstructs future visual sequence",
+        "diffusion policy objective denoises action sequence conditioned on predictive representation"
+      ],
+      "trainingRecipe": [
+        "Stage 1: fine-tune video diffusion model on internet human and robot manipulation data",
+        "Stage 2: train generalist diffusion policy from Video Former predictive tokens"
+      ],
+      "inferenceRecipe": [
+        "run video diffusion model for only a single forward step",
+        "extract selected hidden features instead of decoding video",
+        "aggregate through Video Former and denoise actions"
+      ],
+      "diagramModules": [
+        { "id": "img", "lane": "inputs", "label": "Current Image", "type": "input", "details": "s0", "source": "vpp.txt:265-274" },
+        { "id": "noise", "lane": "inputs", "label": "Noised Latent", "type": "input", "details": "q(x_t'|x0)", "source": "vpp.txt:265-274" },
+        { "id": "lang", "lane": "inputs", "label": "Language", "type": "input", "details": "cross-attn condition", "source": "vpp.txt:145-173" },
+        { "id": "svd", "lane": "backbone", "label": "SVD Video Predictor", "type": "backbone", "details": "single forward step", "source": "vpp.txt:145-181" },
+        { "id": "features", "lane": "backbone", "label": "Upsampling Features", "type": "branch", "details": "selected hidden layer m", "source": "vpp.txt:265-296" },
+        { "id": "former", "lane": "heads", "label": "Video Former", "type": "head", "details": "learnable aggregation tokens", "source": "vpp.txt:265-290" },
+        { "id": "policy", "lane": "heads", "label": "DiT Diffusion Policy", "type": "head", "details": "cross-attends to Q''", "source": "vpp.txt:283-296" },
+        { "id": "out", "lane": "outputs", "label": "Action Sequence", "type": "output", "details": "diffusion action head", "source": "vpp.txt:283-296" }
+      ],
+      "diagramEdges": [
+        { "from": "img", "to": "svd", "label": "condition" },
+        { "from": "noise", "to": "svd", "label": "one step" },
+        { "from": "lang", "to": "svd", "label": "cross-attn" },
+        { "from": "svd", "to": "features", "label": "hidden features" },
+        { "from": "features", "to": "former", "label": "aggregate" },
+        { "from": "former", "to": "policy", "label": "Q'' condition" },
+        { "from": "policy", "to": "out", "label": "denoise" }
+      ]
+    }
+  }
+}

@@ -1,0 +1,12 @@
+# Local runtime logs
+*.log
+
+# Visual check screenshots generated during local iteration
+atlas-*.png
+
+# Common local/editor artifacts
+.DS_Store
+Thumbs.db
+node_modules/
+.cache/
+dist/

@@ -1,0 +1,470 @@
+[
+  {
+    "slug": "act2goal",
+    "fileName": "Act2Goal.txt",
+    "title": "Act2Goal: From World Model To General",
+    "lineCount": 1173,
+    "headingCount": 20,
+    "extractCount": 11,
+    "output": "methods/act2goal.md"
+  },
+  {
+    "slug": "adaworldpolicy",
+    "fileName": "AdaWorldPolicy.txt",
+    "title": "AdaWorldPolicy: World-Model-Driven Diffusion Policy with Online Adaptive",
+    "lineCount": 1503,
+    "headingCount": 23,
+    "extractCount": 11,
+    "output": "methods/adaworldpolicy.md"
+  },
+  {
+    "slug": "aim",
+    "fileName": "AIM.txt",
+    "title": "AIM: Intent-Aware Unified world action Modeling",
+    "lineCount": 1150,
+    "headingCount": 17,
+    "extractCount": 7,
+    "output": "methods/aim.md"
+  },
+  {
+    "slug": "clam",
+    "fileName": "CLAM.txt",
+    "title": "CLAM: Continuous Latent Action Models for",
+    "lineCount": 1501,
+    "headingCount": 24,
+    "extractCount": 13,
+    "output": "methods/clam.md"
+  },
+  {
+    "slug": "clap",
+    "fileName": "CLAP.txt",
+    "title": "CLAP: Contrastive Latent Action Pretraining for Learning",
+    "lineCount": 1084,
+    "headingCount": 13,
+    "extractCount": 9,
+    "output": "methods/clap.md"
+  },
+  {
+    "slug": "cosmos-policy",
+    "fileName": "cosmos-policy.txt",
+    "title": "C OSMOS P OLICY: F INE -T UNING V IDEO M ODELS FOR",
+    "lineCount": 1101,
+    "headingCount": 14,
+    "extractCount": 9,
+    "output": "methods/cosmos-policy.md"
+  },
+  {
+    "slug": "cowvla",
+    "fileName": "CoWVLA.txt",
+    "title": "Chain of World: World Model Thinking in Latent Motion",
+    "lineCount": 2003,
+    "headingCount": 35,
+    "extractCount": 15,
+    "output": "methods/cowvla.md"
+  },
+  {
+    "slug": "dexworldmodel",
+    "fileName": "DexWorldModel.txt",
+    "title": "DexWorldModel: Causal Latent World Modeling",
+    "lineCount": 1305,
+    "headingCount": 19,
+    "extractCount": 9,
+    "output": "methods/dexworldmodel.md"
+  },
+  {
+    "slug": "dit4dit",
+    "fileName": "dit4dit.txt",
+    "title": "D I T4D I T: J OINTLY M ODELING V IDEO DYNAMICS AND ACTIONS",
+    "lineCount": 1270,
+    "headingCount": 13,
+    "extractCount": 5,
+    "output": "methods/dit4dit.md"
+  },
+  {
+    "slug": "dreamgen",
+    "fileName": "dreamgen.txt",
+    "title": "D REAM G EN: Unlocking Generalization in",
+    "lineCount": 1293,
+    "headingCount": 26,
+    "extractCount": 13,
+    "output": "methods/dreamgen.md"
+  },
+  {
+    "slug": "dreamzero",
+    "fileName": "dreamzero.txt",
+    "title": "World Action Models are Zero-shot Policies",
+    "lineCount": 2372,
+    "headingCount": 26,
+    "extractCount": 13,
+    "output": "methods/dreamzero.md"
+  },
+  {
+    "slug": "dust",
+    "fileName": "DUST.txt",
+    "title": "DUAL-STREAM DIFFUSION FOR WORLD-MODEL",
+    "lineCount": 1361,
+    "headingCount": 20,
+    "extractCount": 10,
+    "output": "methods/dust.md"
+  },
+  {
+    "slug": "eva",
+    "fileName": "EVA.txt",
+    "title": "Aligning Video World Models with Executable",
+    "lineCount": 1563,
+    "headingCount": 20,
+    "extractCount": 11,
+    "output": "methods/eva.md"
+  },
+  {
+    "slug": "fast-wam",
+    "fileName": "Fast-WAM.txt",
+    "title": "Fast-WAM: Do World Action Models Need",
+    "lineCount": 1684,
+    "headingCount": 25,
+    "extractCount": 6,
+    "output": "methods/fast-wam.md"
+  },
+  {
+    "slug": "flare",
+    "fileName": "FLARE.txt",
+    "title": "arXiv:2505.15659v1 [cs.RO] 21 May 2025",
+    "lineCount": 1095,
+    "headingCount": 19,
+    "extractCount": 11,
+    "output": "methods/flare.md"
+  },
+  {
+    "slug": "frappe",
+    "fileName": "FRAPPE.txt",
+    "title": "FRAPPE: Infusing World Modeling",
+    "lineCount": 1001,
+    "headingCount": 21,
+    "extractCount": 10,
+    "output": "methods/frappe.md"
+  },
+  {
+    "slug": "genie",
+    "fileName": "genie.txt",
+    "title": "Genie Envisioner: A Unified World Foundation Platform for",
+    "lineCount": 1516,
+    "headingCount": 24,
+    "extractCount": 11,
+    "output": "methods/genie.md"
+  },
+  {
+    "slug": "geometry-forcing",
+    "fileName": "Geometry forcing.txt",
+    "title": "Published as a conference paper at ICLR 2026",
+    "lineCount": 1348,
+    "headingCount": 23,
+    "extractCount": 10,
+    "output": "methods/geometry-forcing.md"
+  },
+  {
+    "slug": "gigaworld-policy",
+    "fileName": "GigaWorld-Policy.txt",
+    "title": "GigaWorld-Policy: An Efficient Action-Centered",
+    "lineCount": 1807,
+    "headingCount": 28,
+    "extractCount": 13,
+    "output": "methods/gigaworld-policy.md"
+  },
+  {
+    "slug": "gr1",
+    "fileName": "gr1.txt",
+    "title": "L ARGE -S CALE V IDEO G ENERATIVE",
+    "lineCount": 1267,
+    "headingCount": 14,
+    "extractCount": 5,
+    "output": "methods/gr1.md"
+  },
+  {
+    "slug": "gr2",
+    "fileName": "gr2.txt",
+    "title": "GR-2: A Generative Video-Language-Action Model with",
+    "lineCount": 1351,
+    "headingCount": 16,
+    "extractCount": 9,
+    "output": "methods/gr2.md"
+  },
+  {
+    "slug": "lapa",
+    "fileName": "LAPA.txt",
+    "title": "Published as a conference paper at ICLR 2025",
+    "lineCount": 1691,
+    "headingCount": 16,
+    "extractCount": 12,
+    "output": "methods/lapa.md"
+  },
+  {
+    "slug": "lda-1b",
+    "fileName": "LDA-1B.txt",
+    "title": "LDA-1B: Scaling Latent Dynamics Action Model",
+    "lineCount": 2331,
+    "headingCount": 31,
+    "extractCount": 15,
+    "output": "methods/lda-1b.md"
+  },
+  {
+    "slug": "lingbot",
+    "fileName": "lingbot.txt",
+    "title": "Causal World Modeling for Robot Control",
+    "lineCount": 1821,
+    "headingCount": 32,
+    "extractCount": 11,
+    "output": "methods/lingbot.md"
+  },
+  {
+    "slug": "mimic-video",
+    "fileName": "mimic-video.txt",
+    "title": "mimic-video: Video-Action Models for Generalizable",
+    "lineCount": 970,
+    "headingCount": 20,
+    "extractCount": 13,
+    "output": "methods/mimic-video.md"
+  },
+  {
+    "slug": "motubrain",
+    "fileName": "MotuBrain.txt",
+    "title": "MotuBrain: An Advanced World Action Model",
+    "lineCount": 1981,
+    "headingCount": 17,
+    "extractCount": 10,
+    "output": "methods/motubrain.md"
+  },
+  {
+    "slug": "motus",
+    "fileName": "Motus.txt",
+    "title": "Motus: A Unified Latent Action World Model",
+    "lineCount": 1725,
+    "headingCount": 30,
+    "extractCount": 13,
+    "output": "methods/motus.md"
+  },
+  {
+    "slug": "mowm",
+    "fileName": "mowm.txt",
+    "title": "M OWM: M IXTURE - OF -W ORLD -M ODELS FOR E M -",
+    "lineCount": 724,
+    "headingCount": 16,
+    "extractCount": 11,
+    "output": "methods/mowm.md"
+  },
+  {
+    "slug": "rynnvla-002",
+    "fileName": "RynnVLA-002.txt",
+    "title": "RynnVLA-002: A Unified Vision-Language-Action",
+    "lineCount": 1355,
+    "headingCount": 21,
+    "extractCount": 9,
+    "output": "methods/rynnvla-002.md"
+  },
+  {
+    "slug": "s-vam",
+    "fileName": "S-VAM.txt",
+    "title": "S-VAM: Shortcut Video-Action Model by",
+    "lineCount": 1007,
+    "headingCount": 20,
+    "extractCount": 12,
+    "output": "methods/s-vam.md"
+  },
+  {
+    "slug": "say-dream-act",
+    "fileName": "Say-Dream-Act.txt",
+    "title": "Say, Dream, and Act: Learning Video World Models for",
+    "lineCount": 1190,
+    "headingCount": 28,
+    "extractCount": 12,
+    "output": "methods/say-dream-act.md"
+  },
+  {
+    "slug": "sim-distil",
+    "fileName": "Sim Distil.txt",
+    "title": "Simulation Distillation: Pretraining World Models",
+    "lineCount": 1108,
+    "headingCount": 17,
+    "extractCount": 10,
+    "output": "methods/sim-distil.md"
+  },
+  {
+    "slug": "tri-system-vla",
+    "fileName": "Tri-System-VLA.txt",
+    "title": "Critic in the Loop: A Tri-System VLA Framework",
+    "lineCount": 908,
+    "headingCount": 13,
+    "extractCount": 6,
+    "output": "methods/tri-system-vla.md"
+  },
+  {
+    "slug": "trivla",
+    "fileName": "TriVLA.txt",
+    "title": "arXiv preprint",
+    "lineCount": 1472,
+    "headingCount": 20,
+    "extractCount": 12,
+    "output": "methods/trivla.md"
+  },
+  {
+    "slug": "ud-vla",
+    "fileName": "UD-VLA.txt",
+    "title": "Published as a conference paper at ICLR 2026",
+    "lineCount": 1538,
+    "headingCount": 29,
+    "extractCount": 11,
+    "output": "methods/ud-vla.md"
+  },
+  {
+    "slug": "univla",
+    "fileName": "UniVLA.txt",
+    "title": "Learning to Act Anywhere with",
+    "lineCount": 2407,
+    "headingCount": 36,
+    "extractCount": 15,
+    "output": "methods/univla.md"
+  },
+  {
+    "slug": "uva",
+    "fileName": "uva.txt",
+    "title": "Unified Video Action Model",
+    "lineCount": 1009,
+    "headingCount": 11,
+    "extractCount": 7,
+    "output": "methods/uva.md"
+  },
+  {
+    "slug": "uwm",
+    "fileName": "uwm.txt",
+    "title": "Unified World Models: Coupling Video and Action",
+    "lineCount": 1095,
+    "headingCount": 14,
+    "extractCount": 5,
+    "output": "methods/uwm.md"
+  },
+  {
+    "slug": "vampo",
+    "fileName": "VAMPO.txt",
+    "title": "VAMPO: Policy Optimization for Improving",
+    "lineCount": 1021,
+    "headingCount": 17,
+    "extractCount": 10,
+    "output": "methods/vampo.md"
+  },
+  {
+    "slug": "vidar",
+    "fileName": "vidar.txt",
+    "title": "Vidar: Embodied Video Diffusion Model for",
+    "lineCount": 1176,
+    "headingCount": 25,
+    "extractCount": 11,
+    "output": "methods/vidar.md"
+  },
+  {
+    "slug": "video-generators",
+    "fileName": "video-generators.txt",
+    "title": "Video Generators are Robot Policies",
+    "lineCount": 1256,
+    "headingCount": 25,
+    "extractCount": 10,
+    "output": "methods/video-generators.md"
+  },
+  {
+    "slug": "videorepa",
+    "fileName": "VideoREPA.txt",
+    "title": "VideoREPA: Learning Physics for Video Generation",
+    "lineCount": 1052,
+    "headingCount": 20,
+    "extractCount": 8,
+    "output": "methods/videorepa.md"
+  },
+  {
+    "slug": "videovla",
+    "fileName": "videovla.txt",
+    "title": "VideoVLA: Video Generators Can Be",
+    "lineCount": 874,
+    "headingCount": 18,
+    "extractCount": 5,
+    "output": "methods/videovla.md"
+  },
+  {
+    "slug": "villa-x",
+    "fileName": "villa-X.txt",
+    "title": "villa-X: Enhancing Latent Action Modeling",
+    "lineCount": 1385,
+    "headingCount": 24,
+    "extractCount": 13,
+    "output": "methods/villa-x.md"
+  },
+  {
+    "slug": "vipra",
+    "fileName": "VIPRA.txt",
+    "title": "Published as a conference paper at ICLR 2026",
+    "lineCount": 2215,
+    "headingCount": 26,
+    "extractCount": 12,
+    "output": "methods/vipra.md"
+  },
+  {
+    "slug": "vla-jepa",
+    "fileName": "VLA-JEPA.txt",
+    "title": "VLA-JEPA: Enhancing Vision-Language-Action Model",
+    "lineCount": 1820,
+    "headingCount": 32,
+    "extractCount": 12,
+    "output": "methods/vla-jepa.md"
+  },
+  {
+    "slug": "vpp",
+    "fileName": "vpp.txt",
+    "title": "Video Prediction Policy:",
+    "lineCount": 1016,
+    "headingCount": 20,
+    "extractCount": 11,
+    "output": "methods/vpp.md"
+  },
+  {
+    "slug": "vtam",
+    "fileName": "VTAM.txt",
+    "title": "VTAM: Video-Tactile-Action Models for",
+    "lineCount": 906,
+    "headingCount": 31,
+    "extractCount": 5,
+    "output": "methods/vtam.md"
+  },
+  {
+    "slug": "wav-world-value-action",
+    "fileName": "WAV-World-Value-Action.txt",
+    "title": "World–Value–Action Model: Implicit Planning for",
+    "lineCount": 1445,
+    "headingCount": 21,
+    "extractCount": 10,
+    "output": "methods/wav-world-value-action.md"
+  },
+  {
+    "slug": "wog",
+    "fileName": "WoG.txt",
+    "title": "World Guidance: World Modeling in Condition",
+    "lineCount": 1512,
+    "headingCount": 47,
+    "extractCount": 14,
+    "output": "methods/wog.md"
+  },
+  {
+    "slug": "x-wam",
+    "fileName": "X-WAM.txt",
+    "title": "Unified 4D World Action Modeling from Video Priors",
+    "lineCount": 1664,
+    "headingCount": 24,
+    "extractCount": 12,
+    "output": "methods/x-wam.md"
+  },
+  {
+    "slug": "xr1",
+    "fileName": "xr1.txt",
+    "title": "XR-1: Towards Versatile Vision-Language-Action Models via Learning Unified",
+    "lineCount": 3056,
+    "headingCount": 42,
+    "extractCount": 19,
+    "output": "methods/xr1.md"
+  }
+]

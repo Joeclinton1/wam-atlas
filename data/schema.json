@@ -1,0 +1,139 @@
+{
+  "schemaName": "wam-atlas-model-card",
+  "schemaVersion": "0.1.0",
+  "purpose": "Represent video action model architectures, training recipes, data roles, runtime paths, and diagram primitives in a single comparable structure.",
+  "sourcePolicy": {
+    "primarySources": [
+      "world_action_models_lit_survey.tex",
+      "world_action_models.bib",
+      "wam_additional_notes.md",
+      "__vla_video_model_adaption_latest.md",
+      "local extracted paper txt files"
+    ],
+    "normalizationNote": "Fields are normalized for comparison. They are not direct quotations unless explicitly marked elsewhere.",
+    "uncertaintyLevels": [
+      "low: direct paper text or survey table support",
+      "medium: synthesized from survey notes and extracted paper text",
+      "high: survey-only or missing local full paper"
+    ]
+  },
+  "modelFields": {
+    "id": "Stable kebab-case identifier.",
+    "name": "Short display name.",
+    "title": "Full paper title.",
+    "year": "Publication/preprint year.",
+    "month": "Publication/preprint month when available.",
+    "paperUrl": "Canonical paper URL.",
+    "localText": "Local extracted text filename when available.",
+    "family": "One of pixel_idm, latent_idm, encoder_only, joint_latent, unified, multi_stream, implicit_future, latent_action, alignment, multimodal, online_adaptation, speedup.",
+    "category": "Human-readable taxonomy label.",
+    "problem": "Primary problem the paper exists to solve.",
+    "oneLine": "One sentence model-card summary.",
+    "insights": {
+      "problem": "Why the method exists.",
+      "method": "Core technical route.",
+      "novelty": "What is new compared with nearby models.",
+      "limitation": "Most important caveat.",
+      "related": "Nearby models to compare first."
+    },
+    "metrics": {
+      "runtimeCost": "1 fast action-only, 5 very slow full video rollout.",
+      "computeScale": "1 small/adapter scale, 5 foundation-scale or heavy generation.",
+      "evidence": "1 early or survey-only, 5 strong multi-benchmark/real-world evidence.",
+      "runtimeNote": "Short speed or deployment note."
+    },
+    "diagram": {
+      "pattern": "Renderer template. Usually matches family.",
+      "inputs": "Observed inputs at policy time.",
+      "data": "Training data sources and their role.",
+      "predictiveState": {
+        "form": "pixels, latent features, latent actions, RGB-D, tactile state, condition vector, value trajectory, etc.",
+        "runtime": "offline, none, partial, implicit, full, async, or online_adaptive.",
+        "rendered": "Whether future pixels are decoded at runtime."
+      },
+      "components": "Ordered high-level modules to draw.",
+      "flows": "Optional semantic edges between components.",
+      "trainingStages": "Named stages with data and objective.",
+      "runtimePath": "Modules used on the deployed control path.",
+      "outputs": "Action, future, value, depth, tactile, or synthetic-data outputs."
+    },
+    "literalArchitecture": {
+      "sourceExtract": "Path to generated method extract markdown.",
+      "sourceLines": "Line ranges in the extracted paper text that support the diagram.",
+      "inputTokens": "Concrete input modalities/tokens, e.g. T5 language embeddings, VAE latent frames, proprioceptive MLP tokens, noisy action tokens.",
+      "tokenization": "How inputs enter the model: VAE, VQ tokenizer, MLP projection, patchification, codebook, action chunk tokenization.",
+      "backbone": "Named core model blocks with concrete architecture family and pretrained backbone where stated.",
+      "branches": "Parallel or conditional branches: video branch, depth branch, action expert, tactile branch, value branch, future-prefix branch.",
+      "attention": "Attention pattern, masking, cross-attention, information-flow restrictions, or stream fusion.",
+      "heads": "Concrete prediction heads: action decoder, denoiser, depth decoder, IDM, value head, future latent head.",
+      "objectives": "Losses and training objectives: flow matching, diffusion denoising, reconstruction, alignment, contrastive, RL/post-training rewards.",
+      "trainingRecipe": "Stage-by-stage method details grounded in paper methods.",
+      "inferenceRecipe": "Actual deployment computation, including what is removed, cached, partially denoised, or asynchronously scheduled.",
+      "diagramModules": "Literal diagram blocks to render, each with id, lane, label, type, details, and optional source line reference.",
+      "diagramEdges": "Directed links between modules with labels such as tokenizes, cross-attends, denoises, supervises, trains-only, runtime."
+    },
+    "uncertainty": "Short note about source coverage and interpretation risk."
+  },
+  "families": [
+    {
+      "id": "pixel_idm",
+      "label": "Pixel future plus inverse dynamics",
+      "diagramThesis": "Predict or synthesize visual futures, then infer actions from decoded or inspectable video."
+    },
+    {
+      "id": "latent_idm",
+      "label": "Latent predictive state plus action head",
+      "diagramThesis": "Tap hidden video-model features or semantic future embeddings instead of waiting for full video."
+    },
+    {
+      "id": "encoder_only",
+      "label": "Training-time video, action-only runtime",
+      "diagramThesis": "Use video prediction as representational pressure, then deploy a compact action decoder."
+    },
+    {
+      "id": "joint_latent",
+      "label": "Shared action-observation latent space",
+      "diagramThesis": "Put actions, proprioception, future state, or motion chains into a common predictive geometry."
+    },
+    {
+      "id": "unified",
+      "label": "Unified action-observation prediction",
+      "diagramThesis": "Train action and future observation as coupled outputs of one temporal model."
+    },
+    {
+      "id": "multi_stream",
+      "label": "Separate streams or expert mixtures",
+      "diagramThesis": "Keep video, language, action, or modality experts separate while exchanging predictive state."
+    },
+    {
+      "id": "implicit_future",
+      "label": "Implicit future representation",
+      "diagramThesis": "Predict future embeddings, condition vectors, or value trajectories without rendering future video."
+    },
+    {
+      "id": "latent_action",
+      "label": "Latent action interface",
+      "diagramThesis": "Learn a mid-level action code from video and ground it to executable robot commands."
+    },
+    {
+      "id": "alignment",
+      "label": "Representation or executability alignment",
+      "diagramThesis": "Improve an existing world/action model by aligning to physics, geometry, rewards, or executable actions."
+    },
+    {
+      "id": "multimodal",
+      "label": "Tactile, depth, or 4D state",
+      "diagramThesis": "Inject physical state variables into the predictive backbone rather than only into the final action head."
+    },
+    {
+      "id": "online_adaptation",
+      "label": "Online adaptive world-action policy",
+      "diagramThesis": "Use prediction error after deployment as self-supervision for small online updates."
+    },
+    {
+      "id": "speedup",
+      "label": "Shortcut or deployment acceleration",
+      "diagramThesis": "Distill, cache, or asynchronously schedule foresight so the action path stays fast."
+    }
+  ]
+}

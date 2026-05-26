@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Video Action Model Atlas</title>
+    <meta name="description" content="Interactive atlas and generated architecture diagrams for video action models and world action models.">
+  <link rel="stylesheet" href="styles.css?v=hover-preview-visible-restore-1">
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#atlas" aria-label="Video Action Model Atlas home">
+        <span class="brand-mark">VA</span>
+        <span>
+          <strong>Video Action Model Atlas</strong>
+          <small>interactive survey of video action models</small>
+        </span>
+      </a>
+      <nav class="nav-tabs" aria-label="Primary navigation">
+        <button class="nav-tab is-active" data-route="atlas">Atlas</button>
+        <button class="nav-tab" data-route="learn">Learn</button>
+        <button class="nav-tab" data-route="sources">Sources</button>
+      </nav>
+      <label class="search-wrap">
+        <span>Search</span>
+        <input id="globalSearch" type="search" placeholder="model, family, idea">
+      </label>
+    </header>
+
+    <main id="app">
+      <section id="atlasPage" class="page page-atlas">
+        <div class="atlas-header">
+          <div class="stat-strip" aria-label="Dataset summary">
+            <span><strong id="modelCount">0</strong> models</span>
+            <span><strong id="familyCount">0</strong> families</span>
+            <span><strong id="sourceCount">0</strong> local texts</span>
+          </div>
+        </div>
+
+        <div class="atlas-controls" aria-label="Atlas layout controls">
+          <div class="mode-group" role="group" aria-label="Atlas view">
+            <button class="mode-button is-active" data-mode="problem">Problem Map</button>
+            <button class="mode-button" data-mode="taxonomy">Taxonomy</button>
+            <button class="mode-button" data-mode="speed">Speed vs Compute</button>
+            <button class="mode-button" data-mode="timeline">Timeline</button>
+          </div>
+          <div class="mode-meta">
+            <span id="modeDescription">Why each paper exists.</span>
+            <button id="resetZoom" class="plain-button" type="button">Reset Zoom</button>
+          </div>
+        </div>
+
+        <div class="atlas-layout">
+          <div class="atlas-canvas-wrap">
+            <svg id="atlasSvg" role="img" aria-label="Zoomable WAM atlas"></svg>
+          </div>
+          <aside id="previewPanel" class="preview-panel hover-preview" aria-live="polite" hidden>
+            <div id="previewEmpty" class="preview-empty" hidden>
+              Hover a node to inspect its generated diagram. Click a node to open the full model card.
+            </div>
+            <div id="previewContent" class="preview-content" hidden>
+              <div class="preview-kicker" id="previewFamily"></div>
+              <h2 id="previewTitle"></h2>
+              <p id="previewInsight"></p>
+              <div id="previewDiagram" class="diagram mini"></div>
+              <button id="previewOpen" class="primary-button" type="button">Open Model Card</button>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section id="modelPage" class="page page-model" hidden>
+        <button id="backToAtlas" class="plain-button back-button" type="button">Back to Atlas</button>
+        <article class="model-card">
+          <header class="model-card-head">
+            <div>
+              <div id="modelFamily" class="preview-kicker"></div>
+              <h1 id="modelName"></h1>
+              <p id="modelOneLine"></p>
+            </div>
+            <a id="modelPaperLink" class="primary-button" href="#" target="_blank" rel="noreferrer">Paper</a>
+          </header>
+
+          <div class="model-meta-grid">
+            <div><span>Year</span><strong id="modelYear"></strong></div>
+            <div><span>Runtime</span><strong id="modelRuntime"></strong></div>
+            <div><span>Compute</span><strong id="modelCompute"></strong></div>
+            <div><span>Evidence</span><strong id="modelEvidence"></strong></div>
+          </div>
+
+          <section class="model-section">
+            <h2>Generated Architecture Diagram</h2>
+            <div id="modelDiagram" class="diagram large"></div>
+          </section>
+
+          <section class="model-section split-section">
+            <div>
+              <h2>Five Insights</h2>
+              <dl id="modelInsights" class="insight-list"></dl>
+            </div>
+            <div>
+              <h2>Training And Runtime</h2>
+              <ol id="trainingStages" class="stage-list"></ol>
+              <p id="runtimePath" class="runtime-path"></p>
+            </div>
+          </section>
+
+          <section class="model-section">
+            <h2>Data Sources And Uncertainty</h2>
+            <div id="dataSources" class="chip-row"></div>
+            <p id="modelUncertainty" class="uncertainty-note"></p>
+          </section>
+        </article>
+      </section>
+
+      <section id="learnPage" class="page content-page" hidden>
+        <h1>Learn</h1>
+        <section>
+          <h2>What Is A WAM?</h2>
+          <p>A video action model is a robot policy or policy-learning pipeline where video prediction, video representation learning, or video-derived latent dynamics is central to action generation. The useful question is not whether a model can make a plausible movie. The useful question is which future variable survives into the deployed controller.</p>
+        </section>
+        <section>
+          <h2>Visual Grammar</h2>
+          <div id="grammarGrid" class="grammar-grid"></div>
+        </section>
+        <section>
+          <h2>Main Families</h2>
+          <div id="familyGrid" class="family-grid"></div>
+        </section>
+      </section>
+
+      <section id="sourcesPage" class="page content-page" hidden>
+        <h1>Sources</h1>
+        <section>
+          <h2>Methodology</h2>
+          <div id="methodologyList" class="methodology-list"></div>
+        </section>
+        <section>
+          <h2>Paper List</h2>
+          <div id="paperTable" class="paper-table"></div>
+        </section>
+        <section>
+          <h2>Uncertainty Notes</h2>
+          <p>The cards normalize paper claims into a common architecture schema. A low uncertainty note means the local extracted paper text or survey table directly supports the card. A medium or high note means the card is synthesized from survey notes, source filenames, and BibTeX metadata and should be verified against the paper before citation.</p>
+        </section>
+      </section>
+    </main>
+
+  <script type="module" src="js/app.js?v=hover-preview-visible-restore-1"></script>
+  </body>
+</html>
