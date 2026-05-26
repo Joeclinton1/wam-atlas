@@ -1,4 +1,4 @@
-import { state, familyColors, typeColors, escapeHtml, wrapText, shortText } from './shared.js?v=diagram-core-glyphs-24';
+import { state, familyColors, typeColors, escapeHtml, wrapText, shortText } from './shared.js?v=diagram-core-glyphs-25';
 
 export function renderDiagram(container, model, options = {}) {
   const spec = getArchitectureSpec(model);
@@ -145,10 +145,11 @@ function standardCoreHeight(diagram, mini) {
     const count = Math.max(2, Math.min(diagram.streams.length || 2, mini ? 4 : 5));
     return mini ? 92 + count * 48 : 100 + count * 54;
   }
-  if (diagram.pattern === "implicit_future") return mini ? 214 : 250;
+  if (diagram.pattern === "implicit_future") return mini ? 230 : 270;
   if (diagram.pattern === "joint_latent") return mini ? 198 : 224;
   if (diagram.pattern === "latent_action") return mini ? 226 : 268;
-  if (diagram.pattern === "encoder_only") return mini ? 192 : 224;
+  if (diagram.pattern === "encoder_only") return mini ? 226 : 270;
+  if (diagram.pattern === "alignment") return mini ? 226 : 266;
   return mini ? 228 : 270;
 }
 
@@ -160,6 +161,7 @@ function drawStandardCorePanel(diagram, box, mini, ids) {
   if (diagram.pattern === "latent_action") return drawLatentActionCodebook(box, diagram, mini);
   if (["pixel_idm", "latent_idm"].includes(diagram.pattern)) return drawFuturePredictor(box, diagram, mini, ids);
   if (diagram.pattern === "implicit_future") return drawImplicitFutureRepresentation(box, diagram, mini, ids);
+  if (diagram.pattern === "alignment") return drawAlignmentCore(box, diagram, mini, ids);
   return drawCorePanel(diagram, box, mini, ids);
 }
 
@@ -715,26 +717,107 @@ function drawImplicitFutureArchitecture(diagram, view, options = {}, ids) {
 
 function drawImplicitFutureRepresentation(box, diagram, mini, ids) {
   const hasValue = diagram.outputs.some((item) => /value|intent|trajectory/i.test(item.label || item)) || diagram.streams.some((item) => /value|reward/i.test(item.label));
-  const slots = Array.from({ length: mini ? 5 : 7 }, (_, index) => {
-    const x = box.x + 38 + (index % 4) * 48;
-    const y = box.y + 88 + Math.floor(index / 4) * 54;
-    return `
-      <g>
-        <rect class="implicit-slot" x="${x}" y="${y}" width="34" height="34"></rect>
-        <text class="implicit-slot-label" x="${x + 17}" y="${y + 22}" text-anchor="middle">z${index + 1}</text>
-      </g>
-    `;
+  const cx = box.x + box.w / 2;
+  const topY = box.y + (mini ? 76 : 84);
+  const latentY = box.y + (mini ? 132 : 154);
+  const policyY = box.y + (mini ? 188 : 222);
+  const obsX = box.x + 36;
+  const futureX = cx - 47;
+  const actionX = box.x + box.w - 88;
+  const futureSlots = Array.from({ length: mini ? 4 : 5 }, (_, index) => {
+    const x = futureX + index * 20;
+    return `<rect class="implicit-slot compact" x="${x}" y="${latentY - 16 + (index % 2) * 4}" width="16" height="24"></rect>`;
   }).join("");
   return `
     <g filter="url(#${ids.softShadow})">
       <rect class="implicit-panel" x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}"></rect>
       <text class="core-title" x="${box.x + 22}" y="${box.y + 30}">implicit future representation</text>
-      ${drawWrappedText(diagram.core.details.join(" / "), box.x + 22, box.y + 52, 31, 2, "core-detail", 11)}
-      ${slots}
-      ${hasValue ? `<path class="value-contour" d="M ${box.x + 52} ${box.y + box.h - 64} C ${box.x + 105} ${box.y + box.h - 108}, ${box.x + 176} ${box.y + box.h - 18}, ${box.x + 232} ${box.y + box.h - 62}"></path>
-        <text class="core-note" x="${box.x + 48}" y="${box.y + box.h - 28}">value / intent field</text>` : `<text class="core-note" x="${box.x + 36}" y="${box.y + box.h - 28}">no decoded future video or IDM bottleneck</text>`}
+      ${drawWrappedText(diagram.core.details.join(" / "), box.x + 22, box.y + 52, 31, 1, "core-detail", 11)}
+      <g class="implicit-stage implicit-observation">
+        ${drawFrameStackGlyph("current observation", obsX, topY - 24, 58, 42, false)}
+        <text x="${obsX + 29}" y="${topY + 35}" text-anchor="middle">now</text>
+      </g>
+      <path class="implicit-flow" d="M ${obsX + 64} ${topY} C ${box.x + 120} ${topY}, ${futureX - 18} ${latentY - 22}, ${futureX + 6} ${latentY - 6}"></path>
+      <g class="implicit-future-slots">
+        <rect class="implicit-latent-shell" x="${futureX - 10}" y="${latentY - 29}" width="${mini ? 100 : 118}" height="56"></rect>
+        ${futureSlots}
+        <text x="${futureX + (mini ? 40 : 48)}" y="${latentY + 40}" text-anchor="middle">hidden future z</text>
+      </g>
+      <path class="implicit-flow condition" d="M ${futureX + 96} ${latentY} C ${actionX - 46} ${latentY}, ${actionX - 44} ${policyY}, ${actionX - 12} ${policyY}"></path>
+      <g class="implicit-policy-mini">
+        ${drawCoreVisual(/diffusion|flow|denois/i.test(`${diagram.core.label} ${diagram.core.details.join(" ")}`) ? "diffusion" : "mlp", actionX - 56, policyY - 30, 76, 54, {})}
+        <text x="${actionX - 18}" y="${policyY + 42}" text-anchor="middle">policy condition</text>
+      </g>
+      ${hasValue ? `<path class="value-contour compact" d="M ${box.x + 56} ${box.y + box.h - 36} C ${box.x + 110} ${box.y + box.h - 70}, ${box.x + 180} ${box.y + box.h - 12}, ${box.x + 238} ${box.y + box.h - 42}"></path>
+        <text class="core-note" x="${box.x + 42}" y="${box.y + box.h - 16}">value / intent shapes the hidden future</text>` : `<text class="core-note" x="${box.x + 42}" y="${box.y + box.h - 16}">future is a latent condition, not rendered video</text>`}
     </g>
   `;
+}
+
+function drawAlignmentCore(box, diagram, mini, ids) {
+  const teacher = alignmentTeacherLabel(diagram);
+  const target = alignmentTargetLabel(diagram);
+  const leftX = box.x + 34;
+  const rightX = box.x + box.w - 100;
+  const midX = box.x + box.w / 2;
+  const y = box.y + (mini ? 92 : 106);
+  return `
+    <g filter="url(#${ids.softShadow})">
+      <rect class="core-panel alignment-core" x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" fill="url(#${ids.coreGrad})"></rect>
+      <text class="core-title" x="${box.x + 22}" y="${box.y + 30}">${escapeHtml(diagram.core.label)}</text>
+      ${drawWrappedText(diagram.core.details.join(" / "), box.x + 22, box.y + 50, 32, 1, "core-detail", 11)}
+      <g class="alignment-teacher">
+        <rect class="alignment-feature-stack teacher" x="${leftX}" y="${y - 30}" width="68" height="54"></rect>
+        ${drawAlignmentFeatureGrid(leftX + 10, y - 20, "#6b7280")}
+        <text x="${leftX + 34}" y="${y + 42}" text-anchor="middle">${escapeHtml(teacher)}</text>
+      </g>
+      <g class="alignment-bridge">
+        <path class="alignment-match-line" d="M ${leftX + 78} ${y - 14} C ${midX - 28} ${y - 48}, ${midX + 28} ${y - 48}, ${rightX - 10} ${y - 14}"></path>
+        <path class="alignment-match-line second" d="M ${leftX + 78} ${y + 12} C ${midX - 28} ${y + 48}, ${midX + 28} ${y + 48}, ${rightX - 10} ${y + 12}"></path>
+        <rect class="alignment-loss-chip" x="${midX - 44}" y="${y - 13}" width="88" height="26"></rect>
+        <text class="alignment-loss-text" x="${midX}" y="${y + 5}" text-anchor="middle">${escapeHtml(alignmentLossLabel(diagram))}</text>
+      </g>
+      <g class="alignment-student">
+        <rect class="alignment-feature-stack student" x="${rightX}" y="${y - 30}" width="68" height="54"></rect>
+        ${drawAlignmentFeatureGrid(rightX + 10, y - 20, "#2f8793")}
+        <text x="${rightX + 34}" y="${y + 42}" text-anchor="middle">${escapeHtml(target)}</text>
+      </g>
+      <text class="core-note" x="${box.x + 30}" y="${box.y + box.h - 18}">teacher relations pull the video/world hidden state toward useful physical structure</text>
+    </g>
+  `;
+}
+
+function drawAlignmentFeatureGrid(x, y, color) {
+  return Array.from({ length: 9 }, (_, index) => {
+    const col = index % 3;
+    const row = Math.floor(index / 3);
+    return `<rect class="alignment-feature-cell" x="${x + col * 16}" y="${y + row * 12}" width="10" height="7" fill="${color}"></rect>`;
+  }).join("");
+}
+
+function alignmentTeacherLabel(diagram) {
+  const text = `${diagram.thesis || ""} ${diagram.core.details.join(" ")} ${diagram.components.map((c) => c.label).join(" ")}`.toLowerCase();
+  if (/vggt|geometry/.test(text)) return "geometry";
+  if (/reward|value|grpo/.test(text)) return "reward";
+  if (/idm|execut/.test(text)) return "IDM";
+  if (/video.?mae|teacher/.test(text)) return "teacher";
+  return "target";
+}
+
+function alignmentTargetLabel(diagram) {
+  const text = `${diagram.core.label} ${diagram.core.details.join(" ")}`.toLowerCase();
+  if (/dynamics|sim/.test(text)) return "dynamics";
+  if (/video|diffusion|flow|dit/.test(text)) return "video DiT";
+  return "world state";
+}
+
+function alignmentLossLabel(diagram) {
+  const text = `${diagram.training.map((t) => `${t.label} ${t.detail}`).join(" ")} ${diagram.core.details.join(" ")}`.toLowerCase();
+  if (/reward|grpo/.test(text)) return "reward";
+  if (/angular|scale|geometry/.test(text)) return "geom align";
+  if (/relation|token/.test(text)) return "relation";
+  if (/value/.test(text)) return "value";
+  return "align";
 }
 
 function drawConditionedPolicy(box, diagram, mini, ids) {
@@ -1481,9 +1564,11 @@ function inferHeads(model, arch, allText, options = {}) {
       .forEach((item) => heads.push({ label: unifiedProjectionLabel(item), detail: compactDetail(item) }));
     return uniqueByText(heads, "label").slice(0, options.mini ? 3 : 5);
   }
-  explicitHeads.forEach((item) => heads.push({ label: headLabel(item), detail: compactDetail(item) }));
+  explicitHeads
+    .filter((item) => !/single-pass.*latent world representation|representation.*parameterizes.*action distribution/i.test(item))
+    .forEach((item) => heads.push({ label: headLabel(item), detail: compactDetail(item) }));
 
-  if (!unified && /inverse dynamics|inverse-dynamics|\bidm\b/.test(allText) && !heads.some((head) => /inverse dynamics|idm/i.test(`${head.label} ${head.detail}`))) {
+  if (!unified && /inverse dynamics|inverse-dynamics|\bidm\b/.test(allText) && !/controlled[^.;,]*\bidm\b[^.;,]*variant|fast-wam-idm/i.test(allText) && !heads.some((head) => /inverse dynamics|idm/i.test(`${head.label} ${head.detail}`))) {
     heads.push({ label: /latent.*\bidm\b|\bidm\b.*latent/.test(allText) ? "latent IDM" : "IDM", detail: "" });
   }
   if (!unified && /action head|action decoder|policy head|control head|trajectory decoder|diffusion policy|action expert|act-vae|cvae action|linear.*action/.test(explicitHeadText) && !heads.some((head) => /action|policy|control|trajectory|chunk/i.test(`${head.label} ${head.detail}`))) {
@@ -1495,7 +1580,7 @@ function inferHeads(model, arch, allText, options = {}) {
   if (/value head|reward head|value map|value-map|asvm/.test(explicitHeadText)) heads.push({ label: "Value Head", detail: "score future trajectory" });
   if (/depth head|depth decoder|rgb-d|4d/.test(explicitHeadText)) heads.push({ label: "Depth Head", detail: "RGB-D / inverse depth" });
   if (/force head|force predictor|tactile head|tactile decoder/.test(explicitHeadText)) heads.push({ label: "Force/Tactile Head", detail: "contact prediction" });
-  return uniqueByText(heads, "label").slice(0, options.mini ? 3 : 5);
+  return uniqueByText(heads, "label").slice(0, options.mini ? 3 : 6);
 }
 
 function unifiedProjectionLabel(item) {
@@ -1623,7 +1708,7 @@ function isUnifiedHeadArchitecture(model, arch, allText) {
     if (/separate.*head|separate.*decoder|action branch|future.*branch|observation.*branch|cvae action|linear.*action/.test(text)) return false;
     return true;
   }
-  return /unified.*head|single.*head|same.*head|one.*head.*action.*observation|joint.*obs.*action|joint.*action.*obs/.test(text);
+  return /\bunified\s+(?:token\s+)?head\b|single\s+(?:shared\s+)?head|same\s+head|one\s+head\s+(?:for\s+)?(?:action.*observation|observation.*action)|joint\s+(?:obs|observation).*action\s+head|joint\s+action.*(?:obs|observation)\s+head/.test(text);
 }
 
 function shouldCollapseUnifiedHeads(model, arch, allText) {
@@ -1764,7 +1849,7 @@ function denseEncoderRows(encoders, box, mini, inputs = []) {
   const top = box.y + 42;
   const gap = mini ? 5 : 6;
   const available = box.h - 54;
-  const itemH = Math.max(46, Math.min(mini ? 48 : 60, Math.floor((available - gap * (list.length - 1)) / list.length)));
+  const itemH = Math.max(mini ? 42 : 40, Math.min(mini ? 48 : 60, Math.floor((available - gap * (list.length - 1)) / list.length)));
   return list.map((encoder, index) => ({
     item: encoder,
     kind: encoder.kind || kindFromText(`${encoder.label} ${encoder.detail}`),
@@ -2584,7 +2669,7 @@ function drawEncoderShape(shape, x, y, w, h, fill, stroke, kind) {
 
 function headShape(head) {
   const text = `${head.label || ""} ${head.detail || ""}`.toLowerCase();
-  if (/vae|vq-?gan|decoder|decode|reconstruct|uncompress|decompress/.test(text) && /video|image|frame|visual|observation|future|latent|vae|vq/.test(text)) return "reverse-funnel";
+  if (/vae|vq-?gan|decoder|decode|reconstruct|uncompress|decompress/.test(text) && /video|image|frame|visual|observation|future|latent|depth|rgb-d|vae|vq/.test(text)) return "reverse-funnel";
   if (/unified|world-action|joint/.test(text)) return "vlm";
   if (/language|text|t5/.test(text)) return "text";
   return "block";
@@ -2615,6 +2700,7 @@ function headGlyphKind(head) {
   if (/diffusion policy/.test(text)) return "diffusion-policy";
   if (/action expert dit|\bdit\b|diffusion transformer/.test(text)) return "dit";
   if (/act-style|\bact-vae\b|\bact\b actor|\bact\b module|autoregressive action decoder/.test(text)) return "act";
+  if (/depth|inverse-depth|regression|state\/action mlp|state-action mlp|mlp decoder/.test(text)) return "mlp";
   if (/future\/obs|future|video|image|frame|observation|vae|vq-?gan|decoder/.test(label) && !/diffusion|denois|flow|\bdit\b|idm/.test(text)) return "";
   if (/diffusion|denois|flow/.test(text)) return "diffusion-policy";
   if (/transformer|attention/.test(text)) return "transformer";
@@ -2813,31 +2899,35 @@ function encoderStroke(kind) {
 }
 
 function drawEncoderOnlyCore(box, diagram, mini, ids) {
-  const runtimeY = box.y + (mini ? 106 : 124);
-  const trainY = box.y + (mini ? 56 : 64);
-  const latentX = box.x + box.w * 0.48;
-  const ditX = box.x + box.w * 0.5;
-  const policyX = box.x + box.w - 62;
+  const trainY = box.y + (mini ? 74 : 86);
+  const runtimeY = box.y + (mini ? 162 : 196);
+  const ditX = box.x + box.w * 0.34;
+  const latentX = box.x + box.w * 0.5;
+  const policyX = box.x + box.w * 0.76;
+  const laneX = box.x + 24;
+  const laneW = box.w - 48;
   return `
     <g filter="url(#${ids.softShadow})">
       <rect class="core-panel encoder-policy-core" x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" fill="url(#${ids.coreGrad})"></rect>
       <text class="core-title" x="${box.x + 22}" y="${box.y + 30}">${escapeHtml(diagram.core.label)}</text>
       <g class="encoder-only-train">
-        <rect x="${box.x + 38}" y="${trainY - 22}" width="${box.w - 76}" height="${mini ? 48 : 54}"></rect>
-        ${drawCoreVisual("dit", ditX - 54, trainY - 16, 108, mini ? 38 : 44, { diffusion: true })}
-        <text x="${ditX}" y="${trainY + (mini ? 30 : 34)}" text-anchor="middle">not runtime</text>
+        <rect x="${laneX}" y="${trainY - 35}" width="${laneW}" height="${mini ? 70 : 78}"></rect>
+        <text x="${laneX + 13}" y="${trainY - 17}">train-only video loss</text>
+        ${drawCoreVisual("dit", ditX - 52, trainY - 12, 104, mini ? 42 : 48, { diffusion: true })}
+        <path class="encoder-only-train-link" d="M ${ditX + 52} ${trainY + 10} C ${latentX - 36} ${trainY + 22}, ${latentX - 38} ${runtimeY - 38}, ${latentX - 20} ${runtimeY - 18}"></path>
       </g>
       <g class="encoder-only-runtime">
-        <rect x="${box.x + 32}" y="${runtimeY - 28}" width="${box.w - 64}" height="${mini ? 62 : 68}"></rect>
-        ${drawLatentGlyph(latentX - 34, runtimeY - 16, 68, 34)}
-        <text x="${latentX}" y="${runtimeY + 29}" text-anchor="middle">VAE z</text>
-        ${drawMlpGlyph(policyX - 28, runtimeY - 18, 56, 38, "core-visual-mlp encoder-only-policy-glyph")}
-        <text x="${policyX}" y="${runtimeY + 31}" text-anchor="middle">policy</text>
+        <rect x="${laneX}" y="${runtimeY - 40}" width="${laneW}" height="${mini ? 76 : 84}"></rect>
+        <text x="${laneX + 13}" y="${runtimeY - 21}">runtime path</text>
+        ${drawLatentGlyph(latentX - 34, runtimeY - 15, 68, 34)}
+        <text x="${latentX}" y="${runtimeY + 34}" text-anchor="middle">latent state</text>
+        ${drawMlpGlyph(policyX - 30, runtimeY - 20, 60, 42, "core-visual-mlp encoder-only-policy-glyph")}
+        <text x="${policyX}" y="${runtimeY + 34}" text-anchor="middle">action policy</text>
       </g>
-      <path class="encoder-only-runtime-arrow" d="M ${box.x + 55} ${runtimeY} C ${box.x + 96} ${runtimeY}, ${latentX - 44} ${runtimeY}, ${latentX - 28} ${runtimeY}"></path>
-      <path class="encoder-only-runtime-arrow" d="M ${latentX + 38} ${runtimeY} C ${latentX + 70} ${runtimeY}, ${policyX - 46} ${runtimeY}, ${policyX - 30} ${runtimeY}"></path>
-      <path class="encoder-only-train-link" d="M ${ditX} ${trainY + (mini ? 30 : 36)} C ${ditX - 6} ${trainY + 52}, ${latentX - 18} ${runtimeY - 42}, ${latentX - 4} ${runtimeY - 20}"></path>
-      <path class="encoder-only-cut" d="M ${ditX - 44} ${trainY + (mini ? 42 : 48)} L ${ditX + 44} ${trainY + (mini ? 42 : 48)}"></path>
+      <path class="encoder-only-runtime-arrow" d="M ${laneX + 14} ${runtimeY} C ${box.x + 90} ${runtimeY}, ${latentX - 48} ${runtimeY}, ${latentX - 34} ${runtimeY}"></path>
+      <path class="encoder-only-runtime-arrow" d="M ${latentX + 40} ${runtimeY} C ${latentX + 72} ${runtimeY}, ${policyX - 50} ${runtimeY}, ${policyX - 33} ${runtimeY}"></path>
+      <path class="encoder-only-cut" d="M ${laneX} ${trainY + 50} L ${box.x + box.w - 24} ${trainY + 50}"></path>
+      <text class="core-note" x="${box.x + 32}" y="${box.y + box.h - 17}">video DiT shapes the latent during training, then is absent at inference</text>
     </g>
   `;
 }
@@ -3066,8 +3156,8 @@ function drawTrainingBand(diagram, box, coreBox, headBox, mini, ids) {
 
   return `
     <g>
-      ${drawConnector(box.x + box.w * 0.44, box.y, coreBox.x + coreBox.w * 0.45, coreBox.y + coreBox.h, "trains", true, ids)}
-      ${drawConnector(box.x + box.w * 0.74, box.y, headBox.x + headBox.w * 0.5, headBox.y + headBox.h, "supervises", true, ids)}
+      ${drawConnector(box.x + box.w * 0.44, box.y, coreBox.x + coreBox.w * 0.45, coreBox.y + coreBox.h, "", true, ids)}
+      ${drawConnector(box.x + box.w * 0.74, box.y, headBox.x + headBox.w * 0.5, headBox.y + headBox.h, "", true, ids)}
       <rect class="training-panel" x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}"></rect>
       <text class="panel-title" x="${box.x + 14}" y="${box.y + 24}">training data + objectives</text>
       ${dataChips}
@@ -3201,7 +3291,8 @@ function kindFromText(text) {
   const lower = String(text || "").toLowerCase();
   if (/language|instruction|\btext\b|textual|t5|qwen|llama|paligemma|vlm/.test(lower)) return "language";
   if (/action|policy|control|trajectory|chunk|gripper|end-effector/.test(lower)) return "action";
-  if (/state|proprio|force|tactile|gelsight|depth/.test(lower)) return "state";
+  if (/depth|rgb-d|4d/.test(lower)) return "future";
+  if (/state|proprio|force|tactile|gelsight/.test(lower)) return "state";
   if (/future|world|latent|video|rollout/.test(lower)) return "future";
   return "visual";
 }
@@ -3303,6 +3394,14 @@ function preciseHeadLabel(label, detail) {
   if (/latent.*\bidm\b|\bidm\b.*latent/.test(lower)) return "latent IDM";
   if (/inverse dynamics|idm/.test(lower)) return "IDM";
   if (/unified world-action|world-action denoiser|unified.*denois/.test(lower)) return "Unified World-Action Denoiser";
+  if (/state\/action|state-action/.test(lower) && /mlp|decoder|physical/.test(lower)) return "State/Action MLP";
+  if (/inverse-depth|depth.*mse|depth.*regression|depth branch/.test(lower)) return "Depth Head";
+  if (/visuo.?tactile|visual.*tactile/.test(lower) && /flow|velocity|vector-field/.test(lower)) return "Visuo-Tactile Flow";
+  if (/(rgb|video|visual|latent).*flow|flow.*(rgb|video|visual|latent)|future.*velocity/.test(lower)) return "Video Flow Head";
+  if (/state|proprio/.test(lower) && /flow|velocity/.test(lower)) return "State Flow Head";
+  if (/vae/.test(lower) && /decoder/.test(lower)) return "VAE Video Decoder";
+  if (/force|tactile|gelsight/.test(lower) && /flow|velocity|head|predict/.test(lower)) return "Force/Tactile Head";
+  if (/action/.test(lower) && /flow|velocity/.test(lower)) return "Action Flow Head";
   if (/cvae|conditional vae/.test(lower) && /action/.test(lower)) return "cVAE Action Decoder";
   if (/diffusion|denois|flow/.test(lower) && /action/.test(lower)) return "Diffusion Action Head";
   if (/linear/.test(lower) && /action|arm|gripper/.test(lower)) return "Linear Action Head";
@@ -3407,6 +3506,15 @@ function streamDetail(arch, matcher, fallback) {
 
 function headLabel(value) {
   const text = String(value || "");
+  const lower = text.toLowerCase();
+  if (/state\/action|state-action/.test(lower) && /mlp|decoder|physical/.test(lower)) return "State/Action MLP";
+  if (/inverse-depth|depth.*mse|depth.*regression|depth branch/.test(lower)) return "Depth Head";
+  if (/visuo.?tactile|visual.*tactile/.test(lower) && /flow|velocity|vector-field/.test(lower)) return "Visuo-Tactile Flow";
+  if (/(rgb|video|visual|latent).*flow|flow.*(rgb|video|visual|latent)|future.*velocity/.test(lower)) return "Video Flow Head";
+  if (/state|proprio/.test(lower) && /flow|velocity/.test(lower)) return "State Flow Head";
+  if (/vae/.test(lower) && /decoder/.test(lower)) return "VAE Video Decoder";
+  if (/force|tactile|gelsight/.test(lower) && /flow|velocity|head|predict/.test(lower)) return "Force/Tactile Head";
+  if (/action/.test(lower) && /flow|velocity/.test(lower)) return "Action Flow Head";
   if (/action|trajectory|chunk|control|policy/i.test(text)) return "Action Head";
   if (/future|video|image|frame|observation/i.test(text)) return "Future Head";
   if (/value|reward|score/i.test(text)) return "Value Head";

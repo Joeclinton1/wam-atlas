@@ -260,7 +260,7 @@ export const institutionMeta = {
   adaworldpolicy: ["HKU", "hku.hk"],
   "say-dream-act": ["Fudan", "fudan.edu.cn"],
   cowvla: ["Peking University", "pku.edu.cn"],
-  "fast-wam": ["Galaxea AI", "galaxea.ai", { logoUrl: "https://galaxea.ai/favicon.ico" }],
+  "fast-wam": ["Tsinghua IIIS / Galaxea AI", "iiis.tsinghua.edu.cn", { logoUrl: "https://www.tsinghua.edu.cn/favicon.ico" }],
   svam: ["HKUST(GZ)", "hkust-gz.edu.cn"],
   "sim-distill": ["UT Austin", "utexas.edu"],
   vampo: ["Zhejiang University", "zju.edu.cn", { logoUrl: "https://www.zju.edu.cn/_upload/tpl/0b/bf/3007/template3007/favicon.ico" }],

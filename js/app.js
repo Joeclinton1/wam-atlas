@@ -17,8 +17,8 @@ import {
   scoreLabel,
   wrapText,
   shortText
-} from './shared.js?v=diagram-core-glyphs-24';
-import { renderDiagram, getArchitectureSpec } from './diagrams.js?v=diagram-core-glyphs-24';
+} from './shared.js?v=diagram-core-glyphs-25';
+import { renderDiagram, getArchitectureSpec } from './diagrams.js?v=diagram-core-glyphs-25';
 
 function hasMetricsTargetBenchmark(model) {
   return Boolean(model.metrics?.comparative?.metricsEligible);
@@ -2622,6 +2622,9 @@ function renderModelCard(id) {
   $("#modelCompute").textContent = model.metrics?.comparative?.computeCost?.pretrainingGpuHours
     ? `${formatMetricValue(model.metrics.comparative.computeCost.pretrainingGpuHours, { unit: "GPUh" })} GPUh`
     : scoreLabel(model.metrics?.computeScale);
+  const params = modelParameterSummary(model, state.arch[model.id]);
+  $("#modelDitParams").textContent = params.dit || "not stated";
+  $("#modelTotalParams").textContent = params.total || "not stated";
   $("#modelEvidence").textContent = model.metrics?.comparative?.confidence || scoreLabel(model.metrics?.evidence);
   renderDiagram($("#modelDiagram"), model, { mini: false });
 
@@ -2646,6 +2649,63 @@ function renderModelCard(id) {
     ? `${model.uncertainty} Literal diagram source: ${spec.sourceExtract}; lines ${(spec.sourceLines || []).join(", ")}.`
     : `${model.uncertainty} Literal architecture curation is pending; current diagram is a survey-level scaffold.`;
   updateActiveNodes();
+}
+
+function modelParameterSummary(model, arch = {}) {
+  const pools = [
+    model.name,
+    model.title,
+    model.oneLine,
+    ...(model.diagram?.components || []),
+    ...(arch.inputTokens || []),
+    ...(arch.tokenization || []),
+    ...(arch.backbone || []),
+    ...(arch.branches || []),
+    ...(arch.heads || []),
+    ...(arch.trainingRecipe || []),
+    ...(arch.inferenceRecipe || []),
+    ...(model.literalArchitecture?.backbone || []),
+    ...(model.literalArchitecture?.branches || []),
+    ...(model.literalArchitecture?.heads || []),
+    ...(model.literalArchitecture?.trainingRecipe || []),
+    ...(model.literalArchitecture?.inferenceRecipe || [])
+  ].filter(Boolean).map(String);
+  const text = pools.join(" ");
+  const dit = firstParamMatch(text, [
+    /(?:wan|cosmos|cogvideox|video|diffusion|flow|base|pretrained)[^.;,]{0,80}?(\d+(?:\.\d+)?)\s*B(?:\s|-)?(?:video\s*)?(?:DiT|diffusion transformer|model|backbone)/ig,
+    /(\d+(?:\.\d+)?)\s*B[^.;,]{0,80}?(?:DiT|diffusion transformer|video backbone|video model|wan|cosmos|cogvideox)/ig,
+    /(?:RDT|Emu3|Qwen|Chameleon|VLM)[^.;,]{0,40}?(\d+(?:\.\d+)?)\s*B/ig
+  ], { skip: /action expert|action head/i });
+  const explicitTotal = firstParamMatch(text, [
+    /(?:reported\s+)?total model size is\s+(\d+(?:\.\d+)?)\s*B/ig,
+    /(?:full|total|overall)[^.;,]{0,40}?(\d+(?:\.\d+)?)\s*B/ig,
+    /(\d+(?:\.\d+)?)\s*B[^.;,]{0,50}?(?:WAM|VLA|model)/ig
+  ]);
+  const assumptions = model.metrics?.comparative?.inferenceCost?.assumptions?.parameterB || [];
+  const plausible = assumptions.filter((value) => Number.isFinite(Number(value)) && Number(value) > 0 && Number(value) <= 20);
+  const total = explicitTotal || (plausible.length ? Math.max(...plausible) : null);
+  return {
+    dit: dit ? `${formatParamB(dit)}B` : "",
+    total: total ? `${formatParamB(total)}B` : ""
+  };
+}
+
+function firstParamMatch(text, patterns, options = {}) {
+  for (const pattern of patterns) {
+    let match;
+    while ((match = pattern.exec(text)) !== null) {
+      if (options.skip?.test(match[0])) continue;
+      const value = Number(match[1]);
+      if (!Number.isFinite(value) || value <= 0 || value > 80) continue;
+      if (value > 20 && !/parameters?|params?|model size/i.test(match[0])) continue;
+      return value;
+    }
+  }
+  return null;
+}
+
+function formatParamB(value) {
+  return Number(value).toLocaleString(undefined, { maximumFractionDigits: Number(value) < 10 ? 1 : 0 });
 }
 
 function renderInsightValue(model, key) {
