@@ -1,13 +1,17 @@
-import { state, familyColors, typeColors, escapeHtml, wrapText, shortText } from './shared.js?v=diagram-core-glyphs-26';
+import { state, familyColors, typeColors, escapeHtml, wrapText, shortText } from './shared.js?v=wam-atlas-28';
 
 export function renderDiagram(container, model, options = {}) {
+  container.innerHTML = architectureDiagramMarkup(model, options);
+}
+
+export function architectureDiagramMarkup(model, options = {}) {
   const spec = getArchitectureSpec(model);
-  const view = { w: 1160, h: options.mini ? 452 : 720 };
+  const view = { w: 1160, h: options.gallery ? 326 : options.mini ? 452 : 720 };
   const diagram = buildArchitectureDiagram(model, spec, options);
   const ids = diagramIds(model, options);
   const header = "";
 
-  container.innerHTML = `
+  return `
     <svg class="wam-diagram" viewBox="0 0 ${view.w} ${view.h}" preserveAspectRatio="xMidYMin meet" role="img" aria-label="${escapeHtml(model.name)} architecture diagram">
       ${diagramDefs(model, ids)}
       <rect class="diagram-bg" x="0" y="0" width="${view.w}" height="${view.h}"></rect>
@@ -20,7 +24,7 @@ export function renderDiagram(container, model, options = {}) {
 
 function diagramIds(model, options = {}) {
   const safeId = String(model.id || "model").replace(/[^a-z0-9_-]/gi, "-");
-  const size = options.mini ? "mini" : "large";
+  const size = options.gallery ? "gallery" : options.mini ? "mini" : "large";
   return {
     coreGrad: `${safeId}-${size}-coreGrad`,
     softShadow: `${safeId}-${size}-softShadow`,
@@ -87,6 +91,7 @@ function drawArchitectureDiagram(diagram, view, options = {}, ids) {
   if (["pixel_idm", "latent_idm"].includes(pattern)) return drawFutureIdmArchitecture(diagram, view, options, ids);
 
   const mini = Boolean(options.mini);
+  const showTraining = !options.gallery;
   const y0 = mini ? 22 : 118;
   const coreBox = { x: 455, y: y0, w: 380, h: mini ? 270 : 330 };
   const inputBox = { x: 34, y: y0, w: 206, h: coreBox.h };
@@ -102,13 +107,14 @@ function drawArchitectureDiagram(diagram, view, options = {}, ids) {
     drawColumnPanel(headBox, "heads", drawHeadStack(diagram.heads, headBox, mini)),
     drawColumnPanel(outputBox, "outputs", drawOutputStack(diagram.outputs, outputBox, mini)),
     drawMainConnectors(inputBox, encoderBox, coreBox, headBox, outputBox, ids),
-    drawTrainingBand(diagram, trainBox, coreBox, headBox, mini, ids),
-    mini ? "" : drawRuntimeStrip(diagram.runtime, coreBox, outputBox, trainBox)
+    showTraining ? drawTrainingBand(diagram, trainBox, coreBox, headBox, mini, ids) : "",
+    mini || !showTraining ? "" : drawRuntimeStrip(diagram.runtime, coreBox, outputBox, trainBox)
   ].join("");
 }
 
 function drawStandardArchitecture(diagram, view, options = {}, ids) {
   const mini = Boolean(options.mini);
+  const showTraining = !options.gallery;
   const unifiedDirect = diagram.pattern === "unified";
   const y0 = diagramLayoutY(options);
   const h = diagramMainHeight(options);
@@ -134,8 +140,8 @@ function drawStandardArchitecture(diagram, view, options = {}, ids) {
     drawDenseEncoderRows(encoders, mini),
     drawDenseHeadRows(heads, mini),
     drawDenseOutputRows(outputs, mini),
-    drawTrainingBand(diagram, trainBox, coreBox, unifiedDirect ? outputBox : headBox, mini, ids),
-    mini ? "" : drawRuntimeStrip(diagram.runtime, coreBox, outputBox, trainBox)
+    showTraining ? drawTrainingBand(diagram, trainBox, coreBox, unifiedDirect ? outputBox : headBox, mini, ids) : "",
+    mini || !showTraining ? "" : drawRuntimeStrip(diagram.runtime, coreBox, outputBox, trainBox)
   ].join("");
 }
 
@@ -175,6 +181,7 @@ function diagramMainHeight(options) {
 
 function drawUnifiedArchitecture(diagram, view, options = {}, ids) {
   const mini = Boolean(options.mini);
+  const showTraining = !options.gallery;
   const y0 = diagramLayoutY(options);
   const h = diagramMainHeight(options);
   const inputBox = { x: 34, y: y0, w: 188, h };
@@ -197,8 +204,8 @@ function drawUnifiedArchitecture(diagram, view, options = {}, ids) {
     drawTypedFlow(sequenceBox, coreBox, "future", ids, 0.5, 0.5, "shared sequence"),
     drawTypedFlow(coreBox, outputBox, "future", ids, 0.36, 0.32, "obs head"),
     drawTypedFlow(coreBox, outputBox, "action", ids, 0.64, 0.68, "action head"),
-    drawTrainingBand(diagram, trainBox, coreBox, outputBox, mini, ids),
-    mini ? "" : drawRuntimeStrip(diagram.runtime, coreBox, outputBox, trainBox)
+    showTraining ? drawTrainingBand(diagram, trainBox, coreBox, outputBox, mini, ids) : "",
+    mini || !showTraining ? "" : drawRuntimeStrip(diagram.runtime, coreBox, outputBox, trainBox)
   ].join("");
 }
 
@@ -450,6 +457,7 @@ function drawUnifiedOutputs(box, diagram, mini, ids) {
 
 function drawMultiStreamArchitecture(diagram, view, options = {}, ids) {
   const mini = Boolean(options.mini);
+  const showTraining = !options.gallery;
   const y0 = diagramLayoutY(options);
   const h = diagramMainHeight(options);
   const inputBox = { x: 34, y: y0, w: 178, h };
@@ -468,8 +476,8 @@ function drawMultiStreamArchitecture(diagram, view, options = {}, ids) {
     drawTypedFlow(encoderBox, streamBox, "visual", ids, 0.36, 0.35, "route"),
     drawTypedFlow(encoderBox, streamBox, "action", ids, 0.64, 0.65, ""),
     drawTypedFlow(streamBox, headBox, "future", ids, 0.5, 0.5, "fuse"),
-    drawTrainingBand(diagram, trainBox, streamBox, headBox, mini, ids),
-    mini ? "" : drawRuntimeStrip(diagram.runtime, streamBox, headBox, trainBox)
+    showTraining ? drawTrainingBand(diagram, trainBox, streamBox, headBox, mini, ids) : "",
+    mini || !showTraining ? "" : drawRuntimeStrip(diagram.runtime, streamBox, headBox, trainBox)
   ].join("");
 }
 
@@ -538,6 +546,7 @@ function streamCoreKind(stream, diagram) {
 
 function drawJointLatentArchitecture(diagram, view, options = {}, ids) {
   const mini = Boolean(options.mini);
+  const showTraining = !options.gallery;
   const y0 = diagramLayoutY(options);
   const h = diagramMainHeight(options);
   const latent = { x: 456, y: y0 + 38, w: 286, h: h - 76 };
@@ -551,8 +560,8 @@ function drawJointLatentArchitecture(diagram, view, options = {}, ids) {
     drawConnector(leftBox.x + leftBox.w, leftBox.y + h * 0.42, latent.x, latent.y + latent.h * 0.44, "embed", false, ids),
     drawConnector(latent.x + latent.w, latent.y + latent.h * 0.44, rightBox.x, rightBox.y + h * 0.42, "decode", false, ids),
     drawConnector(rightBox.x, rightBox.y + h * 0.66, latent.x + latent.w, latent.y + latent.h * 0.66, "align", true, ids),
-    drawTrainingBand(diagram, trainBox, latent, rightBox, mini, ids),
-    mini ? "" : drawRuntimeStrip(diagram.runtime, latent, rightBox, trainBox)
+    showTraining ? drawTrainingBand(diagram, trainBox, latent, rightBox, mini, ids) : "",
+    mini || !showTraining ? "" : drawRuntimeStrip(diagram.runtime, latent, rightBox, trainBox)
   ].join("");
 }
 
@@ -581,6 +590,7 @@ function drawLatentManifold(box, diagram, mini, ids) {
 
 function drawLatentActionArchitecture(diagram, view, options = {}, ids) {
   const mini = Boolean(options.mini);
+  const showTraining = !options.gallery;
   const y0 = diagramLayoutY(options);
   const h = diagramMainHeight(options);
   const videoBox = { x: 34, y: y0, w: 240, h };
@@ -596,8 +606,8 @@ function drawLatentActionArchitecture(diagram, view, options = {}, ids) {
     drawConnector(videoBox.x + videoBox.w, videoBox.y + h * 0.42, codeBox.x, codeBox.y + codeBox.h * 0.42, "infer code", false, ids),
     drawConnector(codeBox.x + codeBox.w, codeBox.y + codeBox.h * 0.5, policyBox.x, policyBox.y + h * 0.5, "condition", false, ids),
     drawConnector(policyBox.x + policyBox.w, policyBox.y + h * 0.48, outputBox.x, outputBox.y + h * 0.48, "decode", false, ids),
-    drawTrainingBand(diagram, trainBox, codeBox, policyBox, mini, ids),
-    mini ? "" : drawRuntimeStrip(diagram.runtime, policyBox, outputBox, trainBox)
+    showTraining ? drawTrainingBand(diagram, trainBox, codeBox, policyBox, mini, ids) : "",
+    mini || !showTraining ? "" : drawRuntimeStrip(diagram.runtime, policyBox, outputBox, trainBox)
   ].join("");
 }
 
@@ -632,6 +642,7 @@ function drawPolicyGrounding(box, diagram, mini, ids) {
 
 function drawFutureIdmArchitecture(diagram, view, options = {}, ids) {
   const mini = Boolean(options.mini);
+  const showTraining = !options.gallery;
   const y0 = diagramLayoutY(options);
   const h = diagramMainHeight(options);
   const futureH = futurePredictorHeight(diagram, mini);
@@ -656,8 +667,8 @@ function drawFutureIdmArchitecture(diagram, view, options = {}, ids) {
     drawDenseEncoderRows(encoders, mini),
     drawDenseHeadRows(idmHeads, mini),
     drawDenseOutputRows(outputs, mini),
-    drawTrainingBand(diagram, trainBox, futureBox, idmBox, mini, ids),
-    mini ? "" : drawRuntimeStrip(diagram.runtime, idmBox, outputBox, trainBox)
+    showTraining ? drawTrainingBand(diagram, trainBox, futureBox, idmBox, mini, ids) : "",
+    mini || !showTraining ? "" : drawRuntimeStrip(diagram.runtime, idmBox, outputBox, trainBox)
   ].join("");
 }
 
@@ -709,6 +720,7 @@ function drawFutureIdmSankey(diagram, inputBox, encoderBox, futureBox, idmBox, o
 
 function drawImplicitFutureArchitecture(diagram, view, options = {}, ids) {
   const mini = Boolean(options.mini);
+  const showTraining = !options.gallery;
   const y0 = diagramLayoutY(options);
   const h = diagramMainHeight(options);
   const inputBox = { x: 34, y: y0, w: 226, h };
@@ -725,8 +737,8 @@ function drawImplicitFutureArchitecture(diagram, view, options = {}, ids) {
     drawConnector(inputBox.x + inputBox.w, inputBox.y + h * 0.67, policyBox.x, policyBox.y + h * 0.66, "current obs", false, ids),
     drawConnector(repBox.x + repBox.w, repBox.y + repBox.h * 0.43, policyBox.x, policyBox.y + h * 0.38, "condition / prefix", false, ids),
     drawConnector(policyBox.x + policyBox.w, policyBox.y + h * 0.5, outputBox.x, outputBox.y + h * 0.5, "act", false, ids),
-    drawTrainingBand(diagram, trainBox, repBox, policyBox, mini, ids),
-    mini ? "" : drawRuntimeStrip(diagram.runtime, policyBox, outputBox, trainBox)
+    showTraining ? drawTrainingBand(diagram, trainBox, repBox, policyBox, mini, ids) : "",
+    mini || !showTraining ? "" : drawRuntimeStrip(diagram.runtime, policyBox, outputBox, trainBox)
   ].join("");
 }
 
@@ -1197,6 +1209,7 @@ function idmActionOutputs(diagram) {
 
 function drawEncoderOnlyArchitecture(diagram, view, options = {}, ids) {
   const mini = Boolean(options.mini);
+  const showTraining = !options.gallery;
   const y0 = diagramLayoutY(options);
   const h = diagramMainHeight(options);
   const inputBox = { x: 34, y: y0, w: 178, h };
@@ -1215,9 +1228,9 @@ function drawEncoderOnlyArchitecture(diagram, view, options = {}, ids) {
     drawTypedFlow(inputBox, encoderBox, "language", ids, 0.52, 0.52, ""),
     drawTypedFlow(encoderBox, policyBox, "future", ids, 0.5, 0.5, "represent"),
     drawTypedFlow(policyBox, outputBox, "action", ids, 0.48, 0.48, "act"),
-    drawConnector(policyBox.x + policyBox.w, policyBox.y + h * 0.7, trainOnlyBox.x, trainOnlyBox.y + trainOnlyBox.h * 0.68, "training only", true, ids),
-    drawTrainingBand(diagram, trainBox, policyBox, trainOnlyBox, mini, ids),
-    mini ? "" : drawRuntimeStrip(diagram.runtime, policyBox, outputBox, trainBox)
+    showTraining ? drawConnector(policyBox.x + policyBox.w, policyBox.y + h * 0.7, trainOnlyBox.x, trainOnlyBox.y + trainOnlyBox.h * 0.68, "training only", true, ids) : "",
+    showTraining ? drawTrainingBand(diagram, trainBox, policyBox, trainOnlyBox, mini, ids) : "",
+    mini || !showTraining ? "" : drawRuntimeStrip(diagram.runtime, policyBox, outputBox, trainBox)
   ].join("");
 }
 
@@ -1266,6 +1279,7 @@ function drawEncoderOnlyAuxiliary(box, diagram, mini) {
 
 function drawEnhancementArchitecture(diagram, view, options = {}, ids) {
   const mini = Boolean(options.mini);
+  const showTraining = !options.gallery;
   const y0 = diagramLayoutY(options);
   const h = diagramMainHeight(options);
   const inputBox = { x: 34, y: y0, w: 178, h };
@@ -1285,8 +1299,8 @@ function drawEnhancementArchitecture(diagram, view, options = {}, ids) {
     drawTypedFlow(encoderBox, baseBox, "future", ids, 0.5, 0.5, "embed"),
     drawConnector(baseBox.x + baseBox.w, baseBox.y + h * 0.45, enhanceBox.x, enhanceBox.y + h * 0.45, "adapt / align", true, ids),
     drawTypedFlow(enhanceBox, outputBox, "action", ids, 0.5, 0.5, "deploy"),
-    drawTrainingBand(diagram, trainBox, baseBox, enhanceBox, mini, ids),
-    mini ? "" : drawRuntimeStrip(diagram.runtime, baseBox, outputBox, trainBox)
+    showTraining ? drawTrainingBand(diagram, trainBox, baseBox, enhanceBox, mini, ids) : "",
+    mini || !showTraining ? "" : drawRuntimeStrip(diagram.runtime, baseBox, outputBox, trainBox)
   ].join("");
 }
 

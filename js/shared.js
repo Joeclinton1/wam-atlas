@@ -9,10 +9,12 @@ export const state = {
   computeMetric: "pretraining",
   metricAccuracyFilterEnabled: false,
   metricAccuracyThreshold: 70,
+  taxonomyGallery: false,
   query: "",
   selectedId: null,
   hoveredId: null,
   taxonomyHoveredFamily: null,
+  timelineExcludedFamilies: new Set(),
   zoom: { k: 0.68, x: 250, y: 78 },
   zoomBase: 0.68,
   dragging: null,
@@ -57,7 +59,7 @@ export const modeDescriptions = {
   timeline: "Field evolution by publication date."
 };
 
-export const rootProblemQuestion = "How can video models best serve as VLA backbones?";
+export const rootProblemQuestion = "How can world models best serve as VLA backbones?";
 
 export const problemBranches = [
   {
@@ -161,7 +163,7 @@ export const familyInsights = {
   },
   latent_idm: {
     thesis: "Latent futures keep the future-prediction idea but move the action bridge into compact semantic or dynamics features.",
-    signal: "The family tests whether the video model's hidden state contains enough controllable information for action recovery.",
+    signal: "The family tests whether the world model's hidden state contains enough controllable information for action recovery.",
     caution: "Latents can hide failure modes: a feature may be predictive for video while being weakly grounded in robot geometry.",
     direction: "Which latent spaces preserve intervention-relevant state rather than just semantic appearance?"
   },
@@ -198,7 +200,7 @@ export const familyInsights = {
   multimodal: {
     thesis: "Multimodal-state models add depth, touch, force, 3D, or 4D state so prediction is grounded in physical variables beyond RGB.",
     signal: "They address the survey concern that video-only WAMs under-specify contact geometry and state uncertainty.",
-    caution: "Extra sensors improve grounding but can narrow deployment settings or hide the actual contribution of the video model.",
+    caution: "Extra sensors improve grounding but can narrow deployment settings or hide the actual contribution of the world model.",
     direction: "How should tactile, depth, and force supervision be fused so it generalizes when a sensor is missing or noisy?"
   },
   latent_action: {

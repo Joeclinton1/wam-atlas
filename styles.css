@@ -76,10 +76,34 @@ a {
   width: 36px;
   height: 36px;
   border-radius: var(--radius);
-  background: var(--ink);
-  color: #fff;
-  font-size: 0.86rem;
-  font-weight: 800;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(23, 32, 36, 0.16), 0 4px 12px rgba(23, 32, 36, 0.08);
+}
+
+.brand-mark svg {
+  width: 30px;
+  height: 30px;
+}
+
+.brand-mark path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.brand-world {
+  stroke: #2f8793;
+  stroke-width: 2.4;
+}
+
+.brand-action {
+  stroke: #ad7b16;
+  stroke-width: 2.2;
+}
+
+.brand-axis {
+  stroke: #172024;
+  stroke-width: 2.1;
 }
 
 .brand strong,
@@ -375,6 +399,87 @@ p {
 
 .taxonomy-family.is-hovered .taxonomy-family-visual {
   filter: drop-shadow(0 12px 18px rgba(23, 32, 36, 0.14));
+}
+
+.taxonomy-gallery-container rect {
+  fill: rgba(255, 255, 255, 0.24);
+}
+
+.taxonomy-gallery-family-bg {
+  fill: color-mix(in srgb, var(--tax-color) 9%, rgba(255, 255, 255, 0.86));
+  stroke: color-mix(in srgb, var(--tax-color) 52%, rgba(23, 32, 36, 0.24));
+  stroke-width: 1.35;
+  stroke-dasharray: 5 5;
+  rx: 14px;
+  ry: 14px;
+  vector-effect: non-scaling-stroke;
+}
+
+.taxonomy-gallery-family-label {
+  fill: color-mix(in srgb, var(--tax-color) 72%, #172024);
+  font-size: 9px;
+  font-weight: 950;
+  letter-spacing: 0;
+  paint-order: stroke;
+  stroke: rgba(255, 255, 255, 0.88);
+  stroke-width: 3px;
+  pointer-events: none;
+}
+
+.taxonomy-gallery-card {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--family-color) 34%, rgba(23, 32, 36, 0.12));
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 8px 18px rgba(25, 34, 37, 0.08);
+  cursor: pointer;
+}
+
+.taxonomy-gallery-card:hover {
+  border-color: color-mix(in srgb, var(--family-color) 72%, rgba(23, 32, 36, 0.18));
+  box-shadow: 0 12px 24px rgba(25, 34, 37, 0.14);
+}
+
+.taxonomy-gallery-title {
+  position: absolute;
+  z-index: 2;
+  top: 5px;
+  left: 7px;
+  right: 7px;
+  overflow: hidden;
+  color: #172024;
+  font-size: 9px;
+  font-weight: 920;
+  line-height: 1.05;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.taxonomy-gallery-diagram {
+  position: absolute;
+  inset: 18px 5px 5px;
+  overflow: hidden;
+}
+
+.taxonomy-gallery-diagram .wam-diagram {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.taxonomy-gallery-diagram .diagram-bg {
+  fill: transparent;
+}
+
+.taxonomy-gallery-diagram .diagram-column-label,
+.taxonomy-gallery-diagram .diagram-detail,
+.taxonomy-gallery-diagram .diagram-badge text,
+.taxonomy-gallery-diagram .diagram-head-title,
+.taxonomy-gallery-diagram .diagram-module-title {
+  font-size: 18px;
 }
 
 .family-hover-card {
@@ -1275,7 +1380,8 @@ p {
 }
 
 .page-atlas .mode-group,
-.page-atlas .mode-meta {
+.page-atlas .mode-meta,
+.page-atlas .taxonomy-gallery-toggle {
   pointer-events: auto;
 }
 
@@ -1375,6 +1481,33 @@ p {
   color: #ffffff;
 }
 
+.icon-toggle {
+  display: inline-grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 1px solid rgba(23, 32, 36, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #506066;
+  cursor: pointer;
+  box-shadow: 0 12px 28px rgba(25, 34, 37, 0.08);
+}
+
+.icon-toggle svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+}
+
+.icon-toggle.is-active {
+  background: #172024;
+  color: #ffffff;
+}
+
 .metric-chart-button.is-disabled,
 .metric-chart-button:disabled {
   opacity: 0.34;
@@ -1451,10 +1584,10 @@ p {
   right: 18px;
   z-index: 9;
   display: grid;
-  grid-template-columns: repeat(2, max-content);
-  gap: 6px 14px;
+  grid-template-columns: max-content;
+  gap: 5px 10px;
   align-items: center;
-  pointer-events: none;
+  pointer-events: auto;
 }
 
 .timeline-floating-legend[hidden] {
@@ -1465,11 +1598,33 @@ p {
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: rgba(39, 52, 58, 0.88);
   font-size: 10px;
   font-weight: 820;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.76);
   white-space: nowrap;
+  cursor: pointer;
+}
+
+.timeline-floating-legend .timeline-legend-item.is-unchecked {
+  opacity: 0.42;
+}
+
+.timeline-legend-box {
+  display: grid;
+  width: 10px;
+  height: 10px;
+  place-items: center;
+  border: 1px solid rgba(23, 32, 36, 0.32);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.78);
+  color: #172024;
+  font-size: 8px;
+  font-weight: 950;
+  line-height: 1;
 }
 
 .timeline-legend-dot {
@@ -3225,6 +3380,32 @@ p {
   background: #fff;
 }
 
+.methodology-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  counter-reset: methodology;
+}
+
+.methodology-list div {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 8px;
+  align-items: start;
+  padding: 8px 10px;
+}
+
+.methodology-list strong {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  border-radius: 999px;
+  background: #172024;
+  color: #fff;
+  font-size: 0.68rem;
+}
+
 .learn-flow {
   display: grid;
   grid-template-columns: minmax(120px, 1fr) 34px minmax(150px, 1.2fr) 34px minmax(120px, 1fr);
@@ -3284,7 +3465,7 @@ p {
 
 .grammar-item {
   position: relative;
-  min-height: 170px;
+  min-height: 128px;
   overflow: hidden;
   background: linear-gradient(135deg, color-mix(in srgb, var(--grammar-color, #117c78) 18%, #ffffff), #ffffff 58%);
 }
@@ -3296,37 +3477,45 @@ p {
 .grammar-head { --grammar-color: #7656a6; }
 .grammar-objective { --grammar-color: #4e7f36; }
 
-.grammar-spark {
+.grammar-glyph {
+  height: 40px;
+  margin-bottom: 5px;
+}
+
+.grammar-glyph svg {
   display: block;
-  height: 50px;
-  margin-bottom: 8px;
+  width: 92px;
+  height: 40px;
 }
 
-.spark-core {
-  position: relative;
-  display: block;
-  width: 78px;
-  height: 42px;
+.grammar-glyph-block,
+.grammar-glyph-token,
+.grammar-glyph-funnel {
+  fill: color-mix(in srgb, var(--grammar-color, #117c78) 16%, #ffffff);
+  stroke: color-mix(in srgb, var(--grammar-color, #117c78) 72%, #172024);
+  stroke-width: 1.5;
 }
 
-.spark-core span {
-  position: absolute;
-  top: calc(8px + (var(--i) % 2) * 12px);
-  left: calc(var(--i) * 18px);
-  width: 20px;
-  height: 20px;
-  border-radius: 6px;
-  background: color-mix(in srgb, var(--grammar-color, #117c78) 68%, #ffffff);
-  box-shadow: 0 5px 12px rgba(23, 32, 36, 0.1);
+.grammar-glyph-line,
+.grammar-glyph-action {
+  fill: none;
+  stroke: color-mix(in srgb, var(--grammar-color, #117c78) 78%, #172024);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.spark-core em {
-  position: absolute;
-  top: 6px;
-  right: -20px;
-  color: color-mix(in srgb, var(--grammar-color, #117c78) 80%, #172024);
-  font-size: 1.2rem;
-  font-style: normal;
+.grammar-glyph-line.dashed {
+  stroke-dasharray: 4 4;
+}
+
+.grammar-glyph-action {
+  stroke: #ad7b16;
+}
+
+.grammar-glyph-number {
+  fill: color-mix(in srgb, var(--grammar-color, #117c78) 80%, #172024);
+  font-size: 18px;
   font-weight: 950;
 }
 
@@ -3334,7 +3523,7 @@ p {
 .family-item strong,
 .research-item strong {
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .grammar-item p,
@@ -3343,6 +3532,16 @@ p {
 .methodology-list p {
   margin-bottom: 0;
   font-size: 0.92rem;
+}
+
+.grammar-item p {
+  font-size: 0.8rem;
+  line-height: 1.34;
+}
+
+.methodology-list p {
+  font-size: 0.8rem;
+  line-height: 1.35;
 }
 
 .family-item {
@@ -3401,6 +3600,19 @@ p {
   font-size: 0.9rem;
 }
 
+.paper-family-pill {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  padding: 4px 8px;
+  border: 1px solid color-mix(in srgb, var(--paper-color, #117c78) 42%, #ffffff);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--paper-color, #117c78) 14%, #ffffff);
+  color: color-mix(in srgb, var(--paper-color, #117c78) 58%, #172024);
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
 @media (max-width: 1050px) {
   .topbar {
     grid-template-columns: 1fr;
@@ -3434,6 +3646,10 @@ p {
 
   .model-meta-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .methodology-list {
+    grid-template-columns: 1fr;
   }
 }
 

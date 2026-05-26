@@ -17,8 +17,8 @@ import {
   scoreLabel,
   wrapText,
   shortText
-} from './shared.js?v=problem-map-scale-27';
-import { renderDiagram, getArchitectureSpec } from './diagrams.js?v=problem-map-scale-27';
+} from './shared.js?v=wam-atlas-28';
+import { renderDiagram, architectureDiagramMarkup, getArchitectureSpec } from './diagrams.js?v=wam-atlas-28';
 
 function hasMetricsTargetBenchmark(model) {
   return Boolean(model.metrics?.comparative?.metricsEligible);
@@ -42,6 +42,7 @@ function filteredModels() {
   const q = state.query.trim().toLowerCase();
   return state.models.filter((model) => {
     if (!isModelIncludedInMetricView(model)) return false;
+    if (state.mode === "timeline" && state.timelineExcludedFamilies?.has(model.family)) return false;
     if (!q) return true;
     const haystack = [
       model.name,
@@ -70,13 +71,28 @@ async function loadData() {
   state.methodology = modelsData.methodology;
   state.arch = archData.models || {};
 
-  $("#modelCount").textContent = state.models.length;
-  $("#familyCount").textContent = new Set(state.models.map((m) => m.family)).size;
+  animateStatCount($("#modelCount"), state.models.length);
+  animateStatCount($("#familyCount"), new Set(state.models.map((m) => m.family)).size);
   populateMetricControls();
   setDefaultZoomForMode(state.mode);
   renderLearn();
   renderSources();
   routeFromHash();
+}
+
+function animateStatCount(el, target) {
+  if (!el) return;
+  const value = Number(target) || 0;
+  const duration = 1050;
+  const start = performance.now();
+  el.textContent = "0";
+  const tick = (now) => {
+    const t = clamp((now - start) / duration, 0, 1);
+    const eased = 1 - Math.pow(1 - t, 3);
+    el.textContent = String(Math.round(value * eased));
+    if (t < 1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
 }
 
 function familyOrder() {
@@ -93,6 +109,10 @@ function problemColorForFamily(family) {
 
 function problemColorForModel(model) {
   return problemColorForFamily(model.family);
+}
+
+function timelineVisibleModels() {
+  return state.models.filter((model) => !state.timelineExcludedFamilies?.has(model.family));
 }
 
 function modelIndexInFamily(model) {
@@ -114,7 +134,7 @@ function positionModel(model, index, models, bounds) {
   }
 
   if (state.mode === "timeline") {
-    return timelineGeometry(models, bounds).positions.get(model.id);
+    return timelineGeometry(timelineVisibleModels(), bounds).positions.get(model.id);
   }
 
   if (state.mode === "taxonomy") {
@@ -130,7 +150,7 @@ function drawAtlasBackdrop(group, defs, bounds, geometry = null) {
     return;
   }
   if (state.mode === "timeline") {
-    drawTimelineBackdrop(group, timelineGeometry(state.models, bounds));
+    drawTimelineBackdrop(group, timelineGeometry(timelineVisibleModels(), bounds));
     return;
   }
   if (state.mode === "metrics") {
@@ -763,6 +783,23 @@ function translateProblemGroup(group, dx, dy) {
 
 function timelineGeometry(models, bounds) {
   const sorted = models.slice().sort((a, b) => slugDate(a) - slugDate(b) || a.name.localeCompare(b.name));
+  if (!sorted.length) {
+    const timelineWidth = Math.max(bounds.width * 1.72, 1680);
+    const left = 92;
+    const right = timelineWidth - 92;
+    const centerY = bounds.height / 2 + 8;
+    const fallbackDate = 2026;
+    return {
+      domainMin: fallbackDate - 0.08,
+      domainMax: fallbackDate + 0.08,
+      left,
+      right,
+      centerY,
+      positions: new Map(),
+      connectors: [],
+      monthTicks: timelineMonthTicks(fallbackDate - 0.08, fallbackDate + 0.08)
+    };
+  }
   const dates = sorted.map(slugDate);
   const minDate = Math.min(...dates);
   const maxDate = Math.max(...dates);
@@ -981,15 +1018,31 @@ function renderTimelineLegend() {
     futures: "Imagined futures",
     coupling: "World-action coupling",
     speed: "Fast control",
-    grounding: "Video grounding",
+    grounding: "World grounding",
     physics: "Physical robustness"
   };
-  legend.innerHTML = problemBranches.map((branch) => `
-    <span class="timeline-legend-item">
+  legend.innerHTML = problemBranches.map((branch) => {
+    const checked = branch.families.some((family) => !state.timelineExcludedFamilies?.has(family));
+    return `
+    <button class="timeline-legend-item ${checked ? "is-checked" : "is-unchecked"}" type="button" data-branch="${escapeHtml(branch.id)}" aria-pressed="${checked ? "true" : "false"}">
+      <span class="timeline-legend-box" aria-hidden="true">${checked ? "&#10003;" : ""}</span>
       <span class="timeline-legend-dot" style="background:${branch.color}"></span>
-      ${escapeHtml(labels[branch.id] || branch.question)}
-    </span>
-  `).join("");
+      <span>${escapeHtml(labels[branch.id] || branch.question)}</span>
+    </button>
+  `;
+  }).join("");
+  legend.querySelectorAll(".timeline-legend-item").forEach((item) => {
+    item.addEventListener("click", () => {
+      const branch = problemBranches.find((candidate) => candidate.id === item.dataset.branch);
+      if (!branch) return;
+      const hasVisible = branch.families.some((family) => !state.timelineExcludedFamilies.has(family));
+      branch.families.forEach((family) => {
+        if (hasVisible) state.timelineExcludedFamilies.add(family);
+        else state.timelineExcludedFamilies.delete(family);
+      });
+      renderAtlas();
+    });
+  });
 }
 
 function populateMetricControls() {
@@ -1368,6 +1421,10 @@ function benchmarkLabel(key) {
 }
 
 function drawTaxonomyBackdrop(group, bounds) {
+  if (state.taxonomyGallery) {
+    drawTaxonomyGalleryBackdrop(group, bounds);
+    return;
+  }
   const layer = atlasAnnotationLayer("taxonomy-map");
   const layouts = taxonomyFamilyLayouts(bounds);
   taxonomyContainers(bounds).forEach((container) => {
@@ -1393,6 +1450,136 @@ function drawTaxonomyBackdrop(group, bounds) {
     `);
   });
   group.appendChild(layer);
+}
+
+function drawTaxonomyGalleryBackdrop(group, bounds) {
+  const layer = atlasAnnotationLayer("taxonomy-gallery-map");
+  const containers = taxonomyGalleryContainers(bounds);
+  containers.forEach((container) => {
+    const layouts = taxonomyGalleryFamilyLayouts(container);
+    const galleryBounds = taxonomyGalleryContainerBounds(container, layouts);
+    layer.insertAdjacentHTML("beforeend", `
+      <g class="taxonomy-container taxonomy-gallery-container">
+        <rect x="${galleryBounds.x}" y="${galleryBounds.y}" width="${galleryBounds.w}" height="${galleryBounds.h}"></rect>
+        <text x="${galleryBounds.x + 18}" y="${galleryBounds.y - 12}">${escapeHtml(container.label)}</text>
+      </g>
+    `);
+    layouts.forEach((layout) => {
+      const color = problemColorForFamily(layout.family);
+      const cards = layout.models.map((model, index) => drawTaxonomyGalleryCard(model, layout, index, color)).join("");
+      layer.insertAdjacentHTML("beforeend", `
+        <g class="taxonomy-gallery-family" data-family="${escapeHtml(layout.family)}" style="--tax-color:${color}">
+          <rect class="taxonomy-gallery-family-bg" x="${layout.x}" y="${layout.y}" width="${layout.w}" height="${layout.h}"></rect>
+          <text class="taxonomy-gallery-family-label" x="${layout.x + 12}" y="${layout.y + 18}">${escapeHtml(familyLabels[layout.family] || layout.family)}</text>
+          ${cards}
+        </g>
+      `);
+    });
+  });
+  group.appendChild(layer);
+  bindTaxonomyGalleryCards(layer);
+}
+
+function taxonomyGalleryContainers(bounds) {
+  const top = bounds.width >= 900 ? 118 : 128;
+  const gap = bounds.width >= 900 ? 42 : 30;
+  const x0 = bounds.width >= 900 ? 120 : 42;
+  if (bounds.width < 900) {
+    const w = 980;
+    return taxonomyGroups.map((group, index) => ({
+      ...group,
+      x: x0,
+      y: top + index * 820,
+      w,
+      h: 760
+    }));
+  }
+  const architectureW = 1180;
+  const enhancementW = 700;
+  return taxonomyGroups.map((group) => {
+    if (group.id === "enhancement") {
+      return { ...group, x: x0 + architectureW + gap, y: top, w: enhancementW, h: 760 };
+    }
+    return { ...group, x: x0, y: top, w: architectureW, h: 760 };
+  });
+}
+
+function taxonomyGalleryContainerBounds(container, layouts) {
+  if (!layouts.length) return container;
+  const pad = 22;
+  const minX = Math.min(container.x, ...layouts.map((layout) => layout.x - pad));
+  const minY = Math.min(container.y, ...layouts.map((layout) => layout.y - 28));
+  const maxX = Math.max(container.x + container.w, ...layouts.map((layout) => layout.x + layout.w + pad));
+  const maxY = Math.max(container.y + container.h, ...layouts.map((layout) => layout.y + layout.h + pad));
+  return {
+    x: minX,
+    y: minY,
+    w: maxX - minX,
+    h: maxY - minY
+  };
+}
+
+function taxonomyGalleryFamilyLayouts(container) {
+  const families = container.families.filter((family) => familyOrder().includes(family));
+  const columnCount = container.id === "enhancement" ? 2 : 3;
+  const pad = 28;
+  const gap = 18;
+  const columnW = (container.w - pad * 2 - gap * (columnCount - 1)) / columnCount;
+  const columns = Array.from({ length: columnCount }, (_, index) => ({
+    x: container.x + pad + index * (columnW + gap),
+    y: container.y + 34,
+    bottom: container.y + 34
+  }));
+  return families.map((family) => {
+    const models = state.models.filter((model) => model.family === family);
+    const column = columns.slice().sort((a, b) => a.bottom - b.bottom)[0];
+    const cardGap = 9;
+    const cardCols = 1;
+    const cardW = columnW - 18;
+    const cardH = clamp(cardW * 0.32, 100, 124);
+    const rows = Math.ceil(models.length / cardCols);
+    const h = 34 + rows * cardH + Math.max(0, rows - 1) * cardGap + 12;
+    const layout = {
+      family,
+      models,
+      x: column.x,
+      y: column.bottom,
+      w: columnW,
+      h,
+      cardCols,
+      cardW,
+      cardH,
+      cardGap,
+      cardX: column.x + 9,
+      cardY: column.bottom + 28
+    };
+    column.bottom += h + gap;
+    return layout;
+  });
+}
+
+function drawTaxonomyGalleryCard(model, layout, index, color) {
+  const col = index % layout.cardCols;
+  const row = Math.floor(index / layout.cardCols);
+  const x = layout.cardX + col * (layout.cardW + layout.cardGap);
+  const y = layout.cardY + row * (layout.cardH + layout.cardGap);
+  return `
+    <foreignObject x="${x}" y="${y}" width="${layout.cardW}" height="${layout.cardH}">
+      <div xmlns="http://www.w3.org/1999/xhtml" class="taxonomy-gallery-card" data-id="${escapeHtml(model.id)}" style="--family-color:${color}">
+        <div class="taxonomy-gallery-title">${escapeHtml(model.name)}</div>
+        <div class="taxonomy-gallery-diagram">${architectureDiagramMarkup(model, { mini: true, gallery: true })}</div>
+      </div>
+    </foreignObject>
+  `;
+}
+
+function bindTaxonomyGalleryCards(layer) {
+  layer.querySelectorAll(".taxonomy-gallery-card").forEach((card) => {
+    card.addEventListener("mouseenter", (event) => showPreview(card.dataset.id, event));
+    card.addEventListener("mousemove", positionPreview);
+    card.addEventListener("mouseleave", hidePreview);
+    card.addEventListener("click", () => openModel(card.dataset.id));
+  });
 }
 
 function taxonomyFamilyCenters(bounds) {
@@ -1450,8 +1637,10 @@ function taxonomyPaperPosition(model, bounds) {
   if (!layout) return null;
   const familyModels = state.models.filter((item) => item.family === model.family);
   const index = familyModels.findIndex((item) => item.id === model.id);
-  const pitchX = layout.paperPitch || 54;
-  const cols = Math.max(1, Math.floor((layout.w - 10) / pitchX));
+  const targetCols = Math.min(3, familyModels.length);
+  const maxThreeColPitch = targetCols > 1 ? (layout.w - 18) / (targetCols - 1) : layout.paperPitch || 54;
+  const pitchX = Math.min(layout.paperPitch || 54, maxThreeColPitch);
+  const cols = Math.max(1, Math.min(3, 1 + Math.floor((layout.w - 18) / pitchX)));
   const col = index % cols;
   const row = Math.floor(index / cols);
   const remaining = familyModels.length - row * cols;
@@ -1469,18 +1658,19 @@ function taxonomyMetrics(bounds) {
   const width = bounds.width || 1200;
   const large = width >= 1500;
   const xl = width >= 1900;
+  const scale = 1.15;
   return {
-    cellGap: xl ? 56 : large ? 48 : 42,
-    diagramSideInset: xl ? 10 : large ? 12 : 16,
-    maxDiagramW: xl ? 230 : large ? 198 : 154,
-    diagramH: xl ? 92 : large ? 80 : 66,
-    paperPitch: xl ? 76 : large ? 66 : 54,
-    paperRowGap: xl ? 40 : large ? 35 : 29,
-    paperRadius: xl ? 8 : large ? 7 : 6,
-    paperLiteralRadius: xl ? 10 : large ? 9 : 7.5,
-    paperLabelSize: xl ? 9.2 : large ? 8.4 : 7.2,
-    paperLogoRadius: xl ? 7.4 : large ? 6.6 : 5.8,
-    paperTopGap: xl ? 32 : large ? 28 : 24
+    cellGap: xl ? 48 : large ? 42 : 36,
+    diagramSideInset: xl ? 8 : large ? 9 : 12,
+    maxDiagramW: (xl ? 230 : large ? 198 : 154) * scale,
+    diagramH: (xl ? 92 : large ? 80 : 66) * scale,
+    paperPitch: (xl ? 76 : large ? 66 : 54) * scale,
+    paperRowGap: (xl ? 40 : large ? 35 : 29) * scale,
+    paperRadius: (xl ? 8 : large ? 7 : 6) * scale,
+    paperLiteralRadius: (xl ? 10 : large ? 9 : 7.5) * scale,
+    paperLabelSize: (xl ? 9.2 : large ? 8.4 : 7.2) * scale,
+    paperLogoRadius: (xl ? 7.4 : large ? 6.6 : 5.8) * scale,
+    paperTopGap: (xl ? 32 : large ? 28 : 24) * scale
   };
 }
 
@@ -2022,6 +2212,7 @@ function institutionFor(model) {
 
 function shortPaperName(name) {
   if (state.mode === "timeline") return shortText(name, 15);
+  if (state.mode === "taxonomy") return shortText(name, 12);
   return shortText(name, state.mode === "problem" ? 12 : 24);
 }
 
@@ -2074,14 +2265,15 @@ function renderAtlas() {
   const visible = new Set(filteredModels().map((model) => model.id));
   const useProblemIntro = state.mode === "problem" && state.lastRenderedMode !== "problem";
   const introCenter = problemGeo?.root || { x: bounds.width / 2, y: bounds.height * 0.48 + 36 };
-  state.models.forEach((model, index) => {
+  const renderPaperNodes = !(state.mode === "taxonomy" && state.taxonomyGallery);
+  if (renderPaperNodes) state.models.forEach((model, index) => {
     const target = problemGeo?.positions.get(model.id) || positionModel(model, index, state.models, bounds) || { x: width / 2, y: height / 2 };
     const leaf = problemGeo?.leafAssignments.get(model.id);
     nextPositions.set(model.id, target);
     const node = document.createElementNS("http://www.w3.org/2000/svg", "g");
     const hasLiteral = Boolean(model.literalArchitecture || state.arch[model.id]);
     node.classList.add("node");
-    const filteredOut = state.mode === "metrics" && !visible.has(model.id);
+    const filteredOut = (state.mode === "metrics" || state.mode === "timeline") && !visible.has(model.id);
     if (!visible.has(model.id)) node.classList.add("is-muted");
     if (filteredOut) node.classList.add("is-filtered-out");
     if (state.selectedId === model.id || state.hoveredId === model.id) node.classList.add("is-active");
@@ -2134,7 +2326,7 @@ function renderAtlas() {
     animatedNodes.push({ node, target, visible: visible.has(model.id), leafId: leaf?.id || "", groupId: leaf?.groupId || "" });
   });
 
-  if (state.mode === "taxonomy") bindTaxonomyFamilyHover(group);
+  if (state.mode === "taxonomy" && !state.taxonomyGallery) bindTaxonomyFamilyHover(group);
 
   $("#modeDescription").textContent = modeDescriptions[state.mode];
   bindZoom(svg, group);
@@ -2152,6 +2344,7 @@ function renderAtlas() {
   });
   state.lastAtlasPositions = nextPositions;
   state.lastRenderedMode = state.mode;
+  renderTimelineLegend();
 }
 
 function animateProblemIntro(group, animatedNodes, bounds) {
@@ -2567,6 +2760,12 @@ function syncModeButtons() {
   });
   const metricsControls = $("#metricsControls");
   if (metricsControls) metricsControls.hidden = state.mode !== "metrics";
+  const taxonomyGalleryToggle = $("#taxonomyGalleryToggle");
+  if (taxonomyGalleryToggle) {
+    taxonomyGalleryToggle.hidden = state.mode !== "taxonomy";
+    taxonomyGalleryToggle.classList.toggle("is-active", Boolean(state.taxonomyGallery));
+    taxonomyGalleryToggle.setAttribute("aria-pressed", state.taxonomyGallery ? "true" : "false");
+  }
   const accuracyBenchmark = $("#accuracyBenchmark");
   if (accuracyBenchmark) {
     accuracyBenchmark.hidden = state.mode !== "metrics" || state.metricView !== "accuracy";
@@ -2630,8 +2829,30 @@ function defaultZoomForMode(mode) {
     const k = width < 760 ? 0.82 : 0.94;
     return { k, x: (width * (1 - k)) / 2, y: (height * (1 - k)) / 2 + 10 };
   }
+  if (mode === "taxonomy" && state.taxonomyGallery) {
+    const box = taxonomyGallerySceneBounds({ width, height });
+    const k = clamp((width - 56) / Math.max(1, box.w), width < 900 ? 0.38 : 0.58, width < 900 ? 0.72 : 0.86);
+    return {
+      k,
+      x: (width - box.w * k) / 2 - box.x * k,
+      y: 92 - box.y * k
+    };
+  }
   const k = width < 760 ? 0.72 : 0.8;
-  return { k, x: (width * (1 - k)) / 2, y: (height * (1 - k)) / 2 };
+  return { k, x: (width * (1 - k)) / 2, y: (height * (1 - k)) / 2 - (mode === "taxonomy" ? 24 : 0) };
+}
+
+function taxonomyGallerySceneBounds(bounds) {
+  const boxes = taxonomyGalleryContainers(bounds).map((container) => {
+    const layouts = taxonomyGalleryFamilyLayouts(container);
+    return taxonomyGalleryContainerBounds(container, layouts);
+  });
+  if (!boxes.length) return { x: 0, y: 0, w: bounds.width, h: bounds.height };
+  const minX = Math.min(...boxes.map((box) => box.x));
+  const minY = Math.min(...boxes.map((box) => box.y));
+  const maxX = Math.max(...boxes.map((box) => box.x + box.w));
+  const maxY = Math.max(...boxes.map((box) => box.y + box.h));
+  return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
 }
 
 function zoomToFitBox(box, bounds, padding) {
@@ -2651,8 +2872,9 @@ function zoomToFitBox(box, bounds, padding) {
 
 function routeFromHash() {
   const hash = location.hash.replace(/^#/, "");
+  const parts = hash.split("/");
   if (hash.startsWith("model/")) {
-    const id = hash.split("/")[1];
+    const id = parts[1];
     renderModelCard(id);
     showPage("model");
     return;
@@ -2667,7 +2889,8 @@ function routeFromHash() {
   }
   if (hash.startsWith("atlas/")) {
     showPage("atlas");
-    setAtlasMode(hash.split("/")[1] || "problem");
+    state.taxonomyGallery = parts[1] === "taxonomy" && parts[2] === "gallery";
+    setAtlasMode(parts[1] || "problem");
     return;
   }
   showPage("atlas");
@@ -2884,7 +3107,7 @@ function renderLearn() {
   const grammar = [
     ["Inputs", "Language, RGB, multiview RGB-D, proprioception, tactile images, force, goal images, or action history.", "input"],
     ["Tokenizers", "VAE/VQ encoders, DINO/SigLIP features, MLP action projections, FAST/action codebooks, and latent action quantizers.", "tokenizer"],
-    ["Backbone", "The core temporal model: GPT, DiT, MMDiT, MoT, shared Transformer, video diffusion model, or VLA backbone.", "backbone"],
+    ["Backbone", "The core temporal model: GPT, DiT, MMDiT, MoT, shared Transformer, world diffusion model, or VLA backbone.", "backbone"],
     ["Attention", "The part that determines leakage and coupling: causal masks, cross-attention, stream fusion, bidirectional blocks, and unilateral depth attention.", "attention"],
     ["Heads", "Action denoisers, cVAE decoders, IDM heads, future latent heads, value heads, depth/tactile/force branches.", "head"],
     ["Objectives", "Flow matching, diffusion denoising, future latent alignment, VQ reconstruction, contrastive codebook alignment, depth MSE, or RL-style post-training rewards.", "objective"]
@@ -2892,14 +3115,14 @@ function renderLearn() {
   $("#learnFlow").innerHTML = `
     <div class="learn-flow-step is-input">observations</div>
     <div class="learn-flow-arrow"></div>
-    <div class="learn-flow-step is-core">video / world model</div>
+    <div class="learn-flow-step is-core">world model</div>
     <div class="learn-flow-arrow"></div>
     <div class="learn-flow-step is-action">action head</div>
     <div class="learn-flow-note">the survey question is which future variable survives into this path</div>
   `;
   $("#grammarGrid").innerHTML = grammar.map(([title, body, type], index) => `
     <div class="grammar-item grammar-${escapeHtml(type)}">
-      <div class="grammar-spark" aria-hidden="true">${learnGrammarSpark(type, index)}</div>
+      <div class="grammar-glyph" aria-hidden="true">${learnGrammarGlyph(type, index)}</div>
       <strong>${escapeHtml(title)}</strong>
       <p>${escapeHtml(body)}</p>
     </div>
@@ -2923,10 +3146,10 @@ function renderLearn() {
   `).join("");
 
   const researchDirections = [
-    ["Causal use of future state", "Show that the action head uses the predicted future variable, not merely a correlated auxiliary loss."],
+    ["Causal use of future state", "Show that the action head uses the predicted world variable, not merely a correlated auxiliary loss."],
     ["Benchmark transfer", "Separate saturated simulated scores from harder SimplerEnv, RoboCasa, RoboTwin, and real unseen-task transfer."],
     ["Contact and drift", "Measure whether world models preserve contact geometry, calibration, and object permanence through long-horizon control."],
-    ["Action-code grounding", "Test whether video-derived latent actions remain executable across embodiments rather than becoming dataset-local tokens."],
+    ["Action-code grounding", "Test whether world-derived latent actions remain executable across embodiments rather than becoming dataset-local tokens."],
     ["Runtime frontier", "Map the accuracy/latency frontier when foresight is rendered, latent, cached, distilled, or skipped entirely."],
     ["Sensor robustness", "Understand how depth, touch, and force help when they are noisy, missing, or unavailable at deployment."]
   ];
@@ -2942,14 +3165,106 @@ function atlasArrowDef() {
   return `<marker id="atlasArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="rgba(23,32,36,0.42)"></path></marker>`;
 }
 
-function learnGrammarSpark(type, index) {
-  const dots = Array.from({ length: 4 }, (_, i) => `<span style="--i:${i}"></span>`).join("");
-  return `<i class="spark-core spark-${escapeHtml(type)}">${dots}</i><em>${index + 1}</em>`;
+function learnGrammarGlyph(type, index) {
+  const n = `<text class="grammar-glyph-number" x="108" y="24">${index + 1}</text>`;
+  const glyphs = {
+    input: `
+      <rect class="grammar-glyph-block" x="8" y="12" width="34" height="26" rx="5"></rect>
+      <path class="grammar-glyph-line" d="M15 30c5-9 12 7 20-6"></path>
+      <rect class="grammar-glyph-block" x="52" y="10" width="38" height="30" rx="5"></rect>
+      <path class="grammar-glyph-line" d="M59 18h24M59 25h18M59 32h22"></path>`,
+    tokenizer: `
+      <path class="grammar-glyph-funnel" d="M8 10h46l-12 30H20Z"></path>
+      <rect class="grammar-glyph-token" x="66" y="12" width="10" height="10" rx="2"></rect>
+      <rect class="grammar-glyph-token" x="80" y="12" width="10" height="10" rx="2"></rect>
+      <rect class="grammar-glyph-token" x="66" y="26" width="10" height="10" rx="2"></rect>
+      <rect class="grammar-glyph-token" x="80" y="26" width="10" height="10" rx="2"></rect>`,
+    backbone: `
+      <rect class="grammar-glyph-block" x="18" y="12" width="64" height="30" rx="6"></rect>
+      <path class="grammar-glyph-line" d="M31 17v20M43 17v20M55 17v20M67 17v20"></path>
+      <path class="grammar-glyph-line" d="M8 27h10M82 27h14"></path>`,
+    attention: `
+      <rect class="grammar-glyph-token" x="12" y="12" width="12" height="12" rx="3"></rect>
+      <rect class="grammar-glyph-token" x="42" y="12" width="12" height="12" rx="3"></rect>
+      <rect class="grammar-glyph-token" x="72" y="12" width="12" height="12" rx="3"></rect>
+      <path class="grammar-glyph-line" d="M18 34C30 22 38 22 48 34S72 46 80 28"></path>`,
+    head: `
+      <rect class="grammar-glyph-block" x="10" y="14" width="36" height="26" rx="5"></rect>
+      <path class="grammar-glyph-line" d="M46 27h16"></path>
+      <path class="grammar-glyph-action" d="M66 20c8 13 15-9 24 4M66 30c8 13 15-9 24 4M66 40c8 13 15-9 24 4"></path>`,
+    objective: `
+      <rect class="grammar-glyph-block" x="10" y="13" width="34" height="26" rx="5"></rect>
+      <path class="grammar-glyph-line" d="M52 34c8-20 19 8 36-12"></path>
+      <path class="grammar-glyph-line dashed" d="M50 24h42"></path>`
+  };
+  return `<svg viewBox="0 0 124 54" role="img">${glyphs[type] || glyphs.input}${n}</svg>`;
 }
 
+const PAPER_AUTHOR_SUMMARIES = {
+  "gr-1": "Hongtao Wu, Ya Jing, Chilam Cheang",
+  "gr-2": "Chi-Lam Cheang, Guangzeng Chen, Ya Jing",
+  lapa: "Seonghyeon Ye, Joel Jang, Byeongguk Jeon",
+  vpp: "Yucheng Hu, Yanjiang Guo, Pengchao Wang",
+  uva: "Shuang Li, Yihuai Gao, Dorsa Sadigh",
+  uwm: "Chuning Zhu, Raymond Yu, Siyuan Feng",
+  dreamgen: "Joel Jang, Seonghyeon Ye, Zongyu Lin",
+  flare: "Ruijie Zheng, Jing Wang, Scott Reed",
+  clam: "Anthony Liang, Pavel Czempin, Matthew Hong",
+  videorepa: "Xiangdong Zhang, Jiaqi Liao, Shaofeng Zhang",
+  univla: "Qingwen Bu, Yanting Yang, Jisong Cai",
+  "geometry-forcing": "Haoyu Wu, Diankun Wu, Tianyu He",
+  trivla: "Zhenyang Liu, Yongchong Gu, Sixiao Zheng",
+  "video-generators-robot-policies": "Junbang Liang, Pavel Tokmakov, Ruoshi Liu",
+  "villa-x": "Xiaoyu Chen, Hangxing Wei, Pushi Zhang",
+  mowm: "Yangcheng Yu, Xin Jin, Yu Shang",
+  dust: "John Won, Kyungmin Lee, Huiwon Jang",
+  "ud-vla": "Jiayi Chen, Wenxuan Song, Pengxiang Ding",
+  "rynnvla-002": "Jun Cen, Siteng Huang, Yuqian Yuan",
+  motus: "Hongzhe Bi, Hengkai Tan, Shenghao Xie",
+  videovla: "Yichao Shen, Fangyun Wei, Zhiying Du",
+  act2goal: "Pengfei Zhou, Liliang Chen, Shengcong Chen",
+  "mimic-video": "Jonas Pai, Liam Achenbach, Victoriano Montesinos",
+  clap: "Chubin Zhang, Jianan Wang, Zifeng Gao",
+  "cosmos-policy": "Moo Jin Kim, Yihuai Gao, Tsung-Yi Lin",
+  wog: "Yue Su, Sijin Chen, Haixin Shi",
+  "vla-jepa": "Jingwen Sun, Wenyao Zhang, Zekun Qi",
+  frappe: "Han Zhao, Jingbo Wang, Wenxuan Song",
+  ldamodel: "Jiangran Lyu, Kai Liu, Xuheng Zhang",
+  adaworldpolicy: "Ge Yuan, Qiyuan Qiao, Jing Zhang",
+  "say-dream-act": "Songen Gu, Yunuo Cai, Tianyu Wang",
+  cowvla: "Fuxiang Yang, Donglin Di, Lulu Tang",
+  "fast-wam": "Tianyuan Yuan, Zibin Dong, Yicheng Liu",
+  svam: "Haodong Yan, Zhide Zhong, Jiaguan Zhu",
+  "sim-distill": "Jacob Levy, Tyler Westenbroek, Kevin Huang",
+  vampo: "Zirui Ge, Pengxiang Ding, Baohua Yin",
+  eva: "Ruixiang Wang, Qingming Liu, Yueci Deng",
+  vtam: "Haoran Yuan, Weigang Yi, Zhenyu Zhang",
+  "gigaworld-policy": "Angen Ye, Boyuan Wang, Chaojun Ni",
+  aim: "Liaoyuan Fan, Zetian Xu, Chen Cao",
+  wav: "Runze Li, Hongyin Zhang, Junxi Jin",
+  dexworldmodel: "Yueci Deng, Guiliang Liu, Kui Jia",
+  "x-wam": "Jun Guo, Qiwei Li, Peiyan Li",
+  motubrain: "MotuBrain Team, Chendong Xiang, Fan Bao",
+  vidar: "Yao Feng, Hengkai Tan, Xinyi Mao",
+  "genie-envisioner": "Yue Liao, Pengfei Zhou, Siyuan Huang",
+  "xr-1": "Shichao Fan, Kun Wu, Zhengping Che",
+  vipra: "Sandeep Routray, Hengkai Pan, Unnat Jain",
+  "lingbot-va": "Lin Li, Qihang Zhang, Yiming Luo",
+  dreamzero: "Seonghyeon Ye, Yunhao Ge, Kaiyuan Zheng",
+  "rhoda-dva": "Rhoda AI",
+  dit4dit: "Teli Ma, Jia Zheng, Zifan Wang"
+};
+
 function renderSources() {
-  $("#methodologyList").innerHTML = (state.methodology || []).map((item) => `
-    <div><p>${escapeHtml(item)}</p></div>
+  const methodology = [
+    "Start from the literature survey, BibTeX records, downloaded papers, and extracted method sections.",
+    "Include only methods where forward dynamics, future-state prediction, or a world-model latent directly informs action learning or control.",
+    "Normalize each paper into the same schema: inputs, encoders, backbone, heads, objectives, runtime path, evidence, and uncertainty.",
+    "Place papers by exact release date where available, using arXiv timestamps for timeline ordering.",
+    "Report uncertainty explicitly when a card depends on survey notes, partial extracts, public pages, or inferred metrics."
+  ];
+  $("#methodologyList").innerHTML = methodology.map((item, index) => `
+    <div><strong>${index + 1}</strong><p>${escapeHtml(item)}</p></div>
   `).join("");
 
   const rows = state.models
@@ -2959,14 +3274,14 @@ function renderSources() {
       <tr>
         <td>${escapeHtml(modelDateLabel(model))}</td>
         <td><a href="${escapeHtml(model.paperUrl)}" target="_blank" rel="noreferrer">${escapeHtml(model.name)}</a></td>
-        <td>${escapeHtml(model.category)}</td>
+        <td><span class="paper-family-pill" style="--paper-color:${problemColorForModel(model)}">${escapeHtml(model.category)}</span></td>
         <td>${escapeHtml(model.localText || "downloaded/extraction pending or survey-only")}</td>
-        <td>${model.literalArchitecture || state.arch[model.id] ? "literal spec" : "method extract pending curation"}</td>
+        <td>${escapeHtml(PAPER_AUTHOR_SUMMARIES[model.id] || "Author metadata pending")}</td>
       </tr>
     `).join("");
   $("#paperTable").innerHTML = `
     <table>
-      <thead><tr><th>Released</th><th>Paper</th><th>Category</th><th>Local Text</th><th>Diagram Status</th></tr></thead>
+      <thead><tr><th>Released</th><th>Paper</th><th>Family</th><th>Local Text</th><th>Authors</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
   `;
@@ -2983,6 +3298,11 @@ function bindEvents() {
     button.addEventListener("click", () => {
       setAtlasMode(button.dataset.mode);
     });
+  });
+  $("#taxonomyGalleryToggle").addEventListener("click", () => {
+    state.taxonomyGallery = !state.taxonomyGallery;
+    syncModeButtons();
+    renderAtlas();
   });
   $$(".metric-button").forEach((button) => {
     button.addEventListener("click", () => {
