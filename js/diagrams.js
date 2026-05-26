@@ -525,13 +525,15 @@ function sharedAttentionGroups(visible) {
 }
 
 function streamCoreKind(stream, diagram) {
-  const text = `${stream.label || ""} ${stream.detail || ""} ${diagram.core.label || ""} ${diagram.core.details.join(" ")}`.toLowerCase();
-  if (/action/.test(text) && /\bact\b|action transformer/.test(text)) return "act";
+  const streamText = `${stream.label || ""} ${stream.detail || ""}`.toLowerCase();
+  const coreText = `${diagram.core.label || ""} ${diagram.core.details.join(" ")}`.toLowerCase();
+  const text = `${streamText} ${coreText}`;
+  if (/\bact\b|act-vae|act style|act-style/.test(streamText)) return "act";
   if (/\bdit\b|diffusion transformer|mm-dit/.test(text)) return "dit";
   if (/diffusion|denois|flow/.test(text)) return "diffusion";
   if (/cnn|u-net|unet/.test(text)) return "cnn";
   if (/mlp|linear/.test(text)) return "mlp";
-  return /action/.test(text) ? "act" : "transformer";
+  return "transformer";
 }
 
 function drawJointLatentArchitecture(diagram, view, options = {}, ids) {

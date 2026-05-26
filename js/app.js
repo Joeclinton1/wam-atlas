@@ -17,8 +17,8 @@ import {
   scoreLabel,
   wrapText,
   shortText
-} from './shared.js?v=diagram-core-glyphs-26';
-import { renderDiagram, getArchitectureSpec } from './diagrams.js?v=diagram-core-glyphs-26';
+} from './shared.js?v=problem-map-scale-27';
+import { renderDiagram, getArchitectureSpec } from './diagrams.js?v=problem-map-scale-27';
 
 function hasMetricsTargetBenchmark(model) {
   return Boolean(model.metrics?.comparative?.metricsEligible);
@@ -144,10 +144,10 @@ function drawAtlasBackdrop(group, defs, bounds, geometry = null) {
 
 function problemGeometry(models, bounds) {
   const root = { id: "root", x: bounds.width / 2, y: bounds.height * 0.46 + 36, fixed: true };
-  const branchRx = clamp(bounds.width * 0.29, 360, 520);
-  const branchRy = clamp(bounds.height * 0.28, 228, 340);
-  const familyRx = clamp(bounds.width * 0.165, 210, 310);
-  const familyRy = clamp(bounds.height * 0.175, 142, 220);
+  const branchRx = clamp(bounds.width * 0.255, 330, 470);
+  const branchRy = clamp(bounds.height * 0.255, 210, 315);
+  const familyRx = clamp(bounds.width * 0.145, 185, 275);
+  const familyRy = clamp(bounds.height * 0.155, 128, 200);
   const positions = new Map();
   const branchNodes = [];
   const familyNodes = [];
@@ -306,12 +306,13 @@ function separateLeafQuestionsFromBranches(geometry, bounds) {
   geometry.branchNodes.forEach((branch) => {
     const leaves = geometry.familyNodes.filter((leaf) => leaf.groupId === branch.groupId);
     const outward = directionalVector(problemBranchAngle(branch.groupId));
-    const tangent = { x: -outward.y, y: outward.x };
+    const branchLayout = problemBranchLeafLayout(branch.groupId, outward);
+    const { tangent } = branchLayout;
     const branchBox = problemNodeBox(branch, "branch");
     leaves.forEach((leaf, index) => {
       const leafBox = problemNodeBox(leaf, "leaf");
-      const offset = (index - (leaves.length - 1) / 2) * Math.max(82, leafBox.w + 24);
-      const radial = Math.max(190, branchBox.w * 0.5 + leafBox.w * 0.5 + 76);
+      const offset = (index - (leaves.length - 1) / 2) * Math.max(branchLayout.offsetGap, leafBox.h * branchLayout.heightWeight + leafBox.w * branchLayout.widthWeight + branchLayout.offsetPad);
+      const radial = Math.max(branchLayout.minRadial, branchBox.w * 0.5 + leafBox.w * 0.5 + branchLayout.radialPad);
       leaf.x = branch.x + outward.x * radial + tangent.x * offset;
       leaf.y = branch.y + outward.y * radial + tangent.y * offset;
     });
@@ -362,6 +363,29 @@ function separateLeafQuestionsFromBranches(geometry, bounds) {
   });
 }
 
+function problemBranchLeafLayout(groupId, outward) {
+  if (groupId === "coupling") {
+    return {
+      tangent: directionalVector(Math.PI / 2),
+      offsetGap: 76,
+      heightWeight: 1.18,
+      widthWeight: 0.08,
+      offsetPad: 34,
+      minRadial: 132,
+      radialPad: 38
+    };
+  }
+  return {
+    tangent: { x: -outward.y, y: outward.x },
+    offsetGap: 76,
+    heightWeight: 0,
+    widthWeight: 1,
+    offsetPad: 18,
+    minRadial: 154,
+    radialPad: 54
+  };
+}
+
 function measureQuestionHeight(text, width, level, eyebrow = "") {
   const layout = questionTextLayout(text, width, level, eyebrow);
   return layout.h;
@@ -387,8 +411,8 @@ function layoutProblemPapers(positions, models, leafByModelId, geometry) {
   papersByLeaf.forEach(({ leaf, papers }) => {
     const leafLayout = questionTextLayout(leaf.question, leafWidth, "leaf", leaf.label);
     const leafBox = problemQuestionCollision("leaf", leafLayout.boxWidth, leafLayout.h);
-    const outward = radialVectorFromRoot(leaf, geometry.root);
-    const tangent = { x: -outward.y, y: outward.x };
+    const route = problemPaperRoute(leaf, geometry.root);
+    const { outward, tangent } = route;
     const edgeDistance = rectEdgeDistance(leafBox, outward);
     const groupPlaced = placedByGroup.get(leaf.groupId) || [];
     const groupObstacles = obstacles.filter((item) => !item.ref.groupId || item.ref.groupId === leaf.groupId);
@@ -405,7 +429,8 @@ function layoutProblemPapers(positions, models, leafByModelId, geometry) {
           edgeDistance,
           obstacles: groupObstacles,
           placed: groupPlaced,
-          index
+          index,
+          route
         });
         paper.point.x = candidate.x;
         paper.point.y = candidate.y;
@@ -415,17 +440,37 @@ function layoutProblemPapers(positions, models, leafByModelId, geometry) {
   });
 }
 
-function bestPaperSlot({ paper, leaf, outward, tangent, edgeDistance, obstacles, placed, index }) {
+function problemPaperRoute(leaf, root) {
+  if (leaf.groupId === "coupling") {
+    return {
+      outward: { x: 1, y: 0 },
+      tangent: { x: 0, y: 1 },
+      tangentGapScale: 0.42,
+      radialGap: 22,
+      radialBase: 6
+    };
+  }
+  const outward = radialVectorFromRoot(leaf, root);
+  return {
+    outward,
+    tangent: { x: -outward.y, y: outward.x },
+    tangentGapScale: 0.48,
+    radialGap: 24,
+    radialBase: 10
+  };
+}
+
+function bestPaperSlot({ paper, leaf, outward, tangent, edgeDistance, obstacles, placed, index, route = {} }) {
   const tangentSteps = [0, -1, 1, -2, 2, -3, 3, -4, 4];
   const radialSteps = [0, 1, 2, 3, 4];
-  const tangentGap = Math.max(46, paper.box.w * 0.46);
-  const radialGap = 26;
+  const tangentGap = Math.max(52, paper.box.w * (route.tangentGapScale || 0.48));
+  const radialGap = route.radialGap || 24;
   let fallback = null;
 
   for (const radialIndex of radialSteps) {
     for (const tangentIndex of tangentSteps) {
       const localX = tangentIndex * tangentGap + (index % 2 ? tangentGap * 0.12 : 0);
-      const radialPush = edgeDistance + 10 + radialIndex * radialGap + Math.abs(localX) * 0.025;
+      const radialPush = edgeDistance + (route.radialBase ?? 10) + radialIndex * radialGap + Math.abs(localX) * 0.025;
       const candidate = {
         x: leaf.x + outward.x * radialPush + tangent.x * localX,
         y: leaf.y + outward.y * radialPush + tangent.y * localX,
@@ -497,8 +542,8 @@ function packProblemGroups(groups, root, bounds) {
   const rootBox = {
     x: root.x,
     y: root.y,
-    w: Math.min(bounds.width * 0.48, 730),
-    h: rootLayout.h + 150
+    w: Math.min(bounds.width * 0.41, 650),
+    h: rootLayout.h + 104
   };
   groups.forEach((group) => {
     const anchor = problemGroupAnchor(group.id, root, bounds);
@@ -601,11 +646,11 @@ function problemGroupAnchor(groupId, root, bounds) {
   const w = bounds.width;
   const h = bounds.height;
   const anchors = {
-    futures: { x: root.x - w * 0.2, y: root.y - h * 0.16 },
-    coupling: { x: root.x + w * 0.2, y: root.y - h * 0.17 },
-    speed: { x: root.x + w * 0.24, y: root.y + h * 0.12 },
-    grounding: { x: root.x + w * 0.035, y: root.y + h * 0.22 },
-    physics: { x: root.x - w * 0.22, y: root.y + h * 0.16 }
+    futures: { x: root.x - w * 0.145, y: root.y - h * 0.12 },
+    coupling: { x: root.x + w * 0.145, y: root.y - h * 0.13 },
+    speed: { x: root.x + w * 0.17, y: root.y + h * 0.1 },
+    grounding: { x: root.x + w * 0.025, y: root.y + h * 0.19 },
+    physics: { x: root.x - w * 0.155, y: root.y + h * 0.13 }
   };
   return anchors[groupId] || {
     x: root.x + Math.cos(problemBranchAngle(groupId)) * w * 0.3,
@@ -634,6 +679,29 @@ function problemGeometryBounds(geometry, models) {
   return groupBounds(items);
 }
 
+function problemVisibleGeometryBounds(geometry, models, bounds) {
+  const items = [
+    { ref: geometry.root, w: problemQuestionWidth("root") + 48, h: questionTextLayout(rootProblemQuestion, problemQuestionWidth("root"), "root").h + 24 },
+    ...geometry.branchNodes.map((node) => {
+      const layout = questionTextLayout(node.question, problemQuestionWidth("branch"), "branch");
+      return { ref: node, w: layout.boxWidth + 34, h: layout.h + 30 };
+    }),
+    ...geometry.familyNodes.map((node) => {
+      const layout = questionTextLayout(node.question, problemQuestionWidth("leaf"), "leaf", node.label);
+      return { ref: node, w: layout.boxWidth + 10, h: layout.h + 10 };
+    })
+  ];
+  models.forEach((model) => {
+    const point = geometry.positions.get(model.id);
+    if (!point) return;
+    const box = problemPaperBox(model, point);
+    const labelSide = point.x > bounds.width - 180 ? "left" : "right";
+    const labelShift = labelSide === "left" ? -box.w * 0.18 : box.w * 0.18;
+    items.push({ ref: { x: point.x + labelShift, y: point.y }, w: box.w, h: box.h });
+  });
+  return groupBounds(items);
+}
+
 function rootProblemBox() {
   const layout = questionTextLayout(rootProblemQuestion, problemQuestionWidth("root"), "root");
   return problemQuestionCollision("root", layout.boxWidth, layout.h);
@@ -643,8 +711,8 @@ function problemPaperBox(model, point) {
   return {
     x: point.x,
     y: point.y,
-    w: Math.min(132, Math.max(82, shortPaperName(model.name).length * 6.2 + 38)),
-    h: 42
+    w: Math.min(150, Math.max(98, shortPaperName(model.name).length * 7 + 46)),
+    h: 50
   };
 }
 
@@ -1768,8 +1836,8 @@ function drawQuestionNode(point, text, cls, color, width, level, eyebrow = "") {
 
 function problemQuestionWidth(level) {
   if (level === "root") return 780;
-  if (level === "branch") return 420;
-  return 142;
+  if (level === "branch") return 470;
+  return 178;
 }
 
 function problemQuestionTextColor(level, color) {
@@ -1793,8 +1861,8 @@ function problemQuestionCollision(level, boxWidth, h) {
 function questionTextLayout(text, width, level, eyebrow = "") {
   const configs = {
     root: { font: 62, minFont: 56, line: 68, minH: 216, maxLines: 3, top: -74, weight: 950 },
-    branch: { font: 28, minFont: 24, line: 32, minH: 104, maxLines: 3, top: -34, weight: 900 },
-    leaf: { font: 10, minFont: 8.2, line: 10.7, minH: 34, maxLines: 6, top: 11, weight: 820 }
+    branch: { font: 34, minFont: 28, line: 38, minH: 122, maxLines: 3, top: -42, weight: 930 },
+    leaf: { font: 12.5, minFont: 9.6, line: 13.7, minH: 48, maxLines: 6, top: 14, weight: 880 }
   };
   const cfg = configs[level] || configs.leaf;
   let fontSize = cfg.font;
@@ -2034,7 +2102,7 @@ function renderAtlas() {
       node.style.opacity = "0";
     }
 
-    const radius = state.mode === "taxonomy" ? (hasLiteral ? 7.5 : 6) : hasLiteral ? 12 : 9;
+    const radius = state.mode === "problem" ? (hasLiteral ? 14 : 10.5) : state.mode === "taxonomy" ? (hasLiteral ? 7.5 : 6) : hasLiteral ? 12 : 9;
     const color = state.mode === "taxonomy" || state.mode === "timeline" || state.mode === "metrics"
       ? problemColorForModel(model)
       : familyColors[model.family] || "#61717a";
@@ -2049,6 +2117,7 @@ function renderAtlas() {
     }
     const bodyClass = [
       "node-body",
+      state.mode === "problem" ? "problem-node-body" : "",
       state.mode === "taxonomy" ? "taxonomy-node-body" : "",
       state.mode === "timeline" ? "timeline-node-body" : "",
       state.mode === "metrics" ? "metrics-node-body" : ""
@@ -2540,12 +2609,13 @@ function defaultZoomForMode(mode) {
   if (mode === "problem") {
     if (!state.models.length) return { k: 0.5, x: width * 0.25, y: 86 };
     const geometry = problemGeometry(state.models, { width, height });
-    return zoomToFitBox(problemGeometryBounds(geometry, state.models), { width, height }, {
-      left: 0,
-      right: 0,
-      top: 102,
-      bottom: 18
+    const zoom = zoomToFitBox(problemVisibleGeometryBounds(geometry, state.models, { width, height }), { width, height }, {
+      left: 18,
+      right: 18,
+      top: 78,
+      bottom: 12
     });
+    return zoom;
   }
   if (mode === "timeline") {
     const k = width < 760 ? 0.62 : 0.76;

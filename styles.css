@@ -708,6 +708,23 @@ p {
   pointer-events: none;
 }
 
+.problem-node-body .node-name {
+  font-size: 12.4px;
+  font-weight: 850;
+  stroke-width: 4.6px;
+}
+
+.problem-node-body .node-logo-bg {
+  r: 10.8px;
+}
+
+.problem-node-body .node-logo-image {
+  x: -9px;
+  y: -9px;
+  width: 18px;
+  height: 18px;
+}
+
 .node-logo-image {
   pointer-events: none;
 }

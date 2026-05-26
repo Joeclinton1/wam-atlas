@@ -90,7 +90,7 @@ export const problemBranches = [
   },
   {
     id: "physics",
-    question: "Physical robustness",
+    question: "How can models stay robust under physical contact?",
     color: "#efb8b1",
     angle: 156,
     families: ["multimodal", "online_adaptation"]
