@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Video Action Model Atlas</title>
     <meta name="description" content="Interactive atlas and generated architecture diagrams for video action models and world action models.">
-  <link rel="stylesheet" href="styles.css?v=timeline-legend-4">
+  <link rel="stylesheet" href="styles.css?v=metrics-anchor-1">
   </head>
   <body>
     <header class="topbar">
@@ -40,8 +40,39 @@
           <div class="mode-group" role="group" aria-label="Atlas view">
             <button class="mode-button is-active" data-mode="problem">Problem Map</button>
             <button class="mode-button" data-mode="taxonomy">Taxonomy</button>
-            <button class="mode-button" data-mode="speed">Speed vs Compute</button>
+            <button class="mode-button" data-mode="metrics">Metrics</button>
             <button class="mode-button" data-mode="timeline">Timeline</button>
+          </div>
+          <div id="metricsControls" class="metrics-controls" hidden>
+            <div class="metric-switch" role="group" aria-label="Metric">
+              <button class="metric-button is-active" data-metric="accuracy">Accuracy</button>
+              <button class="metric-button" data-metric="compute">Compute</button>
+              <button class="metric-button" data-metric="inference">Inference</button>
+              <button class="metric-button" data-metric="generalization">Generalization</button>
+            </div>
+            <select id="accuracyBenchmark" aria-label="Accuracy benchmark">
+              <option value="estimated">Estimated normalized</option>
+            </select>
+            <select id="computeMetric" aria-label="Compute type" hidden>
+              <option value="pretraining">Pretraining GPU-hours</option>
+              <option value="finetuning">Task fine-tune GPU-hours</option>
+            </select>
+            <div class="metric-chart-switch" role="group" aria-label="Metric chart type">
+              <button class="metric-chart-button is-active" data-metric-chart="bar" type="button" title="Bar chart" aria-label="Bar chart">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V9M12 19V5M19 19v-7"></path></svg>
+              </button>
+              <button class="metric-chart-button" data-metric-chart="frontier" type="button" title="Time frontier" aria-label="Time frontier">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18h16M5 16l4-5 4 2 5-7"></path><circle cx="9" cy="11" r="1.5"></circle><circle cx="13" cy="13" r="1.5"></circle><circle cx="18" cy="6" r="1.5"></circle></svg>
+              </button>
+              <button class="metric-chart-button" data-metric-chart="compare" type="button" title="Accuracy comparison" aria-label="Accuracy comparison">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16M4 19V5M7 15l4-4 3 2 5-6" class="dashed"></path><circle cx="8" cy="16" r="1.6"></circle><circle cx="12" cy="10" r="1.6"></circle><circle cx="17" cy="12" r="1.6"></circle></svg>
+              </button>
+            </div>
+            <label id="metricAccuracyFilter" class="metric-filter-toggle" hidden>
+              <input id="metricAccuracyFilterEnabled" type="checkbox">
+              <span>Accuracy over</span>
+              <input id="metricAccuracyThreshold" type="number" min="0" max="100" step="5" value="70" aria-label="Minimum estimated accuracy">
+            </label>
           </div>
           <div class="mode-meta">
             <span id="modeDescription">Why each paper exists.</span>
@@ -62,6 +93,7 @@
               <div class="preview-kicker" id="previewFamily"></div>
               <h2 id="previewTitle"></h2>
               <p id="previewInsight"></p>
+              <div id="previewMetricAudit" class="metric-audit" hidden></div>
               <div id="previewDiagram" class="diagram mini"></div>
               <button id="previewOpen" class="primary-button" type="button">Open Model Card</button>
             </div>
@@ -145,6 +177,6 @@
       </section>
     </main>
 
-  <script type="module" src="js/app.js?v=timeline-legend-4"></script>
+  <script type="module" src="js/app.js?v=metrics-anchor-1"></script>
   </body>
 </html>

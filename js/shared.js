@@ -3,6 +3,12 @@ export const state = {
   schema: null,
   arch: {},
   mode: "problem",
+  metricView: "accuracy",
+  metricChart: "bar",
+  accuracyBenchmark: "estimated",
+  computeMetric: "pretraining",
+  metricAccuracyFilterEnabled: false,
+  metricAccuracyThreshold: 70,
   query: "",
   selectedId: null,
   hoveredId: null,
@@ -47,7 +53,7 @@ export const familyLabels = {
 export const modeDescriptions = {
   problem: "Problem tree: from the central field question to the exact paper-level bottleneck.",
   taxonomy: "Architecture families arranged as a readable category map.",
-  speed: "Runtime cost against training/model scale.",
+  metrics: "Estimated accuracy, compute, inference, and generalization metrics.",
   timeline: "Field evolution by publication date."
 };
 

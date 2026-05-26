@@ -43,7 +43,39 @@
       "runtimeCost": "1 fast action-only, 5 very slow full video rollout.",
       "computeScale": "1 small/adapter scale, 5 foundation-scale or heavy generation.",
       "evidence": "1 early or survey-only, 5 strong multi-benchmark/real-world evidence.",
-      "runtimeNote": "Short speed or deployment note."
+      "runtimeNote": "Short speed or deployment note.",
+      "comparative": {
+        "version": "Normalization pass identifier.",
+        "confidence": "low, medium-low, medium, or medium-high depending on local evidence density.",
+        "accuracy": {
+          "estimatedScore": "0-100 SimplerEnv/RoboCasa-anchored cross-benchmark success estimate; RobotWin and LIBERO variants are compressed/downweighted because they are more saturated.",
+          "benchmarkScores": "Benchmark-specific normalized scores for SimplerEnv, LIBERO variants, RoboTwin, and RoboCasa when reported by the paper or by a cross-paper comparison table.",
+          "reportedBenchmarkKeys": "Keys available in the stored evidence. LIBERO results are excluded from Metrics; the Metrics benchmark selector and default accuracy eligibility use LIBERO-Plus/Pro, SimplerEnv, RoboTwin, and RoboCasa."
+        },
+        "computeCost": {
+          "pretrainingGpuHours": "Estimated GPU-hours for large-scale pretraining or generalist model training.",
+          "finetuningGpuHours5h": "Estimated GPU-hours normalized to 300 one-minute task episodes, i.e. 5h of task data.",
+          "reportedGpuHours": "Raw GPU-hour numbers extracted from the paper where present."
+        },
+        "inferenceCost": {
+          "fps4090": "Estimated action-level FPS on an RTX 4090, ignoring deployment engineering tricks unless reported as end-to-end model frequency.",
+          "reportedFpsOrHz": "Raw FPS/Hz values extracted from model/policy inference context.",
+          "assumptions": "Parameter, denoising-step, and action-token counts used by the estimator."
+        },
+        "generalization": {
+          "improvementPct": "Normalized real-world unseen-task transfer score or inferred improvement over a shared baseline.",
+          "baseline": "Shared real-world/unseen-task baseline interpretation used for the estimate."
+        },
+        "metricAudit": {
+          "accuracy": "Displayed value, assumptions, formula, calculation, and source excerpts for estimated accuracy.",
+          "computePretraining": "Displayed value, assumptions, formula, calculation, and source excerpts for pretraining GPU-hour estimate.",
+          "computeFinetuning": "Displayed value, assumptions, formula, calculation, and source excerpts for standardized task fine-tuning GPU-hour estimate.",
+          "inference": "Displayed value, assumptions, formula, calculation, and source excerpts for RTX 4090 FPS estimate.",
+          "generalization": "Displayed value, assumptions, formula, calculation, and source excerpts for normalized generalization improvement.",
+          "benchmarkAccuracy": "Benchmark-specific audit objects keyed by benchmark."
+        },
+        "evidence": "Short local text snippets that support or motivate the estimate."
+      }
     },
     "diagram": {
       "pattern": "Renderer template. Usually matches family.",

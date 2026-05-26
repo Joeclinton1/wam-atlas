@@ -1,0 +1,2294 @@
+{
+  "generatedOn": "2026-05-26T10:58:26.030Z",
+  "extractor": "scripts/enrich-comparative-metrics.mjs",
+  "modelCount": 52,
+  "qualityCounts": {
+    "weak-auto": 5,
+    "needs-review": 30,
+    "usable-auto": 17
+  },
+  "sampleIds": [
+    "gr-2",
+    "vpp",
+    "fast-wam",
+    "xr-1",
+    "videovla",
+    "cosmos-policy",
+    "vla-jepa",
+    "gigaworld-policy",
+    "rhoda-dva",
+    "lingbot-va",
+    "vtam",
+    "lapa"
+  ],
+  "sample": [
+    {
+      "id": "gr-2",
+      "name": "GR-2",
+      "family": "unified",
+      "quality": "weak-auto",
+      "confidence": "medium",
+      "benchmarks": [],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [
+          50
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": null,
+        "pretrainingGpuHours": 22572,
+        "finetuningGpuHours5h": 262.5,
+        "fps4090": 1.3,
+        "generalization": null
+      },
+      "metricsEligible": false,
+      "generalizationEligible": false,
+      "warnings": [
+        "no benchmark key detected; estimated accuracy uses atlas priors",
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "diffusion-like method without detected denoising-step count",
+        "excluded from Metrics: no target benchmark result"
+      ]
+    },
+    {
+      "id": "lapa",
+      "name": "LAPA",
+      "family": "latent_action",
+      "quality": "needs-review",
+      "confidence": "medium",
+      "benchmarks": [
+        "simpler"
+      ],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [
+          7,
+          4.1,
+          4,
+          15
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": 57.3,
+        "pretrainingGpuHours": 272,
+        "finetuningGpuHours5h": 28,
+        "fps4090": 52.9,
+        "generalization": 16.7
+      },
+      "metricsEligible": true,
+      "generalizationEligible": true,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "diffusion-like method without detected denoising-step count"
+      ]
+    },
+    {
+      "id": "vpp",
+      "name": "VPP",
+      "family": "latent_idm",
+      "quality": "needs-review",
+      "confidence": "medium",
+      "benchmarks": [],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [
+          1.5
+        ],
+        "denoisingSteps": [
+          10
+        ],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": null,
+        "pretrainingGpuHours": 480,
+        "finetuningGpuHours5h": 36,
+        "fps4090": 8.5,
+        "generalization": null
+      },
+      "metricsEligible": false,
+      "generalizationEligible": false,
+      "warnings": [
+        "no benchmark key detected; estimated accuracy uses atlas priors",
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "excluded from Metrics: no target benchmark result"
+      ]
+    },
+    {
+      "id": "videovla",
+      "name": "VideoVLA",
+      "family": "unified",
+      "quality": "usable-auto",
+      "confidence": "medium",
+      "benchmarks": [
+        "simpler"
+      ],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [
+          3
+        ],
+        "parameterB": [
+          5,
+          1,
+          2
+        ],
+        "denoisingSteps": [
+          50,
+          10
+        ],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": 63,
+        "pretrainingGpuHours": 3200,
+        "finetuningGpuHours5h": 480,
+        "fps4090": 0.9,
+        "generalization": 23.7
+      },
+      "metricsEligible": true,
+      "generalizationEligible": true,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate"
+      ]
+    },
+    {
+      "id": "cosmos-policy",
+      "name": "Cosmos Policy",
+      "family": "joint_latent",
+      "quality": "usable-auto",
+      "confidence": "medium",
+      "benchmarks": [
+        "libero",
+        "robocasa"
+      ],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [
+          5
+        ],
+        "parameterB": [
+          2,
+          7
+        ],
+        "denoisingSteps": [
+          5,
+          10,
+          1,
+          66
+        ],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": 67.1,
+        "pretrainingGpuHours": 106920,
+        "finetuningGpuHours5h": 1536,
+        "fps4090": 1.6,
+        "generalization": 17.6
+      },
+      "metricsEligible": true,
+      "generalizationEligible": true,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate"
+      ]
+    },
+    {
+      "id": "vla-jepa",
+      "name": "VLA-JEPA",
+      "family": "latent_idm",
+      "quality": "needs-review",
+      "confidence": "medium",
+      "benchmarks": [
+        "libero",
+        "simpler"
+      ],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [
+          2
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": 57.3,
+        "pretrainingGpuHours": 2192,
+        "finetuningGpuHours5h": 75,
+        "fps4090": 33.9,
+        "generalization": null
+      },
+      "metricsEligible": true,
+      "generalizationEligible": false,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "diffusion-like method without detected denoising-step count",
+        "excluded from generalization: no real-world unseen-task evidence"
+      ]
+    },
+    {
+      "id": "fast-wam",
+      "name": "Fast-WAM",
+      "family": "encoder_only",
+      "quality": "usable-auto",
+      "confidence": "medium-high",
+      "benchmarks": [
+        "libero",
+        "robotwinAllData"
+      ],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [
+          6,
+          5,
+          1,
+          2
+        ],
+        "denoisingSteps": [
+          10
+        ],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": 80,
+        "pretrainingGpuHours": 2741,
+        "finetuningGpuHours5h": 75,
+        "fps4090": 5.3,
+        "generalization": null
+      },
+      "metricsEligible": true,
+      "generalizationEligible": false,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "excluded from generalization: no real-world unseen-task evidence"
+      ]
+    },
+    {
+      "id": "vtam",
+      "name": "VTAM",
+      "family": "multimodal",
+      "quality": "needs-review",
+      "confidence": "medium-low",
+      "benchmarks": [],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [
+          1
+        ],
+        "parameterB": [
+          3
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": null,
+        "pretrainingGpuHours": 14877,
+        "finetuningGpuHours5h": 262.5,
+        "fps4090": 1,
+        "generalization": null
+      },
+      "metricsEligible": false,
+      "generalizationEligible": false,
+      "warnings": [
+        "no benchmark key detected; estimated accuracy uses atlas priors",
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "diffusion-like method without detected denoising-step count",
+        "excluded from Metrics: no target benchmark result"
+      ]
+    },
+    {
+      "id": "gigaworld-policy",
+      "name": "GigaWorld-Policy",
+      "family": "joint_latent",
+      "quality": "usable-auto",
+      "confidence": "medium-high",
+      "benchmarks": [
+        "robotwinAllData"
+      ],
+      "extracted": {
+        "gpuHours": [
+          6000
+        ],
+        "fpsOrHz": [],
+        "parameterB": [
+          5,
+          3,
+          1
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": 75.1,
+        "pretrainingGpuHours": 6000,
+        "finetuningGpuHours5h": 520,
+        "fps4090": 2.8,
+        "generalization": null
+      },
+      "metricsEligible": true,
+      "generalizationEligible": false,
+      "warnings": [
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "diffusion-like method without detected denoising-step count",
+        "excluded from generalization: no real-world unseen-task evidence"
+      ]
+    },
+    {
+      "id": "xr-1",
+      "name": "XR-1",
+      "family": "latent_action",
+      "quality": "usable-auto",
+      "confidence": "medium-high",
+      "benchmarks": [],
+      "extracted": {
+        "gpuHours": [
+          38400,
+          576
+        ],
+        "fpsOrHz": [
+          5
+        ],
+        "parameterB": [
+          2.6,
+          3,
+          0.9,
+          4,
+          1
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": null,
+        "pretrainingGpuHours": 76800,
+        "finetuningGpuHours5h": 576,
+        "fps4090": 5,
+        "generalization": null
+      },
+      "metricsEligible": false,
+      "generalizationEligible": false,
+      "warnings": [
+        "no benchmark key detected; estimated accuracy uses atlas priors",
+        "diffusion-like method without detected denoising-step count",
+        "excluded from Metrics: no target benchmark result"
+      ]
+    },
+    {
+      "id": "lingbot-va",
+      "name": "LingBot-VA",
+      "family": "multi_stream",
+      "quality": "usable-auto",
+      "confidence": "medium",
+      "benchmarks": [
+        "robotwinAllData",
+        "robotwinTaskSpecific"
+      ],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [
+          5
+        ],
+        "parameterB": [
+          5.3,
+          5,
+          4,
+          1
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": 78.4,
+        "pretrainingGpuHours": 2496,
+        "finetuningGpuHours5h": 520,
+        "fps4090": 2,
+        "generalization": 15
+      },
+      "metricsEligible": true,
+      "generalizationEligible": true,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "diffusion-like method without detected denoising-step count"
+      ]
+    },
+    {
+      "id": "rhoda-dva",
+      "name": "Rhoda DVA",
+      "family": "pixel_idm",
+      "quality": "needs-review",
+      "confidence": "medium-low",
+      "benchmarks": [],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": null,
+        "pretrainingGpuHours": 10260,
+        "finetuningGpuHours5h": 10,
+        "fps4090": 4.6,
+        "generalization": null
+      },
+      "metricsEligible": false,
+      "generalizationEligible": false,
+      "warnings": [
+        "no benchmark key detected; estimated accuracy uses atlas priors",
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "excluded from Metrics: no target benchmark result"
+      ]
+    }
+  ],
+  "allModels": [
+    {
+      "id": "gr-1",
+      "name": "GR-1",
+      "family": "unified",
+      "quality": "weak-auto",
+      "confidence": "medium-low",
+      "benchmarks": [],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": null,
+        "pretrainingGpuHours": 1890,
+        "finetuningGpuHours5h": 93.8,
+        "fps4090": 2.1,
+        "generalization": null
+      },
+      "metricsEligible": false,
+      "generalizationEligible": false,
+      "warnings": [
+        "no benchmark key detected; estimated accuracy uses atlas priors",
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "diffusion-like method without detected denoising-step count",
+        "excluded from Metrics: no target benchmark result"
+      ]
+    },
+    {
+      "id": "gr-2",
+      "name": "GR-2",
+      "family": "unified",
+      "quality": "weak-auto",
+      "confidence": "medium",
+      "benchmarks": [],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [
+          50
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": null,
+        "pretrainingGpuHours": 22572,
+        "finetuningGpuHours5h": 262.5,
+        "fps4090": 1.3,
+        "generalization": null
+      },
+      "metricsEligible": false,
+      "generalizationEligible": false,
+      "warnings": [
+        "no benchmark key detected; estimated accuracy uses atlas priors",
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "diffusion-like method without detected denoising-step count",
+        "excluded from Metrics: no target benchmark result"
+      ]
+    },
+    {
+      "id": "lapa",
+      "name": "LAPA",
+      "family": "latent_action",
+      "quality": "needs-review",
+      "confidence": "medium",
+      "benchmarks": [
+        "simpler"
+      ],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [
+          7,
+          4.1,
+          4,
+          15
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": 57.3,
+        "pretrainingGpuHours": 272,
+        "finetuningGpuHours5h": 28,
+        "fps4090": 52.9,
+        "generalization": 16.7
+      },
+      "metricsEligible": true,
+      "generalizationEligible": true,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "diffusion-like method without detected denoising-step count"
+      ]
+    },
+    {
+      "id": "vpp",
+      "name": "VPP",
+      "family": "latent_idm",
+      "quality": "needs-review",
+      "confidence": "medium",
+      "benchmarks": [],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [
+          1.5
+        ],
+        "denoisingSteps": [
+          10
+        ],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": null,
+        "pretrainingGpuHours": 480,
+        "finetuningGpuHours5h": 36,
+        "fps4090": 8.5,
+        "generalization": null
+      },
+      "metricsEligible": false,
+      "generalizationEligible": false,
+      "warnings": [
+        "no benchmark key detected; estimated accuracy uses atlas priors",
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "excluded from Metrics: no target benchmark result"
+      ]
+    },
+    {
+      "id": "uva",
+      "name": "UVA",
+      "family": "encoder_only",
+      "quality": "usable-auto",
+      "confidence": "medium",
+      "benchmarks": [],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [
+          7,
+          3.3,
+          3,
+          0.5
+        ],
+        "denoisingSteps": [
+          16
+        ],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": null,
+        "pretrainingGpuHours": 4158,
+        "finetuningGpuHours5h": 75,
+        "fps4090": 10.5,
+        "generalization": null
+      },
+      "metricsEligible": false,
+      "generalizationEligible": false,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "excluded from Metrics: no target benchmark result"
+      ]
+    },
+    {
+      "id": "uwm",
+      "name": "UWM",
+      "family": "unified",
+      "quality": "needs-review",
+      "confidence": "medium",
+      "benchmarks": [],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": null,
+        "pretrainingGpuHours": 96,
+        "finetuningGpuHours5h": 93.8,
+        "fps4090": 2.1,
+        "generalization": null
+      },
+      "metricsEligible": false,
+      "generalizationEligible": false,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "diffusion-like method without detected denoising-step count",
+        "excluded from Metrics: no target benchmark result"
+      ]
+    },
+    {
+      "id": "dreamgen",
+      "name": "DreamGen",
+      "family": "pixel_idm",
+      "quality": "needs-review",
+      "confidence": "medium",
+      "benchmarks": [
+        "robocasa"
+      ],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": 20.6,
+        "pretrainingGpuHours": 81000,
+        "finetuningGpuHours5h": 520,
+        "fps4090": 18.7,
+        "generalization": 43.2
+      },
+      "metricsEligible": true,
+      "generalizationEligible": true,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "diffusion-like method without detected denoising-step count"
+      ]
+    },
+    {
+      "id": "flare",
+      "name": "FLARE",
+      "family": "implicit_future",
+      "quality": "needs-review",
+      "confidence": "medium",
+      "benchmarks": [
+        "robocasa"
+      ],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": 70.1,
+        "pretrainingGpuHours": 1890,
+        "finetuningGpuHours5h": 75,
+        "fps4090": 31.7,
+        "generalization": 40
+      },
+      "metricsEligible": true,
+      "generalizationEligible": true,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "diffusion-like method without detected denoising-step count"
+      ]
+    },
+    {
+      "id": "clam",
+      "name": "CLAM",
+      "family": "latent_action",
+      "quality": "needs-review",
+      "confidence": "medium-low",
+      "benchmarks": [],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [
+          4
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": null,
+        "pretrainingGpuHours": 4.5,
+        "finetuningGpuHours5h": 4,
+        "fps4090": 85.3,
+        "generalization": null
+      },
+      "metricsEligible": false,
+      "generalizationEligible": false,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "excluded from Metrics: no target benchmark result"
+      ]
+    },
+    {
+      "id": "videorepa",
+      "name": "VideoREPA",
+      "family": "alignment",
+      "quality": "weak-auto",
+      "confidence": "medium-low",
+      "benchmarks": [],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [
+          2,
+          5,
+          7
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": null,
+        "pretrainingGpuHours": 4158,
+        "finetuningGpuHours5h": 128,
+        "fps4090": 0.35,
+        "generalization": null
+      },
+      "metricsEligible": false,
+      "generalizationEligible": false,
+      "warnings": [
+        "no benchmark key detected; estimated accuracy uses atlas priors",
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "diffusion-like method without detected denoising-step count",
+        "excluded from Metrics: no target benchmark result"
+      ]
+    },
+    {
+      "id": "univla",
+      "name": "UniVLA",
+      "family": "latent_action",
+      "quality": "usable-auto",
+      "confidence": "medium",
+      "benchmarks": [
+        "libero",
+        "simpler"
+      ],
+      "extracted": {
+        "gpuHours": [
+          100
+        ],
+        "fpsOrHz": [],
+        "parameterB": [
+          7
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": [
+          4
+        ]
+      },
+      "estimates": {
+        "accuracy": 42.7,
+        "pretrainingGpuHours": 200,
+        "finetuningGpuHours5h": 960,
+        "fps4090": 52.9,
+        "generalization": 18
+      },
+      "metricsEligible": true,
+      "generalizationEligible": true,
+      "warnings": [
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "diffusion-like method without detected denoising-step count"
+      ]
+    },
+    {
+      "id": "geometry-forcing",
+      "name": "Geometry Forcing",
+      "family": "alignment",
+      "quality": "weak-auto",
+      "confidence": "medium-low",
+      "benchmarks": [],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [
+          1.3
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": null,
+        "pretrainingGpuHours": 64,
+        "finetuningGpuHours5h": 75,
+        "fps4090": 0.35,
+        "generalization": null
+      },
+      "metricsEligible": false,
+      "generalizationEligible": false,
+      "warnings": [
+        "no benchmark key detected; estimated accuracy uses atlas priors",
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "diffusion-like method without detected denoising-step count",
+        "excluded from Metrics: no target benchmark result"
+      ]
+    },
+    {
+      "id": "trivla",
+      "name": "TriVLA",
+      "family": "latent_idm",
+      "quality": "usable-auto",
+      "confidence": "medium",
+      "benchmarks": [
+        "libero"
+      ],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [
+          6,
+          36
+        ],
+        "parameterB": [
+          1.5,
+          0.53,
+          1.87,
+          3.39
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": 87,
+        "pretrainingGpuHours": 480,
+        "finetuningGpuHours5h": 28,
+        "fps4090": 11.6,
+        "generalization": null
+      },
+      "metricsEligible": false,
+      "generalizationEligible": false,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "diffusion-like method without detected denoising-step count",
+        "excluded from Metrics: no target benchmark result"
+      ]
+    },
+    {
+      "id": "video-generators-robot-policies",
+      "name": "VideoPolicy",
+      "family": "latent_idm",
+      "quality": "needs-review",
+      "confidence": "medium-low",
+      "benchmarks": [
+        "robocasa"
+      ],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [],
+        "denoisingSteps": [
+          30
+        ],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": 66,
+        "pretrainingGpuHours": 2688,
+        "finetuningGpuHours5h": 75,
+        "fps4090": 0.11,
+        "generalization": null
+      },
+      "metricsEligible": true,
+      "generalizationEligible": false,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "excluded from generalization: no real-world unseen-task evidence"
+      ]
+    },
+    {
+      "id": "villa-x",
+      "name": "villa-X",
+      "family": "latent_action",
+      "quality": "needs-review",
+      "confidence": "medium",
+      "benchmarks": [
+        "libero",
+        "simpler"
+      ],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [
+          3,
+          1
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": 70.1,
+        "pretrainingGpuHours": 6144,
+        "finetuningGpuHours5h": 75,
+        "fps4090": 11.5,
+        "generalization": 9.6
+      },
+      "metricsEligible": true,
+      "generalizationEligible": true,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "diffusion-like method without detected denoising-step count"
+      ]
+    },
+    {
+      "id": "mowm",
+      "name": "MoWM",
+      "family": "implicit_future",
+      "quality": "weak-auto",
+      "confidence": "medium-low",
+      "benchmarks": [],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": null,
+        "pretrainingGpuHours": 28,
+        "finetuningGpuHours5h": 52,
+        "fps4090": 9.1,
+        "generalization": null
+      },
+      "metricsEligible": false,
+      "generalizationEligible": false,
+      "warnings": [
+        "no benchmark key detected; estimated accuracy uses atlas priors",
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "diffusion-like method without detected denoising-step count",
+        "excluded from Metrics: no target benchmark result"
+      ]
+    },
+    {
+      "id": "dust",
+      "name": "DUST",
+      "family": "multi_stream",
+      "quality": "needs-review",
+      "confidence": "medium",
+      "benchmarks": [
+        "robocasa"
+      ],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [
+          1,
+          6
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": 58.3,
+        "pretrainingGpuHours": 2741,
+        "finetuningGpuHours5h": 120,
+        "fps4090": 5.7,
+        "generalization": null
+      },
+      "metricsEligible": true,
+      "generalizationEligible": false,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "diffusion-like method without detected denoising-step count",
+        "excluded from generalization: no real-world unseen-task evidence"
+      ]
+    },
+    {
+      "id": "ud-vla",
+      "name": "UD-VLA",
+      "family": "unified",
+      "quality": "needs-review",
+      "confidence": "medium",
+      "benchmarks": [
+        "libero",
+        "simpler"
+      ],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [
+          7,
+          55
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": 63,
+        "pretrainingGpuHours": 240,
+        "finetuningGpuHours5h": 96,
+        "fps4090": 4.3,
+        "generalization": null
+      },
+      "metricsEligible": true,
+      "generalizationEligible": false,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "diffusion-like method without detected denoising-step count",
+        "excluded from generalization: no real-world unseen-task evidence"
+      ]
+    },
+    {
+      "id": "rynnvla-002",
+      "name": "RynnVLA-002",
+      "family": "unified",
+      "quality": "needs-review",
+      "confidence": "medium-low",
+      "benchmarks": [
+        "libero"
+      ],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": 95.4,
+        "pretrainingGpuHours": 1890,
+        "finetuningGpuHours5h": 75,
+        "fps4090": 6.2,
+        "generalization": null
+      },
+      "metricsEligible": false,
+      "generalizationEligible": false,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "diffusion-like method without detected denoising-step count",
+        "excluded from Metrics: no target benchmark result"
+      ]
+    },
+    {
+      "id": "motus",
+      "name": "Motus",
+      "family": "multi_stream",
+      "quality": "needs-review",
+      "confidence": "medium",
+      "benchmarks": [
+        "robotwinAllData"
+      ],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [
+          5,
+          2,
+          1
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": 76.7,
+        "pretrainingGpuHours": 18000,
+        "finetuningGpuHours5h": 400,
+        "fps4090": 2,
+        "generalization": 46.9
+      },
+      "metricsEligible": true,
+      "generalizationEligible": true,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "diffusion-like method without detected denoising-step count"
+      ]
+    },
+    {
+      "id": "videovla",
+      "name": "VideoVLA",
+      "family": "unified",
+      "quality": "usable-auto",
+      "confidence": "medium",
+      "benchmarks": [
+        "simpler"
+      ],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [
+          3
+        ],
+        "parameterB": [
+          5,
+          1,
+          2
+        ],
+        "denoisingSteps": [
+          50,
+          10
+        ],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": 63,
+        "pretrainingGpuHours": 3200,
+        "finetuningGpuHours5h": 480,
+        "fps4090": 0.9,
+        "generalization": 23.7
+      },
+      "metricsEligible": true,
+      "generalizationEligible": true,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate"
+      ]
+    },
+    {
+      "id": "act2goal",
+      "name": "Act2Goal",
+      "family": "pixel_idm",
+      "quality": "needs-review",
+      "confidence": "medium",
+      "benchmarks": [],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [
+          1.6
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": null,
+        "pretrainingGpuHours": 2688,
+        "finetuningGpuHours5h": 768,
+        "fps4090": 5,
+        "generalization": null
+      },
+      "metricsEligible": false,
+      "generalizationEligible": false,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "diffusion-like method without detected denoising-step count",
+        "excluded from Metrics: no target benchmark result"
+      ]
+    },
+    {
+      "id": "mimic-video",
+      "name": "mimic-video",
+      "family": "latent_idm",
+      "quality": "needs-review",
+      "confidence": "medium-low",
+      "benchmarks": [
+        "libero",
+        "simpler"
+      ],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [
+          2,
+          3,
+          4
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": [
+          2,
+          1
+        ]
+      },
+      "estimates": {
+        "accuracy": 46.9,
+        "pretrainingGpuHours": 14877,
+        "finetuningGpuHours5h": 210,
+        "fps4090": 5,
+        "generalization": null
+      },
+      "metricsEligible": true,
+      "generalizationEligible": false,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "diffusion-like method without detected denoising-step count",
+        "excluded from generalization: no real-world unseen-task evidence"
+      ]
+    },
+    {
+      "id": "clap",
+      "name": "CLAP",
+      "family": "latent_action",
+      "quality": "needs-review",
+      "confidence": "medium",
+      "benchmarks": [
+        "libero"
+      ],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [
+          4,
+          1,
+          7,
+          3
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": [
+          1
+        ]
+      },
+      "estimates": {
+        "accuracy": 91,
+        "pretrainingGpuHours": 4158,
+        "finetuningGpuHours5h": 75,
+        "fps4090": 5.5,
+        "generalization": null
+      },
+      "metricsEligible": false,
+      "generalizationEligible": false,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "diffusion-like method without detected denoising-step count",
+        "excluded from Metrics: no target benchmark result"
+      ]
+    },
+    {
+      "id": "cosmos-policy",
+      "name": "Cosmos Policy",
+      "family": "joint_latent",
+      "quality": "usable-auto",
+      "confidence": "medium",
+      "benchmarks": [
+        "libero",
+        "robocasa"
+      ],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [
+          5
+        ],
+        "parameterB": [
+          2,
+          7
+        ],
+        "denoisingSteps": [
+          5,
+          10,
+          1,
+          66
+        ],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": 67.1,
+        "pretrainingGpuHours": 106920,
+        "finetuningGpuHours5h": 1536,
+        "fps4090": 1.6,
+        "generalization": 17.6
+      },
+      "metricsEligible": true,
+      "generalizationEligible": true,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate"
+      ]
+    },
+    {
+      "id": "wog",
+      "name": "WoG",
+      "family": "implicit_future",
+      "quality": "usable-auto",
+      "confidence": "medium",
+      "benchmarks": [
+        "simpler"
+      ],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": 70.9,
+        "pretrainingGpuHours": 1890,
+        "finetuningGpuHours5h": 75,
+        "fps4090": 40.6,
+        "generalization": null
+      },
+      "metricsEligible": true,
+      "generalizationEligible": false,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "excluded from generalization: no real-world unseen-task evidence"
+      ]
+    },
+    {
+      "id": "vla-jepa",
+      "name": "VLA-JEPA",
+      "family": "latent_idm",
+      "quality": "needs-review",
+      "confidence": "medium",
+      "benchmarks": [
+        "libero",
+        "simpler"
+      ],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [
+          2
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": 57.3,
+        "pretrainingGpuHours": 2192,
+        "finetuningGpuHours5h": 75,
+        "fps4090": 33.9,
+        "generalization": null
+      },
+      "metricsEligible": true,
+      "generalizationEligible": false,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "diffusion-like method without detected denoising-step count",
+        "excluded from generalization: no real-world unseen-task evidence"
+      ]
+    },
+    {
+      "id": "frappe",
+      "name": "FRAPPE",
+      "family": "implicit_future",
+      "quality": "needs-review",
+      "confidence": "medium",
+      "benchmarks": [
+        "robotwinTaskSpecific"
+      ],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [
+          1
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": 49,
+        "pretrainingGpuHours": 11902,
+        "finetuningGpuHours5h": 210,
+        "fps4090": 27.6,
+        "generalization": null
+      },
+      "metricsEligible": true,
+      "generalizationEligible": false,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "diffusion-like method without detected denoising-step count",
+        "excluded from generalization: no real-world unseen-task evidence"
+      ]
+    },
+    {
+      "id": "ldamodel",
+      "name": "LDA-1B",
+      "family": "multi_stream",
+      "quality": "usable-auto",
+      "confidence": "medium",
+      "benchmarks": [
+        "robocasa"
+      ],
+      "extracted": {
+        "gpuHours": [
+          4608
+        ],
+        "fpsOrHz": [],
+        "parameterB": [
+          1.6,
+          1,
+          3,
+          0.5,
+          0.1
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": 55.4,
+        "pretrainingGpuHours": 4608,
+        "finetuningGpuHours5h": 520,
+        "fps4090": 5.1,
+        "generalization": null
+      },
+      "metricsEligible": true,
+      "generalizationEligible": false,
+      "warnings": [
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "diffusion-like method without detected denoising-step count",
+        "excluded from generalization: no real-world unseen-task evidence"
+      ]
+    },
+    {
+      "id": "adaworldpolicy",
+      "name": "AdaWorldPolicy",
+      "family": "online_adaptation",
+      "quality": "needs-review",
+      "confidence": "medium-low",
+      "benchmarks": [],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [
+          0.4,
+          14,
+          0.6,
+          2
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": null,
+        "pretrainingGpuHours": 22572,
+        "finetuningGpuHours5h": 262.5,
+        "fps4090": 4,
+        "generalization": null
+      },
+      "metricsEligible": false,
+      "generalizationEligible": false,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "diffusion-like method without detected denoising-step count",
+        "excluded from Metrics: no target benchmark result"
+      ]
+    },
+    {
+      "id": "say-dream-act",
+      "name": "Say-Dream-Act",
+      "family": "pixel_idm",
+      "quality": "needs-review",
+      "confidence": "medium-low",
+      "benchmarks": [
+        "libero"
+      ],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [
+          14,
+          2
+        ],
+        "denoisingSteps": [
+          35
+        ],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": 98.2,
+        "pretrainingGpuHours": 22572,
+        "finetuningGpuHours5h": 262.5,
+        "fps4090": 0.4,
+        "generalization": null
+      },
+      "metricsEligible": false,
+      "generalizationEligible": false,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "excluded from Metrics: no target benchmark result"
+      ]
+    },
+    {
+      "id": "cowvla",
+      "name": "CoWVLA",
+      "family": "joint_latent",
+      "quality": "needs-review",
+      "confidence": "medium",
+      "benchmarks": [
+        "libero",
+        "simpler"
+      ],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [
+          8.5,
+          75
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": 76,
+        "pretrainingGpuHours": 768,
+        "finetuningGpuHours5h": 75,
+        "fps4090": 13.5,
+        "generalization": null
+      },
+      "metricsEligible": true,
+      "generalizationEligible": false,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "diffusion-like method without detected denoising-step count",
+        "excluded from generalization: no real-world unseen-task evidence"
+      ]
+    },
+    {
+      "id": "fast-wam",
+      "name": "Fast-WAM",
+      "family": "encoder_only",
+      "quality": "usable-auto",
+      "confidence": "medium-high",
+      "benchmarks": [
+        "libero",
+        "robotwinAllData"
+      ],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [
+          6,
+          5,
+          1,
+          2
+        ],
+        "denoisingSteps": [
+          10
+        ],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": 80,
+        "pretrainingGpuHours": 2741,
+        "finetuningGpuHours5h": 75,
+        "fps4090": 5.3,
+        "generalization": null
+      },
+      "metricsEligible": true,
+      "generalizationEligible": false,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "excluded from generalization: no real-world unseen-task evidence"
+      ]
+    },
+    {
+      "id": "svam",
+      "name": "S-VAM",
+      "family": "speedup",
+      "quality": "needs-review",
+      "confidence": "medium",
+      "benchmarks": [],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [
+          5
+        ],
+        "parameterB": [],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": null,
+        "pretrainingGpuHours": 1890,
+        "finetuningGpuHours5h": 75,
+        "fps4090": 3.3,
+        "generalization": null
+      },
+      "metricsEligible": false,
+      "generalizationEligible": false,
+      "warnings": [
+        "no benchmark key detected; estimated accuracy uses atlas priors",
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "diffusion-like method without detected denoising-step count",
+        "excluded from Metrics: no target benchmark result"
+      ]
+    },
+    {
+      "id": "sim-distill",
+      "name": "SimDist",
+      "family": "alignment",
+      "quality": "needs-review",
+      "confidence": "medium-low",
+      "benchmarks": [],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [
+          5
+        ],
+        "parameterB": [
+          4,
+          8
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": null,
+        "pretrainingGpuHours": 28,
+        "finetuningGpuHours5h": 75,
+        "fps4090": 5,
+        "generalization": null
+      },
+      "metricsEligible": false,
+      "generalizationEligible": false,
+      "warnings": [
+        "no benchmark key detected; estimated accuracy uses atlas priors",
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "diffusion-like method without detected denoising-step count",
+        "excluded from Metrics: no target benchmark result"
+      ]
+    },
+    {
+      "id": "vampo",
+      "name": "VAMPO",
+      "family": "alignment",
+      "quality": "needs-review",
+      "confidence": "medium-low",
+      "benchmarks": [],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [],
+        "denoisingSteps": [
+          108,
+          10
+        ],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": null,
+        "pretrainingGpuHours": 96,
+        "finetuningGpuHours5h": 80,
+        "fps4090": 4,
+        "generalization": null
+      },
+      "metricsEligible": false,
+      "generalizationEligible": false,
+      "warnings": [
+        "no benchmark key detected; estimated accuracy uses atlas priors",
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "excluded from Metrics: no target benchmark result"
+      ]
+    },
+    {
+      "id": "eva",
+      "name": "EVA",
+      "family": "alignment",
+      "quality": "needs-review",
+      "confidence": "medium",
+      "benchmarks": [],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [
+          14,
+          5
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": null,
+        "pretrainingGpuHours": 22572,
+        "finetuningGpuHours5h": 64,
+        "fps4090": 6.1,
+        "generalization": null
+      },
+      "metricsEligible": false,
+      "generalizationEligible": false,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "diffusion-like method without detected denoising-step count",
+        "excluded from Metrics: no target benchmark result"
+      ]
+    },
+    {
+      "id": "vtam",
+      "name": "VTAM",
+      "family": "multimodal",
+      "quality": "needs-review",
+      "confidence": "medium-low",
+      "benchmarks": [],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [
+          1
+        ],
+        "parameterB": [
+          3
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": null,
+        "pretrainingGpuHours": 14877,
+        "finetuningGpuHours5h": 262.5,
+        "fps4090": 1,
+        "generalization": null
+      },
+      "metricsEligible": false,
+      "generalizationEligible": false,
+      "warnings": [
+        "no benchmark key detected; estimated accuracy uses atlas priors",
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "diffusion-like method without detected denoising-step count",
+        "excluded from Metrics: no target benchmark result"
+      ]
+    },
+    {
+      "id": "gigaworld-policy",
+      "name": "GigaWorld-Policy",
+      "family": "joint_latent",
+      "quality": "usable-auto",
+      "confidence": "medium-high",
+      "benchmarks": [
+        "robotwinAllData"
+      ],
+      "extracted": {
+        "gpuHours": [
+          6000
+        ],
+        "fpsOrHz": [],
+        "parameterB": [
+          5,
+          3,
+          1
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": 75.1,
+        "pretrainingGpuHours": 6000,
+        "finetuningGpuHours5h": 520,
+        "fps4090": 2.8,
+        "generalization": null
+      },
+      "metricsEligible": true,
+      "generalizationEligible": false,
+      "warnings": [
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "diffusion-like method without detected denoising-step count",
+        "excluded from generalization: no real-world unseen-task evidence"
+      ]
+    },
+    {
+      "id": "aim",
+      "name": "AIM",
+      "family": "implicit_future",
+      "quality": "needs-review",
+      "confidence": "medium",
+      "benchmarks": [
+        "robotwinAllData",
+        "robotwinTaskSpecific"
+      ],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [
+          5
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": 79.5,
+        "pretrainingGpuHours": 14877,
+        "finetuningGpuHours5h": 210,
+        "fps4090": 9.2,
+        "generalization": null
+      },
+      "metricsEligible": true,
+      "generalizationEligible": false,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "diffusion-like method without detected denoising-step count",
+        "excluded from generalization: no real-world unseen-task evidence"
+      ]
+    },
+    {
+      "id": "wav",
+      "name": "WAV",
+      "family": "implicit_future",
+      "quality": "needs-review",
+      "confidence": "medium",
+      "benchmarks": [
+        "libero"
+      ],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [
+          7,
+          4,
+          3,
+          2,
+          2.2
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": 98.1,
+        "pretrainingGpuHours": 22572,
+        "finetuningGpuHours5h": 210,
+        "fps4090": 7.3,
+        "generalization": null
+      },
+      "metricsEligible": false,
+      "generalizationEligible": false,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "diffusion-like method without detected denoising-step count",
+        "excluded from Metrics: no target benchmark result"
+      ]
+    },
+    {
+      "id": "dexworldmodel",
+      "name": "DexWorldModel",
+      "family": "online_adaptation",
+      "quality": "needs-review",
+      "confidence": "medium-low",
+      "benchmarks": [
+        "robotwinAllData"
+      ],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [
+          1,
+          5,
+          2
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": 81.9,
+        "pretrainingGpuHours": 30720,
+        "finetuningGpuHours5h": 210,
+        "fps4090": 20.3,
+        "generalization": 23.8
+      },
+      "metricsEligible": true,
+      "generalizationEligible": true,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "diffusion-like method without detected denoising-step count"
+      ]
+    },
+    {
+      "id": "x-wam",
+      "name": "X-WAM",
+      "family": "multimodal",
+      "quality": "usable-auto",
+      "confidence": "medium-high",
+      "benchmarks": [
+        "robotwinAllData",
+        "robocasa"
+      ],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [
+          5
+        ],
+        "denoisingSteps": [
+          25
+        ],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": 79.2,
+        "pretrainingGpuHours": 70470,
+        "finetuningGpuHours5h": 520,
+        "fps4090": 1,
+        "generalization": null
+      },
+      "metricsEligible": true,
+      "generalizationEligible": false,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "excluded from generalization: no real-world unseen-task evidence"
+      ]
+    },
+    {
+      "id": "motubrain",
+      "name": "MotuBrain",
+      "family": "multi_stream",
+      "quality": "needs-review",
+      "confidence": "medium-high",
+      "benchmarks": [
+        "robotwinAllData"
+      ],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [
+          1
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": 83.5,
+        "pretrainingGpuHours": 56376,
+        "finetuningGpuHours5h": 520,
+        "fps4090": 15.3,
+        "generalization": null
+      },
+      "metricsEligible": true,
+      "generalizationEligible": false,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "diffusion-like method without detected denoising-step count",
+        "excluded from generalization: no real-world unseen-task evidence"
+      ]
+    },
+    {
+      "id": "vidar",
+      "name": "Vidar",
+      "family": "pixel_idm",
+      "quality": "usable-auto",
+      "confidence": "medium",
+      "benchmarks": [
+        "robotwinAllData"
+      ],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [
+          8
+        ],
+        "parameterB": [
+          1
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": 35.8,
+        "pretrainingGpuHours": 4096,
+        "finetuningGpuHours5h": 40,
+        "fps4090": 0.04,
+        "generalization": 53.4
+      },
+      "metricsEligible": true,
+      "generalizationEligible": true,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "diffusion-like method without detected denoising-step count"
+      ]
+    },
+    {
+      "id": "genie-envisioner",
+      "name": "Genie Envisioner",
+      "family": "multi_stream",
+      "quality": "usable-auto",
+      "confidence": "medium",
+      "benchmarks": [],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [
+          5,
+          30
+        ],
+        "parameterB": [
+          2
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": null,
+        "pretrainingGpuHours": 5376,
+        "finetuningGpuHours5h": 384,
+        "fps4090": 5,
+        "generalization": null
+      },
+      "metricsEligible": false,
+      "generalizationEligible": false,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "diffusion-like method without detected denoising-step count",
+        "excluded from Metrics: no target benchmark result"
+      ]
+    },
+    {
+      "id": "xr-1",
+      "name": "XR-1",
+      "family": "latent_action",
+      "quality": "usable-auto",
+      "confidence": "medium-high",
+      "benchmarks": [],
+      "extracted": {
+        "gpuHours": [
+          38400,
+          576
+        ],
+        "fpsOrHz": [
+          5
+        ],
+        "parameterB": [
+          2.6,
+          3,
+          0.9,
+          4,
+          1
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": null,
+        "pretrainingGpuHours": 76800,
+        "finetuningGpuHours5h": 576,
+        "fps4090": 5,
+        "generalization": null
+      },
+      "metricsEligible": false,
+      "generalizationEligible": false,
+      "warnings": [
+        "no benchmark key detected; estimated accuracy uses atlas priors",
+        "diffusion-like method without detected denoising-step count",
+        "excluded from Metrics: no target benchmark result"
+      ]
+    },
+    {
+      "id": "vipra",
+      "name": "ViPRA",
+      "family": "latent_action",
+      "quality": "usable-auto",
+      "confidence": "medium",
+      "benchmarks": [
+        "simpler"
+      ],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [
+          2,
+          22,
+          6,
+          5,
+          7
+        ],
+        "parameterB": [
+          7,
+          3,
+          3.3,
+          0.5,
+          1,
+          2
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": [
+          14,
+          1
+        ]
+      },
+      "estimates": {
+        "accuracy": 66.2,
+        "pretrainingGpuHours": 2496,
+        "finetuningGpuHours5h": 210,
+        "fps4090": 2,
+        "generalization": 15
+      },
+      "metricsEligible": true,
+      "generalizationEligible": true,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "diffusion-like method without detected denoising-step count"
+      ]
+    },
+    {
+      "id": "lingbot-va",
+      "name": "LingBot-VA",
+      "family": "multi_stream",
+      "quality": "usable-auto",
+      "confidence": "medium",
+      "benchmarks": [
+        "robotwinAllData",
+        "robotwinTaskSpecific"
+      ],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [
+          5
+        ],
+        "parameterB": [
+          5.3,
+          5,
+          4,
+          1
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": 78.4,
+        "pretrainingGpuHours": 2496,
+        "finetuningGpuHours5h": 520,
+        "fps4090": 2,
+        "generalization": 15
+      },
+      "metricsEligible": true,
+      "generalizationEligible": true,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "diffusion-like method without detected denoising-step count"
+      ]
+    },
+    {
+      "id": "dreamzero",
+      "name": "DreamZero",
+      "family": "unified",
+      "quality": "usable-auto",
+      "confidence": "medium-high",
+      "benchmarks": [
+        "robocasa"
+      ],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [
+          7
+        ],
+        "parameterB": [
+          14,
+          5,
+          8,
+          32
+        ],
+        "denoisingSteps": [
+          16,
+          4,
+          1
+        ],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": 62.4,
+        "pretrainingGpuHours": 106920,
+        "finetuningGpuHours5h": 520,
+        "fps4090": 0.18,
+        "generalization": 39.5
+      },
+      "metricsEligible": true,
+      "generalizationEligible": true,
+      "warnings": [
+        "no benchmark key detected; estimated accuracy uses atlas priors",
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate"
+      ]
+    },
+    {
+      "id": "rhoda-dva",
+      "name": "Rhoda DVA",
+      "family": "pixel_idm",
+      "quality": "needs-review",
+      "confidence": "medium-low",
+      "benchmarks": [],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [],
+        "parameterB": [],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": null,
+        "pretrainingGpuHours": 10260,
+        "finetuningGpuHours5h": 10,
+        "fps4090": 4.6,
+        "generalization": null
+      },
+      "metricsEligible": false,
+      "generalizationEligible": false,
+      "warnings": [
+        "no benchmark key detected; estimated accuracy uses atlas priors",
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "no explicit model inference FPS/Hz detected; inference uses architecture estimate",
+        "excluded from Metrics: no target benchmark result"
+      ]
+    },
+    {
+      "id": "dit4dit",
+      "name": "DiT4DiT",
+      "family": "latent_idm",
+      "quality": "usable-auto",
+      "confidence": "medium",
+      "benchmarks": [
+        "libero",
+        "robocasa"
+      ],
+      "extracted": {
+        "gpuHours": [],
+        "fpsOrHz": [
+          9,
+          6
+        ],
+        "parameterB": [
+          2.2,
+          2,
+          2.3,
+          2.7
+        ],
+        "denoisingSteps": [],
+        "actionTokenCounts": []
+      },
+      "estimates": {
+        "accuracy": 50.8,
+        "pretrainingGpuHours": 56376,
+        "finetuningGpuHours5h": 520,
+        "fps4090": 6,
+        "generalization": 60
+      },
+      "metricsEligible": true,
+      "generalizationEligible": true,
+      "warnings": [
+        "no explicit GPU-hour value detected; compute uses scale/parameter estimate",
+        "diffusion-like method without detected denoising-step count"
+      ]
+    }
+  ]
+}

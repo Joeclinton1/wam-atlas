@@ -16,12 +16,32 @@ import {
   scoreLabel,
   wrapText,
   shortText
-} from './shared.js?v=timeline-legend-4';
-import { renderDiagram, getArchitectureSpec } from './diagrams.js?v=timeline-legend-4';
+} from './shared.js?v=metrics-anchor-1';
+import { renderDiagram, getArchitectureSpec } from './diagrams.js?v=metrics-anchor-1';
+
+function hasMetricsTargetBenchmark(model) {
+  return Boolean(model.metrics?.comparative?.metricsEligible);
+}
+
+function isModelIncludedInMetricView(model) {
+  const comparative = model.metrics?.comparative;
+  if (state.mode !== "metrics") return true;
+  if (!hasMetricsTargetBenchmark(model)) return false;
+  if (!passesMetricAccuracyFilter(model)) return false;
+  if (state.metricView === "accuracy" && state.accuracyBenchmark !== "estimated") {
+    return Boolean(comparative?.accuracy?.benchmarkScores?.[state.accuracyBenchmark]);
+  }
+  if (state.metricView === "generalization") {
+    return Boolean(comparative?.generalization?.includeInMetrics);
+  }
+  return true;
+}
+
 function filteredModels() {
   const q = state.query.trim().toLowerCase();
-  if (!q) return state.models;
   return state.models.filter((model) => {
+    if (!isModelIncludedInMetricView(model)) return false;
+    if (!q) return true;
     const haystack = [
       model.name,
       model.title,
@@ -51,6 +71,7 @@ async function loadData() {
 
   $("#modelCount").textContent = state.models.length;
   $("#familyCount").textContent = new Set(state.models.map((m) => m.family)).size;
+  populateMetricControls();
   setDefaultZoomForMode(state.mode);
   renderLearn();
   renderSources();
@@ -87,10 +108,8 @@ function positionModel(model, index, models, bounds) {
   const w = bounds.width;
   const h = bounds.height;
 
-  if (state.mode === "speed") {
-    const x = 90 + ((Number(model.metrics?.runtimeCost) || 1) - 1) * ((w - 180) / 4);
-    const y = h - 90 - ((Number(model.metrics?.computeScale) || 1) - 1) * ((h - 180) / 4);
-    return { x: x + jitter, y: y - jitter };
+  if (state.mode === "metrics") {
+    return metricsPosition(model, bounds, index);
   }
 
   if (state.mode === "timeline") {
@@ -113,8 +132,8 @@ function drawAtlasBackdrop(group, defs, bounds, geometry = null) {
     drawTimelineBackdrop(group, timelineGeometry(state.models, bounds));
     return;
   }
-  if (state.mode === "speed") {
-    drawSpeedBackdrop(group, bounds);
+  if (state.mode === "metrics") {
+    drawMetricsBackdrop(group, bounds);
     return;
   }
   if (state.mode === "taxonomy") {
@@ -904,28 +923,379 @@ function renderTimelineLegend() {
   `).join("");
 }
 
-function drawSpeedBackdrop(group, bounds) {
-  const layer = atlasAnnotationLayer("speed-map");
-  const left = 78;
-  const bottom = bounds.height - 75;
-  const right = bounds.width - 64;
-  const top = 56;
-  const grid = Array.from({ length: 5 }, (_, index) => {
-    const x = left + index * ((right - left) / 4);
-    const y = bottom - index * ((bottom - top) / 4);
+function populateMetricControls() {
+  const select = $("#accuracyBenchmark");
+  if (!select) return;
+  const keys = new Set();
+  state.models.forEach((model) => {
+    if (!hasMetricsTargetBenchmark(model)) return;
+    (model.metrics?.comparative?.accuracy?.defaultBenchmarkKeys || []).forEach((key) => keys.add(key));
+  });
+  const ordered = ["estimated", ...Array.from(keys).sort((a, b) => benchmarkLabel(a).localeCompare(benchmarkLabel(b)))];
+  select.innerHTML = ordered.map((key) => `
+    <option value="${escapeHtml(key)}">${escapeHtml(key === "estimated" ? "Estimated normalized" : benchmarkLabel(key))}</option>
+  `).join("");
+  if (!ordered.includes(state.accuracyBenchmark)) state.accuracyBenchmark = "estimated";
+  select.value = state.accuracyBenchmark;
+}
+
+function metricConfig() {
+  const configs = {
+    accuracy: {
+      label: state.accuracyBenchmark === "estimated" ? "estimated normalized accuracy" : `${benchmarkLabel(state.accuracyBenchmark)} accuracy`,
+      unit: "%",
+      min: 30,
+      max: 95,
+      better: "higher",
+      value: (model) => state.accuracyBenchmark === "estimated"
+        ? (hasMetricsTargetBenchmark(model) ? model.metrics?.comparative?.accuracy?.estimatedScore : null)
+        : model.metrics?.comparative?.accuracy?.benchmarkScores?.[state.accuracyBenchmark]?.estimatedScore
+    },
+    compute: {
+      label: state.computeMetric === "finetuning" ? "task fine-tune cost for 5h data" : "pretraining compute cost",
+      unit: "GPUh",
+      min: state.computeMetric === "finetuning" ? 1 : 8,
+      max: state.computeMetric === "finetuning" ? 1800 : 120000,
+      scale: "log",
+      better: "lower",
+      value: (model) => state.computeMetric === "finetuning"
+        ? (hasMetricsTargetBenchmark(model) ? model.metrics?.comparative?.computeCost?.finetuningGpuHours5h : null)
+        : (hasMetricsTargetBenchmark(model) ? model.metrics?.comparative?.computeCost?.pretrainingGpuHours : null)
+    },
+    inference: {
+      label: "estimated inference throughput on RTX 4090",
+      unit: "FPS",
+      min: 0.1,
+      max: 220,
+      scale: "log",
+      better: "higher",
+      value: (model) => hasMetricsTargetBenchmark(model) ? model.metrics?.comparative?.inferenceCost?.fps4090 : null
+    },
+    generalization: {
+      label: "normalized generalization improvement",
+      unit: "%",
+      min: 0,
+      max: 75,
+      better: "higher",
+      value: (model) => model.metrics?.comparative?.generalization?.includeInMetrics
+        ? model.metrics?.comparative?.generalization?.improvementPct
+        : null
+    }
+  };
+  return configs[state.metricView] || configs.accuracy;
+}
+
+function metricValue(model) {
+  const value = Number(metricConfig().value(model));
+  return Number.isFinite(value) ? value : null;
+}
+
+function metricChartMode() {
+  return state.metricView === "accuracy" && state.metricChart === "compare" ? "bar" : state.metricChart;
+}
+
+function metricAccuracyFilterApplies() {
+  return state.mode === "metrics"
+    && metricChartMode() === "frontier"
+    && (state.metricView === "compute" || state.metricView === "inference");
+}
+
+function passesMetricAccuracyFilter(model) {
+  if (!metricAccuracyFilterApplies() || !state.metricAccuracyFilterEnabled) return true;
+  const accuracy = Number(model.metrics?.comparative?.accuracy?.estimatedScore);
+  return Number.isFinite(accuracy) && accuracy >= Number(state.metricAccuracyThreshold || 0);
+}
+
+function metricChartModels() {
+  const config = metricConfig();
+  return filteredModels().filter((model) => Number.isFinite(Number(config.value(model))));
+}
+
+function metricSortMultiplier(config = metricConfig()) {
+  return config.better === "lower" ? 1 : -1;
+}
+
+function sortedMetricModels() {
+  const config = metricConfig();
+  return metricChartModels()
+    .slice()
+    .sort((a, b) => {
+      const delta = (metricValue(a) - metricValue(b)) * metricSortMultiplier(config);
+      if (delta) return delta;
+      return slugDate(a) - slugDate(b);
+    });
+}
+
+function metricDateValue(model) {
+  return new Date(Number(model.year || 2024), Number(model.month || 6) - 1, Number(model.day || 15)).getTime();
+}
+
+function metricDateDomain(models) {
+  const dates = models.map(metricDateValue).filter(Number.isFinite);
+  if (!dates.length) return [Date.UTC(2024, 0, 1), Date.UTC(2026, 0, 1)];
+  const min = Math.min(...dates);
+  const max = Math.max(...dates);
+  const pad = Math.max(86400000 * 20, (max - min) * 0.06);
+  return [min - pad, max + pad];
+}
+
+function metricXForDate(model, chart, domain) {
+  const [min, max] = domain;
+  return chart.left + ((metricDateValue(model) - min) / Math.max(1, max - min)) * (chart.right - chart.left);
+}
+
+function metricYForValue(value, chart, config) {
+  const t = metricScaleValue(value, config);
+  return config.better === "lower"
+    ? chart.top + t * (chart.bottom - chart.top)
+    : chart.bottom - t * (chart.bottom - chart.top);
+}
+
+function metricXForValue(value, chart, config) {
+  return chart.left + metricScaleValue(value, config) * (chart.right - chart.left);
+}
+
+function metricYForAccuracy(model, chart) {
+  const accuracy = Number(model.metrics?.comparative?.accuracy?.estimatedScore);
+  return chart.bottom - metricScaleValue(accuracy, { min: 30, max: 100 }) * (chart.bottom - chart.top);
+}
+
+function metricScaleValue(value, config) {
+  if (config.scale === "log") {
+    const min = Math.log10(Math.max(0.001, config.min));
+    const max = Math.log10(Math.max(config.min + 0.001, config.max));
+    return clamp((Math.log10(Math.max(0.001, value)) - min) / (max - min), 0, 1);
+  }
+  return clamp((value - config.min) / (config.max - config.min), 0, 1);
+}
+
+function metricTicks(config) {
+  if (config.scale === "log") {
+    const raw = config.max > 10000 ? [10, 100, 1000, 10000, 100000] : [0.1, 1, 10, 100, 1000];
+    return raw.filter((value) => value >= config.min && value <= config.max);
+  }
+  const step = (config.max - config.min) / 4;
+  return Array.from({ length: 5 }, (_, index) => config.min + index * step);
+}
+
+function metricsBounds(bounds) {
+  return {
+    left: 96,
+    right: bounds.width - 92,
+    top: 148,
+    bottom: bounds.height - 86
+  };
+}
+
+function metricLaneForModel(model, bounds) {
+  const branch = problemBranchForFamily(model.family);
+  const branches = problemBranches.filter((item) => item.families.some((family) => state.models.some((model) => model.family === family)));
+  const index = Math.max(0, branches.findIndex((item) => item.id === branch?.id));
+  const top = metricsBounds(bounds).top + 38;
+  const bottom = metricsBounds(bounds).bottom - 38;
+  const count = Math.max(1, branches.length - 1);
+  return top + (index / count) * (bottom - top);
+}
+
+function metricsPosition(model, bounds, index) {
+  const chart = metricsBounds(bounds);
+  const config = metricConfig();
+  const value = metricValue(model);
+  if (value == null) return { x: chart.left, y: chart.bottom };
+  const mode = metricChartMode();
+  if (mode === "frontier") {
+    const domain = metricDateDomain(metricChartModels());
+    const jitter = ((index * 31) % 15) - 7;
+    return {
+      x: clamp(metricXForDate(model, chart, domain), chart.left, chart.right),
+      y: clamp(metricYForValue(value, chart, config) + jitter * 0.35, chart.top + 18, chart.bottom - 18)
+    };
+  }
+  if (mode === "compare") {
+    const jitter = ((index * 17) % 13) - 6;
+    return {
+      x: clamp(metricXForValue(value, chart, config), chart.left, chart.right),
+      y: clamp(metricYForAccuracy(model, chart) + jitter * 0.4, chart.top + 18, chart.bottom - 18)
+    };
+  }
+  const items = sortedMetricModels();
+  const rank = Math.max(0, items.findIndex((item) => item.id === model.id));
+  const y = chart.top + ((rank + 0.5) / Math.max(1, items.length)) * (chart.bottom - chart.top);
+  const x = chart.left + metricScaleValue(value, config) * (chart.right - chart.left);
+  return { x: clamp(x, chart.left, chart.right), y: clamp(y, chart.top + 18, chart.bottom - 18) };
+}
+
+function drawMetricsBackdrop(group, bounds) {
+  const layer = atlasAnnotationLayer("metrics-map");
+  const chart = metricsBounds(bounds);
+  const config = metricConfig();
+  const mode = metricChartMode();
+  const valueTicks = mode === "bar" || mode === "compare" ? "" : metricTicks(config).map((value) => {
+    const y = metricYForValue(value, chart, config);
     return `
-      <line class="speed-grid" x1="${x}" y1="${top}" x2="${x}" y2="${bottom}"></line>
-      <line class="speed-grid" x1="${left}" y1="${y}" x2="${right}" y2="${y}"></line>
+      <line class="metrics-grid" x1="${chart.left}" y1="${y}" x2="${chart.right}" y2="${y}"></line>
+      <text class="metrics-tick" x="${chart.left - 14}" y="${y + 3}" text-anchor="end">${escapeHtml(formatMetricValue(value, config))}</text>
     `;
   }).join("");
+  const chartBody = mode === "frontier"
+    ? drawTimeFrontierBackdrop(metricChartModels(), chart, config)
+    : mode === "compare"
+      ? drawAccuracyComparisonBackdrop(metricChartModels(), chart, config)
+      : drawBarMetricBackdrop(sortedMetricModels(), chart, config);
+  const xLabel = mode === "frontier" ? "release date" : config.label;
+  const yLabel = mode === "compare" ? "estimated normalized accuracy (%, higher is better)" : `${config.label} (${config.unit}, ${config.better} is better)`;
   layer.innerHTML = `
-    ${grid}
-    <line class="speed-axis" x1="${left}" y1="${bottom}" x2="${right}" y2="${bottom}" marker-end="url(#atlasArrow)"></line>
-    <line class="speed-axis" x1="${left}" y1="${bottom}" x2="${left}" y2="${top}" marker-end="url(#atlasArrow)"></line>
-    <text class="axis-label" x="${right - 138}" y="${bottom + 38}">runtime cost</text>
-    <text class="axis-label" x="${left - 55}" y="${top + 18}" transform="rotate(-90 ${left - 55} ${top + 18})">compute scale</text>
+    ${valueTicks}
+    ${chartBody}
+    <line class="metrics-axis" x1="${chart.left}" y1="${chart.bottom}" x2="${chart.right}" y2="${chart.bottom}"></line>
+    <line class="metrics-axis" x1="${chart.left}" y1="${chart.top}" x2="${chart.left}" y2="${chart.bottom}"></line>
+    <text class="axis-label metrics-axis-label" x="${chart.left}" y="${chart.top - 24}">${escapeHtml(yLabel)}</text>
+    <text class="metrics-axis-caption" x="${chart.right}" y="${chart.bottom + 32}" text-anchor="end">${escapeHtml(xLabel)}</text>
   `;
   group.appendChild(layer);
+}
+
+function drawBarMetricBackdrop(models, chart, config) {
+  const count = Math.max(1, models.length);
+  const barH = clamp((chart.bottom - chart.top) / count * 0.45, 3, 12);
+  const ticks = metricTicks(config).map((value) => {
+    const x = chart.left + metricScaleValue(value, config) * (chart.right - chart.left);
+    return `
+      <line class="metrics-grid" x1="${x}" y1="${chart.top}" x2="${x}" y2="${chart.bottom}"></line>
+      <text class="metrics-tick" x="${x}" y="${chart.bottom + 18}" text-anchor="middle">${escapeHtml(formatMetricValue(value, config))}</text>
+    `;
+  }).join("");
+  const bars = models.map((model, rank) => {
+    const value = metricValue(model);
+    const x = chart.left + metricScaleValue(value, config) * (chart.right - chart.left);
+    const y = chart.top + ((rank + 0.5) / count) * (chart.bottom - chart.top);
+    return `
+      <line class="metrics-bar" x1="${chart.left}" y1="${y}" x2="${x}" y2="${y}" stroke="${problemColorForModel(model)}" stroke-width="${barH}"></line>
+      <text class="metrics-bar-label" x="${chart.left - 12}" y="${y + 3}" text-anchor="end">${escapeHtml(shortText(model.name, 18))}</text>
+    `;
+  }).join("");
+  return `${ticks}${bars}`;
+}
+
+function drawTimeFrontierBackdrop(models, chart, config) {
+  const domain = metricDateDomain(models);
+  const years = Array.from(new Set(models.map((model) => Number(model.year)).filter(Number.isFinite))).sort((a, b) => a - b);
+  const yearTicks = years.map((year) => {
+    const x = chart.left + ((new Date(year, 0, 1).getTime() - domain[0]) / Math.max(1, domain[1] - domain[0])) * (chart.right - chart.left);
+    return `
+      <line class="metrics-grid" x1="${x}" y1="${chart.top}" x2="${x}" y2="${chart.bottom}"></line>
+      <text class="metrics-tick" x="${x}" y="${chart.bottom + 18}" text-anchor="middle">${year}</text>
+    `;
+  }).join("");
+  const best = frontierPolyline(models, chart, config, (model) => metricXForDate(model, chart, domain));
+  const anti = state.metricView === "compute" || state.metricView === "inference"
+    ? frontierPolyline(models, chart, config, (model) => metricXForDate(model, chart, domain), { anti: true, dashed: true })
+    : "";
+  const guide = anti ? `
+    <text class="metrics-frontier-label" x="${chart.right}" y="${chart.top + 16}" text-anchor="end">best frontier</text>
+    <text class="metrics-frontier-label is-anti" x="${chart.right}" y="${chart.top + 32}" text-anchor="end">worst frontier</text>
+  ` : "";
+  return `${yearTicks}${anti}${best}${guide}`;
+}
+
+function drawAccuracyComparisonBackdrop(models, chart, config) {
+  const metricXTicks = metricTicks(config).map((value) => {
+    const x = metricXForValue(value, chart, config);
+    return `
+      <line class="metrics-grid" x1="${x}" y1="${chart.top}" x2="${x}" y2="${chart.bottom}"></line>
+      <text class="metrics-tick" x="${x}" y="${chart.bottom + 18}" text-anchor="middle">${escapeHtml(formatMetricValue(value, config))}</text>
+    `;
+  }).join("");
+  const accuracyYTicks = [40, 55, 70, 85, 100].map((value) => {
+    const y = chart.bottom - metricScaleValue(value, { min: 30, max: 100 }) * (chart.bottom - chart.top);
+    return `
+      <line class="metrics-grid" x1="${chart.left}" y1="${y}" x2="${chart.right}" y2="${y}"></line>
+      <text class="metrics-tick" x="${chart.left - 14}" y="${y + 3}" text-anchor="end">${value}</text>
+    `;
+  }).join("");
+  return `${metricXTicks}${accuracyYTicks}${comparisonParetoPolyline(models, chart, config)}`;
+}
+
+function comparisonParetoPolyline(models, chart, config) {
+  const points = models
+    .map((model) => {
+      const metric = metricValue(model);
+      const accuracy = Number(model.metrics?.comparative?.accuracy?.estimatedScore);
+      if (!Number.isFinite(metric) || !Number.isFinite(accuracy)) return null;
+      return {
+        x: metricXForValue(metric, chart, config),
+        y: metricYForAccuracy(model, chart),
+        metric,
+        accuracy
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => config.better === "lower" ? a.metric - b.metric : b.metric - a.metric);
+  let bestAccuracy = -Infinity;
+  const frontier = [];
+  points.forEach((point) => {
+    if (point.accuracy <= bestAccuracy) return;
+    bestAccuracy = point.accuracy;
+    frontier.push(point);
+  });
+  if (config.better !== "lower") frontier.reverse();
+  if (frontier.length < 2) return "";
+  const attr = frontier.map(({ x, y }) => `${Math.round(x * 10) / 10},${Math.round(y * 10) / 10}`).join(" ");
+  return `<polyline class="metrics-frontier is-dashed" points="${attr}"></polyline>`;
+}
+
+function frontierPolyline(models, chart, config, xForModel, options = {}) {
+  const dashed = Boolean(options.dashed);
+  const anti = Boolean(options.anti);
+  const sorted = models
+    .filter((model) => metricValue(model) != null)
+    .sort((a, b) => xForModel(a) - xForModel(b));
+  let best = null;
+  const points = [];
+  sorted.forEach((model) => {
+    const value = metricValue(model);
+    const improves = best == null || (config.better === "lower" ? value < best : value > best);
+    const worsens = best == null || (config.better === "lower" ? value > best : value < best);
+    if (anti ? !worsens : !improves) return;
+    best = value;
+    points.push([xForModel(model), metricYForValue(value, chart, config)]);
+  });
+  if (points.length < 2) return "";
+  const attr = points.map(([x, y]) => `${Math.round(x * 10) / 10},${Math.round(y * 10) / 10}`).join(" ");
+  return `<polyline class="metrics-frontier${dashed ? " is-dashed" : ""}${anti ? " is-anti" : ""}" points="${attr}"></polyline>`;
+}
+
+function metricLaneForBranch(branch, bounds) {
+  const branches = problemBranches.filter((item) => item.families.some((family) => state.models.some((model) => model.family === family)));
+  const index = Math.max(0, branches.findIndex((item) => item.id === branch.id));
+  const chart = metricsBounds(bounds);
+  const top = chart.top + 38;
+  const bottom = chart.bottom - 38;
+  return top + (index / Math.max(1, branches.length - 1)) * (bottom - top);
+}
+
+function formatMetricValue(value, config) {
+  if (config.unit === "GPUh") {
+    if (value >= 1000) return `${Math.round(value / 1000)}k`;
+    return `${Math.round(value)}`;
+  }
+  if (config.unit === "FPS") {
+    if (value < 1) return String(Math.round(value * 100) / 100);
+    return value < 10 ? String(Math.round(value * 10) / 10) : String(Math.round(value));
+  }
+  return `${Math.round(value)}`;
+}
+
+function benchmarkLabel(key) {
+  const labels = {
+    robotwinAllData: "RoboTwin all-data",
+    robotwinTaskSpecific: "RoboTwin task-specific",
+    liberoPlus: "LIBERO-Plus",
+    liberoPro: "LIBERO-Pro",
+    simpler: "SimplerEnv",
+    robocasa: "RoboCasa"
+  };
+  return labels[key] || key;
 }
 
 function drawTaxonomyBackdrop(group, bounds) {
@@ -1576,7 +1946,9 @@ function renderAtlas() {
     const node = document.createElementNS("http://www.w3.org/2000/svg", "g");
     const hasLiteral = Boolean(model.literalArchitecture || state.arch[model.id]);
     node.classList.add("node");
+    const filteredOut = state.mode === "metrics" && !visible.has(model.id);
     if (!visible.has(model.id)) node.classList.add("is-muted");
+    if (filteredOut) node.classList.add("is-filtered-out");
     if (state.selectedId === model.id || state.hoveredId === model.id) node.classList.add("is-active");
     node.dataset.id = model.id;
     node.dataset.family = model.family;
@@ -1596,10 +1968,10 @@ function renderAtlas() {
     }
 
     const radius = state.mode === "taxonomy" ? (hasLiteral ? 7.5 : 6) : hasLiteral ? 12 : 9;
-    const color = state.mode === "taxonomy" || state.mode === "timeline"
+    const color = state.mode === "taxonomy" || state.mode === "timeline" || state.mode === "metrics"
       ? problemColorForModel(model)
       : familyColors[model.family] || "#61717a";
-    const labelSide = state.mode === "taxonomy" || state.mode === "timeline" ? "bottom" : target.x > width - 180 ? "left" : "right";
+    const labelSide = state.mode === "taxonomy" || state.mode === "timeline" || state.mode === "metrics" ? "bottom" : target.x > width - 180 ? "left" : "right";
     let paperRadius = radius;
     let taxonomyStyle = "";
     if (state.mode === "taxonomy") {
@@ -1611,7 +1983,8 @@ function renderAtlas() {
     const bodyClass = [
       "node-body",
       state.mode === "taxonomy" ? "taxonomy-node-body" : "",
-      state.mode === "timeline" ? "timeline-node-body" : ""
+      state.mode === "timeline" ? "timeline-node-body" : "",
+      state.mode === "metrics" ? "metrics-node-body" : ""
     ].filter(Boolean).join(" ");
     node.innerHTML = `<g class="${bodyClass}" style="${taxonomyStyle}">${drawPaperNode(model, paperRadius, color, hasLiteral, labelSide)}</g>`;
     node.addEventListener("mouseenter", (event) => showPreview(model.id, event));
@@ -1861,6 +2234,7 @@ function showPreview(id, event) {
   const spec = getArchitectureSpec(model);
   state.hoveredId = id;
   $("#previewPanel").hidden = false;
+  $("#previewPanel").classList.toggle("is-metric", state.mode === "metrics");
   $("#previewPanel").style.setProperty("--preview-outline", problemColorForModel(model));
   $("#previewEmpty").hidden = true;
   $("#previewContent").hidden = false;
@@ -1868,7 +2242,17 @@ function showPreview(id, event) {
   $("#previewTitle").textContent = model.name;
   $("#previewInsight").textContent = model.insights?.novelty || model.oneLine;
   $("#previewOpen").onclick = () => openModel(id);
-  renderDiagram($("#previewDiagram"), model, { mini: true });
+  if (state.mode === "metrics") {
+    $("#previewFamily").textContent = metricConfig().label;
+    $("#previewInsight").textContent = "";
+    $("#previewMetricAudit").hidden = false;
+    $("#previewDiagram").hidden = true;
+    renderMetricAudit($("#previewMetricAudit"), model);
+  } else {
+    $("#previewMetricAudit").hidden = true;
+    $("#previewDiagram").hidden = false;
+    renderDiagram($("#previewDiagram"), model, { mini: true });
+  }
   positionPreview(event);
   updateActiveNodes();
 }
@@ -1876,6 +2260,7 @@ function showPreview(id, event) {
 function hidePreview() {
   state.hoveredId = null;
   $("#previewPanel").hidden = true;
+  $("#previewPanel").classList.remove("is-metric");
   updateActiveNodes();
 }
 
@@ -1891,6 +2276,123 @@ function positionPreview(event) {
   if (top + rect.height > window.innerHeight - 12) top = event.clientY - rect.height - gap;
   panel.style.left = `${Math.max(12, left)}px`;
   panel.style.top = `${Math.max(82, top)}px`;
+}
+
+function activeMetricAudit(model) {
+  const audit = model.metrics?.comparative?.metricAudit || {};
+  if (state.metricView === "accuracy") {
+    if (state.accuracyBenchmark !== "estimated") {
+      return audit.benchmarkAccuracy?.[state.accuracyBenchmark] || audit.accuracy;
+    }
+    return audit.accuracy;
+  }
+  if (state.metricView === "compute") {
+    return state.computeMetric === "finetuning" ? audit.computeFinetuning : audit.computePretraining;
+  }
+  if (state.metricView === "inference") return audit.inference;
+  if (state.metricView === "generalization") return audit.generalization;
+  return audit.accuracy;
+}
+
+function renderMetricAudit(container, model) {
+  const audit = activeMetricAudit(model);
+  if (!audit) {
+    container.innerHTML = `<p>No metric audit available.</p>`;
+    return;
+  }
+  const secondaryAudit = comparisonMetricAudit(model);
+  const source = audit.sourceExcerpts?.[0];
+  const sourceLabel = source ? `${source.source}:${source.line}` : "atlas estimate";
+  const sourceText = source?.excerpt ? shortText(source.excerpt, 118) : "No direct source excerpt available.";
+  const calculation = shortText(audit.calculation || audit.formula || "Estimated from atlas metric assumptions.", 132);
+  container.innerHTML = `
+    <div class="metric-audit-head">
+      <strong>${escapeHtml(metricPointAxisLabel())}</strong>
+      <span>${escapeHtml(formatAuditValue(audit))}</span>
+    </div>
+    <p class="metric-audit-summary">${escapeHtml(metricAuditSummary(audit, model))}</p>
+    ${secondaryAudit ? `
+      <div class="metric-audit-secondary">
+        <b>Y axis</b>
+        <span>${escapeHtml(`${formatAuditValue(secondaryAudit)} estimated accuracy`)}</span>
+      </div>
+    ` : ""}
+    <div class="metric-audit-source">
+      <b>${escapeHtml(sourceLabel)}</b>
+      <span>${escapeHtml(sourceText)}</span>
+    </div>
+    <div class="metric-audit-formula">
+      <b>Calc</b>
+      <span>${escapeHtml(calculation)}</span>
+    </div>
+  `;
+}
+
+function metricPointAxisLabel() {
+  if (state.mode === "metrics" && metricChartMode() === "compare" && state.metricView !== "accuracy") {
+    return `X axis: ${metricConfig().label}`;
+  }
+  return metricConfig().label;
+}
+
+function comparisonMetricAudit(model) {
+  if (state.mode !== "metrics" || metricChartMode() !== "compare" || state.metricView === "accuracy") return null;
+  return model.metrics?.comparative?.metricAudit?.accuracy || null;
+}
+
+function metricAuditSummary(audit, model, options = {}) {
+  const value = formatAuditValue(audit);
+  const sourceText = "";
+  const benchmark = audit.assumptions?.benchmark;
+  const explainAccuracy = options.forceAccuracy || state.metricView === "accuracy";
+  if (explainAccuracy && !options.forceAccuracy && state.accuracyBenchmark !== "estimated") {
+    return shortText(`${model.name}: ${value} from the ${benchmarkLabel(benchmark || state.accuracyBenchmark)} result.${sourceText}`, 190);
+  }
+  if (explainAccuracy) {
+    const keys = audit.assumptions?.benchmarkKeys || model.metrics?.comparative?.accuracy?.defaultBenchmarkKeys || [];
+    const label = keys.length ? keys.map(benchmarkLabel).join(", ") : "the eligible target benchmarks";
+    const contributions = metricContributionSummary(audit.assumptions?.normalizedBenchmarkContributions);
+    return shortText(`${model.name}: ${value} from target benchmarks anchored to SimplerEnv/RoboCasa: ${label}.${contributions}${sourceText}`, 190);
+  }
+  if (state.metricView === "compute") {
+    const scope = state.computeMetric === "finetuning" ? "standardized 5h task fine-tuning cost" : "pretraining or generalist-training cost";
+    return shortText(`${model.name}: ${value} ${scope}, using reported GPU-hours where available and otherwise estimator assumptions.${sourceText}`, 190);
+  }
+  if (state.metricView === "inference") {
+    return shortText(`${model.name}: ${value} estimated RTX 4090 action-level throughput, from reported latency/FPS or architecture assumptions.${sourceText}`, 190);
+  }
+  if (state.metricView === "generalization") {
+    return shortText(`${model.name}: ${value} from real-world unseen-task evidence, normalized against a reported or nearest shared baseline.${sourceText}`, 190);
+  }
+  return `${model.name} is plotted at ${value} using the metric audit below.${sourceText}`;
+}
+
+function metricContributionSummary(contributions) {
+  if (!Array.isArray(contributions) || !contributions.length) return "";
+  const text = contributions.slice(0, 3).map((item) => {
+    const label = benchmarkLabel(item.benchmark);
+    return `${label} ${item.reportedScore} -> ${item.normalizedScore} (${item.weight}x)`;
+  }).join("; ");
+  const suffix = contributions.length > 3 ? "; ..." : "";
+  return ` Calibration: ${text}${suffix}.`;
+}
+
+function formatAuditValue(audit) {
+  const value = audit.displayedValue;
+  if (audit.unit?.includes("FPS")) return `${value} FPS`;
+  if (audit.unit?.includes("GPU")) return `${value} GPUh`;
+  if (audit.unit?.includes("percent")) return `${value}%`;
+  return `${value} ${audit.unit || ""}`.trim();
+}
+
+function metricAssumptionLabel(key) {
+  return key.replace(/([A-Z])/g, " $1").replace(/^./, (letter) => letter.toUpperCase());
+}
+
+function formatAssumptionValue(value) {
+  if (Array.isArray(value)) return value.join(", ");
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
 }
 
 function updateActiveNodes() {
@@ -1919,10 +2421,40 @@ function showPage(name) {
 
 function syncModeButtons() {
   $$(".mode-button").forEach((item) => item.classList.toggle("is-active", item.dataset.mode === state.mode));
+  $$(".metric-button").forEach((item) => item.classList.toggle("is-active", item.dataset.metric === state.metricView));
+  if (state.metricView === "accuracy" && state.metricChart === "compare") state.metricChart = "bar";
+  $$(".metric-chart-button").forEach((item) => {
+    const disabled = state.metricView === "accuracy" && item.dataset.metricChart === "compare";
+    item.disabled = disabled;
+    item.classList.toggle("is-disabled", disabled);
+    item.classList.toggle("is-active", item.dataset.metricChart === metricChartMode());
+  });
+  const metricsControls = $("#metricsControls");
+  if (metricsControls) metricsControls.hidden = state.mode !== "metrics";
+  const accuracyBenchmark = $("#accuracyBenchmark");
+  if (accuracyBenchmark) {
+    accuracyBenchmark.hidden = state.mode !== "metrics" || state.metricView !== "accuracy";
+    accuracyBenchmark.value = state.accuracyBenchmark;
+  }
+  const computeMetric = $("#computeMetric");
+  if (computeMetric) {
+    computeMetric.hidden = state.mode !== "metrics" || state.metricView !== "compute";
+    computeMetric.value = state.computeMetric;
+  }
+  const metricAccuracyFilter = $("#metricAccuracyFilter");
+  if (metricAccuracyFilter) metricAccuracyFilter.hidden = !metricAccuracyFilterApplies();
+  const metricAccuracyFilterEnabled = $("#metricAccuracyFilterEnabled");
+  if (metricAccuracyFilterEnabled) metricAccuracyFilterEnabled.checked = Boolean(state.metricAccuracyFilterEnabled);
+  const metricAccuracyThreshold = $("#metricAccuracyThreshold");
+  if (metricAccuracyThreshold) {
+    metricAccuracyThreshold.value = String(state.metricAccuracyThreshold);
+    metricAccuracyThreshold.disabled = !state.metricAccuracyFilterEnabled;
+  }
   renderTimelineLegend();
 }
 
 function setAtlasMode(mode, render = true) {
+  if (mode === "speed") mode = "metrics";
   state.mode = modeDescriptions[mode] ? mode : "problem";
   setDefaultZoomForMode(state.mode);
   syncModeButtons();
@@ -1956,6 +2488,10 @@ function defaultZoomForMode(mode) {
       x: width - timelineWidth * k - 34,
       y: (height * (1 - k)) / 2
     };
+  }
+  if (mode === "metrics") {
+    const k = width < 760 ? 0.82 : 0.94;
+    return { k, x: (width * (1 - k)) / 2, y: (height * (1 - k)) / 2 + 10 };
   }
   const k = width < 760 ? 0.72 : 0.8;
   return { k, x: (width * (1 - k)) / 2, y: (height * (1 - k)) / 2 };
@@ -2012,9 +2548,13 @@ function renderModelCard(id) {
   $("#modelOneLine").textContent = model.oneLine;
   $("#modelPaperLink").href = model.paperUrl;
   $("#modelYear").textContent = `${model.month ? `${model.month}/` : ""}${model.year}`;
-  $("#modelRuntime").textContent = scoreLabel(model.metrics?.runtimeCost);
-  $("#modelCompute").textContent = scoreLabel(model.metrics?.computeScale);
-  $("#modelEvidence").textContent = scoreLabel(model.metrics?.evidence);
+  $("#modelRuntime").textContent = model.metrics?.comparative?.inferenceCost?.fps4090
+    ? `${formatMetricValue(model.metrics.comparative.inferenceCost.fps4090, { unit: "FPS" })} FPS`
+    : scoreLabel(model.metrics?.runtimeCost);
+  $("#modelCompute").textContent = model.metrics?.comparative?.computeCost?.pretrainingGpuHours
+    ? `${formatMetricValue(model.metrics.comparative.computeCost.pretrainingGpuHours, { unit: "GPUh" })} GPUh`
+    : scoreLabel(model.metrics?.computeScale);
+  $("#modelEvidence").textContent = model.metrics?.comparative?.confidence || scoreLabel(model.metrics?.evidence);
   renderDiagram($("#modelDiagram"), model, { mini: false });
 
   const insightLabels = ["problem", "method", "novelty", "limitation", "related"];
@@ -2098,6 +2638,38 @@ function bindEvents() {
     button.addEventListener("click", () => {
       setAtlasMode(button.dataset.mode);
     });
+  });
+  $$(".metric-button").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.metricView = button.dataset.metric;
+      syncModeButtons();
+      renderAtlas();
+    });
+  });
+  $$(".metric-chart-button").forEach((button) => {
+    button.addEventListener("click", () => {
+      if (button.disabled) return;
+      state.metricChart = button.dataset.metricChart;
+      syncModeButtons();
+      renderAtlas();
+    });
+  });
+  $("#accuracyBenchmark").addEventListener("change", (event) => {
+    state.accuracyBenchmark = event.target.value;
+    renderAtlas();
+  });
+  $("#computeMetric").addEventListener("change", (event) => {
+    state.computeMetric = event.target.value;
+    renderAtlas();
+  });
+  $("#metricAccuracyFilterEnabled").addEventListener("change", (event) => {
+    state.metricAccuracyFilterEnabled = event.target.checked;
+    syncModeButtons();
+    renderAtlas();
+  });
+  $("#metricAccuracyThreshold").addEventListener("input", (event) => {
+    state.metricAccuracyThreshold = clamp(Number(event.target.value) || 0, 0, 100);
+    renderAtlas();
   });
   $("#globalSearch").addEventListener("input", (event) => {
     state.query = event.target.value;

@@ -1,0 +1,1649 @@
+{
+  "version": "agent-metrics-audit-2026-05-26",
+  "models": {
+    "lapa": {
+      "accuracy": {
+        "benchmarks": {
+          "simpler": {
+            "value": 57.3,
+            "context": "SIMPLER BridgeV2 average success",
+            "evidence": [
+              {
+                "source": "methods/lapa.md",
+                "line": 1376,
+                "excerpt": "SIMPLER Bridgev2 table with LAPA average 57.3%."
+              }
+            ]
+          }
+        }
+      },
+      "computeCost": {
+        "pretrainingGpuHours": 272,
+        "pretrainingFormula": "8 H100 * 34h",
+        "evidence": [
+          {
+            "source": "methods/lapa.md",
+            "line": 568,
+            "excerpt": "8 H100s for 34 hours and 272 H100-hours."
+          }
+        ]
+      },
+      "generalization": {
+        "improvementPct": 16.7,
+        "unseenTask": true,
+        "evidence": [
+          {
+            "source": "methods/lapa.md",
+            "line": 494,
+            "excerpt": "Real-world evaluation covers unseen object combinations, unseen objects, and unseen instructions."
+          }
+        ]
+      }
+    },
+    "gr-1": {
+      "warnings": [
+        "No target accuracy benchmark was found in extracted GR-1 notes; CALVIN-style metrics are intentionally ignored."
+      ],
+      "generalization": {
+        "improvementPct": 12,
+        "evidence": [
+          {
+            "source": "methods/gr1.md",
+            "line": 622,
+            "excerpt": "Real robot experiments claim unseen-scene and unseen-object transfer."
+          }
+        ]
+      }
+    },
+    "gr-2": {
+      "warnings": [
+        "No target accuracy benchmark was found in extracted GR-2 notes; real-world generalization evidence is preserved instead."
+      ],
+      "generalization": {
+        "improvementPct": 24,
+        "evidence": [
+          {
+            "source": "methods/gr2.md",
+            "line": 737,
+            "excerpt": "Unseen backgrounds, environments, manipulation, and bin-picking gains are reported."
+          }
+        ]
+      }
+    },
+    "vpp": {
+      "computeCost": {
+        "pretrainingGpuHours": 480,
+        "finetuningGpuHours5h": 36,
+        "pretrainingFormula": "8 A100 * midpoint(2-3 days)",
+        "finetuningFormula": "4 A100 * midpoint(6-12h)",
+        "evidence": [
+          {
+            "source": "methods/vpp.md",
+            "line": 371,
+            "excerpt": "Video model takes 2-3 days on 8 A100s."
+          }
+        ]
+      },
+      "inferenceCost": {
+        "fps4090": 8.5,
+        "reported": 8.5,
+        "formula": "midpoint(7-10 Hz reported on RTX 4090)",
+        "evidence": [
+          {
+            "source": "methods/vpp.md",
+            "line": 0,
+            "excerpt": "VPP reports 7-10Hz on RTX 4090."
+          }
+        ]
+      },
+      "generalization": {
+        "improvementPct": 28,
+        "evidence": [
+          {
+            "source": "methods/vpp.md",
+            "line": 0,
+            "excerpt": "Real-world unseen-task success is reported for Franka, dexterous hand, and tool-use settings."
+          }
+        ]
+      }
+    },
+    "uva": {
+      "accuracy": {},
+      "inferenceCost": {
+        "fps4090": 10.5,
+        "formula": "1000 / 95ms",
+        "evidence": [
+          {
+            "source": "methods/uva.md",
+            "line": 0,
+            "excerpt": "16-step trajectory runtime is 95 ms."
+          }
+        ]
+      },
+      "excludeAccuracy": true,
+      "warnings": [
+        "removed LIBERO-only benchmark because it is not a Metrics target benchmark"
+      ]
+    },
+    "uwm": {
+      "accuracy": {},
+      "computeCost": {
+        "pretrainingGpuHours": 96,
+        "pretrainingFormula": "4 A100 * 24h",
+        "evidence": [
+          {
+            "source": "methods/uwm.md",
+            "line": 972,
+            "excerpt": "100K steps, 24 hours, 4 A100 GPUs."
+          }
+        ]
+      },
+      "excludeAccuracy": true,
+      "warnings": [
+        "removed LIBERO-only benchmark because it is not a Metrics target benchmark"
+      ]
+    },
+    "dreamgen": {
+      "accuracy": {
+        "benchmarks": {
+          "robocasa": {
+            "value": 20.6,
+            "context": "24 RoboCasa tasks average success",
+            "evidence": [
+              {
+                "source": "methods/dreamgen.md",
+                "line": 242,
+                "excerpt": "20.6% average success across 24 RoboCasa tasks."
+              }
+            ]
+          }
+        }
+      },
+      "computeCost": {
+        "pretrainingGpuHours": 81000,
+        "pretrainingFormula": "1500 L40 * 54h synthetic-data generation",
+        "evidence": [
+          {
+            "source": "methods/dreamgen.md",
+            "line": 543,
+            "excerpt": "240k RoboCasa samples in 54 hours on 1500 L40s."
+          }
+        ]
+      },
+      "generalization": {
+        "improvementPct": 43.2,
+        "evidence": [
+          {
+            "source": "methods/dreamgen.md",
+            "line": 143,
+            "excerpt": "43.2% seen-env novel behaviors and 28.5% unseen environments."
+          }
+        ]
+      }
+    },
+    "flare": {
+      "accuracy": {
+        "benchmarks": {
+          "robocasa": {
+            "value": 70.1,
+            "context": "24 RoboCasa tasks average success",
+            "evidence": [
+              {
+                "source": "methods/flare.md",
+                "line": 316,
+                "excerpt": "24 RoboCasa tasks average of 70.1%."
+              }
+            ]
+          }
+        }
+      },
+      "generalization": {
+        "improvementPct": 40,
+        "unseenTask": true,
+        "evidence": [
+          {
+            "source": "methods/flare.md",
+            "line": 480,
+            "excerpt": "FLARE further improves to an 80% success rate, roughly doubling the baseline trained solely on action-labeled data."
+          }
+        ]
+      }
+    },
+    "univla": {
+      "accuracy": {
+        "benchmarks": {
+          "libero": {
+            "value": 95.2,
+            "evidence": [
+              {
+                "source": "methods/univla.md",
+                "line": 872,
+                "excerpt": "LIBERO full-dataset average 95.2%."
+              }
+            ]
+          },
+          "simpler": {
+            "value": 42.7,
+            "evidence": [
+              {
+                "source": "methods/univla.md",
+                "line": 2209,
+                "excerpt": "SimplerEnv-Bridge task success 42.7%."
+              }
+            ]
+          }
+        }
+      },
+      "computeCost": {
+        "pretrainingGpuHours": 200,
+        "finetuningGpuHours5h": 960,
+        "evidence": [
+          {
+            "source": "methods/univla.md",
+            "line": 2035,
+            "excerpt": "30 hours on 32 A100 GPUs."
+          }
+        ]
+      },
+      "generalization": {
+        "improvementPct": 18,
+        "evidence": [
+          {
+            "source": "methods/univla.md",
+            "line": 1115,
+            "excerpt": "Unseen lighting, distractors, objects, and embodiment are reported."
+          }
+        ]
+      }
+    },
+    "clam": {
+      "warnings": [
+        "No LIBERO, SimplerEnv, RoboTwin, or RoboCasa metric was found in the local CLAM text."
+      ],
+      "computeCost": {
+        "pretrainingGpuHours": 4.5,
+        "finetuningGpuHours5h": 4,
+        "evidence": [
+          {
+            "source": "methods/clam.md",
+            "line": 1480,
+            "excerpt": "MetaWorld training hours are reported for CLAM variants."
+          }
+        ]
+      }
+    },
+    "videorepa": {
+      "warnings": [
+        "VideoREPA reports physics-video benchmarks rather than the requested robot benchmark set."
+      ],
+      "computeCost": {
+        "finetuningGpuHours5h": 128,
+        "finetuningFormula": "8 A100 * estimated 16h LoRA/adaptation pass",
+        "evidence": [
+          {
+            "source": "methods/videorepa.md",
+            "line": 453,
+            "excerpt": "8 A100 80GB, batch 32."
+          }
+        ]
+      },
+      "inferenceCost": {
+        "fps4090": 0.35,
+        "formula": "50-step video diffusion sampling estimate",
+        "evidence": [
+          {
+            "source": "methods/videorepa.md",
+            "line": 1026,
+            "excerpt": "DDIM sampler with 50 steps."
+          }
+        ]
+      }
+    },
+    "geometry-forcing": {
+      "warnings": [
+        "Geometry Forcing is a video-generation geometry paper, so target robot benchmark scores are absent."
+      ],
+      "computeCost": {
+        "pretrainingGpuHours": 64,
+        "pretrainingFormula": "8 A100 * estimated short 2500-step/2000-step finetune pass",
+        "evidence": [
+          {
+            "source": "methods/geometry-forcing.md",
+            "line": 388,
+            "excerpt": "8 NVIDIA A100 GPUs."
+          }
+        ]
+      },
+      "inferenceCost": {
+        "fps4090": 0.35,
+        "formula": "50-step DDIM sampling estimate",
+        "evidence": [
+          {
+            "source": "methods/geometry-forcing.md",
+            "line": 1026,
+            "excerpt": "DDIM sampler with 50 steps."
+          }
+        ]
+      }
+    },
+    "trivla": {
+      "accuracy": {
+        "benchmarks": {
+          "libero": {
+            "value": 87,
+            "context": "LIBERO full-suite average",
+            "evidence": [
+              {
+                "source": "methods/trivla.md",
+                "line": 623,
+                "excerpt": "TriVLA average 87.0 +/- 0.7%."
+              }
+            ]
+          }
+        }
+      },
+      "computeCost": {
+        "pretrainingGpuHours": 480,
+        "finetuningGpuHours5h": 28,
+        "evidence": [
+          {
+            "source": "methods/trivla.md",
+            "line": 1153,
+            "excerpt": "Video model fine-tuning 2-3 days on 8 H100 GPUs; policy training 5-9 hours on 4 H100 GPUs."
+          }
+        ]
+      },
+      "inferenceCost": {
+        "fps4090": 11.6,
+        "reported": 11.6,
+        "formula": "1000 / 85.9ms latency",
+        "evidence": [
+          {
+            "source": "methods/trivla.md",
+            "line": 1165,
+            "excerpt": "Latency below 85.9 ms."
+          }
+        ]
+      }
+    },
+    "video-generators-robot-policies": {
+      "accuracy": {
+        "benchmarks": {
+          "robocasa": {
+            "value": 66,
+            "evidence": [
+              {
+                "source": "methods/video-generators.md",
+                "line": 289,
+                "excerpt": "RoboCasa average success 0.66."
+              }
+            ]
+          }
+        }
+      },
+      "computeCost": {
+        "pretrainingGpuHours": 2688,
+        "pretrainingFormula": "8 A100 * 14 days * 24h",
+        "evidence": [
+          {
+            "source": "methods/video-generators.md",
+            "line": 692,
+            "excerpt": "8 A100 GPUs for about two weeks."
+          }
+        ]
+      },
+      "inferenceCost": {
+        "fps4090": 0.11,
+        "formula": "1 / 9s for 25-frame video generation",
+        "evidence": [
+          {
+            "source": "methods/video-generators.md",
+            "line": 838,
+            "excerpt": "25-frame video takes around 9 seconds."
+          }
+        ]
+      }
+    },
+    "villa-x": {
+      "accuracy": {
+        "benchmarks": {
+          "libero": {
+            "value": 90.1,
+            "evidence": [
+              {
+                "source": "methods/villa-x.md",
+                "line": 1134,
+                "excerpt": "LIBERO average success 90.1."
+              }
+            ]
+          },
+          "simpler": {
+            "value": {
+              "googleRobotAvg": 77.7,
+              "widowXAvg": 62.5
+            },
+            "evidence": [
+              {
+                "source": "methods/villa-x.md",
+                "line": 421,
+                "excerpt": "SIMPLER Google 77.7, WidowX 62.5."
+              }
+            ]
+          }
+        }
+      },
+      "computeCost": {
+        "pretrainingGpuHours": 6144,
+        "pretrainingFormula": "64 A100 * 4 days * 24h",
+        "evidence": [
+          {
+            "source": "methods/villa-x.md",
+            "line": 885,
+            "excerpt": "4 days on 64 A100 GPUs."
+          }
+        ]
+      },
+      "generalization": {
+        "improvementPct": 9.6,
+        "unseenTask": true,
+        "evidence": [
+          {
+            "source": "methods/villa-x.md",
+            "line": 452,
+            "excerpt": "Unseen tasks use unseen objects or backgrounds in the XHand evaluation."
+          }
+        ]
+      }
+    },
+    "mowm": {
+      "computeCost": {
+        "pretrainingGpuHours": 28,
+        "finetuningGpuHours5h": 52,
+        "evidence": [
+          {
+            "source": "methods/mowm.md",
+            "line": 369,
+            "excerpt": "4 H20 GPUs, 7 hours, 75 epochs; action planning 13 hours on 4 H20 GPUs."
+          }
+        ]
+      },
+      "inferenceCost": {
+        "fps4090": 9.1,
+        "formula": "1000 / 110ms",
+        "evidence": [
+          {
+            "source": "methods/mowm.md",
+            "line": 541,
+            "excerpt": "110 ms latency for 50 steps."
+          }
+        ]
+      }
+    },
+    "dust": {
+      "accuracy": {
+        "benchmarks": {
+          "robocasa": {
+            "value": {
+              "100Demos": 50.1,
+              "300Demos": 58.5,
+              "1000Demos": 66.3
+            },
+            "evidence": [
+              {
+                "source": "methods/dust.md",
+                "line": 470,
+                "excerpt": "DUST average success for 100/300/1000 demos per task is 0.501/0.585/0.663."
+              }
+            ]
+          }
+        }
+      },
+      "computeCost": {
+        "finetuningGpuHours5h": 120,
+        "evidence": [
+          {
+            "source": "methods/dust.md",
+            "line": 1149,
+            "excerpt": "RoboCasa training uses 2 A100 GPUs and batch 32."
+          }
+        ]
+      }
+    },
+    "ud-vla": {
+      "accuracy": {
+        "benchmarks": {
+          "libero": {
+            "value": 92.7,
+            "evidence": [
+              {
+                "source": "methods/ud-vla.md",
+                "line": 765,
+                "excerpt": "UD-VLA row reports average 92.7."
+              }
+            ]
+          },
+          "simpler": {
+            "value": 63,
+            "evidence": [
+              {
+                "source": "methods/ud-vla.md",
+                "line": 326,
+                "excerpt": "SIMPLER overall average for UD-VLA is 63.0."
+              }
+            ]
+          }
+        }
+      },
+      "computeCost": {
+        "pretrainingGpuHours": 240,
+        "finetuningGpuHours5h": 96,
+        "evidence": [
+          {
+            "source": "methods/ud-vla.md",
+            "line": 1348,
+            "excerpt": "LIBERO/SimplerEnv joint training lasts around 30h on 8 H100 GPUs."
+          }
+        ]
+      },
+      "inferenceCost": {
+        "fps4090": 4.3,
+        "formula": "reported 4.3x faster decoding used as relative FPS proxy",
+        "evidence": [
+          {
+            "source": "methods/ud-vla.md",
+            "line": 803,
+            "excerpt": "JD3P is reported as 4.3x faster in decoding."
+          }
+        ]
+      }
+    },
+    "rynnvla-002": {
+      "accuracy": {
+        "benchmarks": {
+          "libero": {
+            "value": {
+              "discreteActions": 93.3,
+              "continuousActions": 97.4
+            },
+            "evidence": [
+              {
+                "source": "methods/rynnvla-002.md",
+                "line": 648,
+                "excerpt": "Discrete actions reach 93.3 and continuous actions reach 97.4."
+              }
+            ]
+          }
+        }
+      },
+      "generalization": {
+        "improvementPct": 30,
+        "unseenTask": true,
+        "evidence": [
+          {
+            "source": "methods/rynnvla-002.md",
+            "line": 694,
+            "excerpt": "Multi-target and distractor scenarios exceed 80 percent success."
+          }
+        ]
+      }
+    },
+    "motus": {
+      "accuracy": {
+        "benchmarks": {
+          "robotwinAllData": {
+            "value": {
+              "clean": 88.66,
+              "randomized": 87.02
+            },
+            "evidence": [
+              {
+                "source": "methods/motus.md",
+                "line": 582,
+                "excerpt": "Average scores end with 88.66 and 87.02 for Motus."
+              }
+            ]
+          }
+        }
+      },
+      "computeCost": {
+        "pretrainingGpuHours": 18000,
+        "finetuningGpuHours5h": 400,
+        "evidence": [
+          {
+            "source": "methods/motus.md",
+            "line": 1542,
+            "excerpt": "Stage 1/2/3 are listed at about 8000, 10000, and 400 GPU hours."
+          }
+        ]
+      },
+      "generalization": {
+        "improvementPct": 46.9,
+        "unseenTask": true,
+        "evidence": [
+          {
+            "source": "methods/motus.md",
+            "line": 1188,
+            "excerpt": "OOD setting: cube placed outside training space."
+          }
+        ]
+      }
+    },
+    "videovla": {
+      "accuracy": {
+        "benchmarks": {
+          "simpler": {
+            "value": 63,
+            "evidence": [
+              {
+                "source": "methods/videovla.md",
+                "line": 326,
+                "excerpt": "Overall SIMPLER average is 63.0."
+              }
+            ]
+          }
+        }
+      },
+      "computeCost": {
+        "pretrainingGpuHours": 3200,
+        "finetuningGpuHours5h": 480,
+        "evidence": [
+          {
+            "source": "methods/videovla.md",
+            "line": 337,
+            "excerpt": "Pretraining is 100K iterations and fine-tuning 15K iterations on 32 MI300X GPUs."
+          }
+        ]
+      },
+      "inferenceCost": {
+        "fps4090": 0.9,
+        "formula": "1 / 1.1s real-world latency",
+        "evidence": [
+          {
+            "source": "methods/videovla.md",
+            "line": 828,
+            "excerpt": "Real-world latency is about 1.1 seconds with 10 denoising steps."
+          }
+        ]
+      },
+      "generalization": {
+        "improvementPct": 23.7,
+        "unseenTask": true,
+        "evidence": [
+          {
+            "source": "methods/videovla.md",
+            "line": 426,
+            "excerpt": "Real-world generalization to novel objects."
+          }
+        ]
+      }
+    },
+    "act2goal": {
+      "computeCost": {
+        "pretrainingGpuHours": 2688,
+        "finetuningGpuHours5h": 768,
+        "evidence": [
+          {
+            "source": "methods/act2goal.md",
+            "line": 1130,
+            "excerpt": "Stage 1 takes 7x24 hours on 16 A800 GPUs; Stage 2 takes 48 hours on 16 A800 GPUs."
+          }
+        ]
+      },
+      "inferenceCost": {
+        "fps4090": 5,
+        "formula": "1000 / 200ms for 50 executable actions",
+        "evidence": [
+          {
+            "source": "methods/act2goal.md",
+            "line": 1139,
+            "excerpt": "Inference latency is 200ms for 50 executable actions."
+          }
+        ]
+      },
+      "generalization": {
+        "improvementPct": 60,
+        "evidence": [
+          {
+            "source": "methods/act2goal.md",
+            "line": 772,
+            "excerpt": "OOD Plug-In success increases from 0.30 to 0.90."
+          }
+        ]
+      }
+    },
+    "mimic-video": {
+      "accuracy": {
+        "benchmarks": {
+          "libero": {
+            "value": 93.9,
+            "evidence": [
+              {
+                "source": "methods/mimic-video.md",
+                "line": 472,
+                "excerpt": "mimic-video scratch achieves 93.9 average on LIBERO."
+              }
+            ]
+          },
+          "simpler": {
+            "value": 46.9,
+            "context": "SIMPLER-Bridge",
+            "evidence": [
+              {
+                "source": "methods/mimic-video.md",
+                "line": 440,
+                "excerpt": "mimic-video scratch SIMPLER-Bridge average SR 46.9%."
+              }
+            ]
+          }
+        }
+      }
+    },
+    "clap": {
+      "accuracy": {
+        "benchmarks": {
+          "libero": {
+            "value": 91,
+            "evidence": [
+              {
+                "source": "methods/clap.md",
+                "line": 705,
+                "excerpt": "CLAP-RF average on LIBERO is 91.0."
+              }
+            ]
+          }
+        }
+      },
+      "inferenceCost": {
+        "fps4090": 5.5,
+        "formula": "1000 / 183ms CLAP-RF latency",
+        "evidence": [
+          {
+            "source": "methods/clap.md",
+            "line": 848,
+            "excerpt": "CLAP-RF latency is 183 ms on RTX 3090."
+          }
+        ]
+      },
+      "generalization": {
+        "improvementPct": 30,
+        "unseenTask": true,
+        "evidence": [
+          {
+            "source": "methods/clap.md",
+            "line": 600,
+            "excerpt": "Robust generalization to OOD objects."
+          }
+        ]
+      }
+    },
+    "cosmos-policy": {
+      "accuracy": {
+        "benchmarks": {
+          "libero": {
+            "value": 98.5,
+            "evidence": [
+              {
+                "source": "methods/cosmos-policy.md",
+                "line": 47,
+                "excerpt": "LIBERO and RoboCasa average success rates are 98.5% and 67.1%."
+              }
+            ]
+          },
+          "robocasa": {
+            "value": 67.1,
+            "evidence": [
+              {
+                "source": "methods/cosmos-policy.md",
+                "line": 47,
+                "excerpt": "LIBERO and RoboCasa average success rates are 98.5% and 67.1%."
+              }
+            ]
+          }
+        }
+      },
+      "computeCost": {
+        "finetuningGpuHours5h": 1536,
+        "evidence": [
+          {
+            "source": "methods/cosmos-policy.md",
+            "line": 845,
+            "excerpt": "45K gradient steps using 32 H100 GPUs, taking 48 hours total."
+          }
+        ]
+      },
+      "inferenceCost": {
+        "fps4090": 1.6,
+        "formula": "1 / 0.61s H100 latency, kept conservative for 4090",
+        "evidence": [
+          {
+            "source": "methods/cosmos-policy.md",
+            "line": 1045,
+            "excerpt": "0.61 seconds total on 1 H100 GPU with 5 denoising steps."
+          }
+        ]
+      },
+      "generalization": {
+        "improvementPct": 17.6,
+        "unseenTask": true,
+        "evidence": [
+          {
+            "source": "methods/cosmos-policy.md",
+            "line": 688,
+            "excerpt": "Evaluates in-distribution and out-of-distribution (OOD) generalization scenarios."
+          }
+        ]
+      }
+    },
+    "wog": {
+      "accuracy": {
+        "benchmarks": {
+          "simpler": {
+            "value": 70.9,
+            "evidence": [
+              {
+                "source": "methods/wog.md",
+                "line": 621,
+                "excerpt": "Highest overall success rate of 70.9%."
+              }
+            ]
+          }
+        }
+      }
+    },
+    "vla-jepa": {
+      "accuracy": {
+        "benchmarks": {
+          "libero": {
+            "value": 97.2,
+            "evidence": [
+              {
+                "source": "methods/vla-jepa.md",
+                "line": 603,
+                "excerpt": "VLA-JEPA 96.2 99.6 97.2 95.8 97.2."
+              }
+            ]
+          },
+          "simpler": {
+            "value": 57.3,
+            "evidence": [
+              {
+                "source": "methods/vla-jepa.md",
+                "line": 760,
+                "excerpt": "VLA-JEPA ... average 57.3."
+              }
+            ]
+          }
+        }
+      }
+    },
+    "frappe": {
+      "accuracy": {
+        "benchmarks": {
+          "robotwinTaskSpecific": {
+            "value": 57.5,
+            "evidence": [
+              {
+                "source": "methods/frappe.md",
+                "line": 516,
+                "excerpt": "Ours ... 57.5% average on RoboTwin 2.0 Easy setting."
+              }
+            ]
+          }
+        }
+      }
+    },
+    "ldamodel": {
+      "accuracy": {
+        "benchmarks": {
+          "robocasa": {
+            "value": 55.4,
+            "evidence": [
+              {
+                "source": "methods/lda-1b.md",
+                "line": 618,
+                "excerpt": "LDA further improves the success rate to 55.4%."
+              }
+            ]
+          }
+        }
+      },
+      "computeCost": {
+        "pretrainingGpuHours": 4608,
+        "evidence": [
+          {
+            "source": "methods/lda-1b.md",
+            "line": 478,
+            "excerpt": "48 NVIDIA H800 GPUs ... total computational cost of 4,608 GPU hours."
+          }
+        ]
+      }
+    },
+    "adaworldpolicy": {
+      "accuracy": {},
+      "inferenceCost": {
+        "fps4090": 4,
+        "reported": 4,
+        "evidence": [
+          {
+            "source": "methods/adaworldpolicy.md",
+            "line": 836,
+            "excerpt": "Closed-loop process runs at an average of 4Hz."
+          }
+        ]
+      },
+      "generalization": {
+        "improvementPct": 15,
+        "unseenTask": true,
+        "formula": "conservative normalized score from physical-robot OOD shifts where figure values are not extractable",
+        "evidence": [
+          {
+            "source": "methods/adaworldpolicy.md",
+            "line": 553,
+            "excerpt": "Physical robot evaluation includes out-of-distribution shifts."
+          }
+        ]
+      },
+      "excludeAccuracy": true,
+      "warnings": [
+        "removed LIBERO-only benchmark because it is not a Metrics target benchmark"
+      ]
+    },
+    "say-dream-act": {
+      "accuracy": {
+        "benchmarks": {
+          "libero": {
+            "value": 98.2,
+            "evidence": [
+              {
+                "source": "methods/say-dream-act.md",
+                "line": 881,
+                "excerpt": "Total success rate of 98.2%."
+              }
+            ]
+          }
+        }
+      }
+    },
+    "cowvla": {
+      "accuracy": {
+        "benchmarks": {
+          "libero": {
+            "value": 95.6,
+            "evidence": [
+              {
+                "source": "methods/cowvla.md",
+                "line": 794,
+                "excerpt": "Ours ... 0.956."
+              }
+            ]
+          },
+          "simpler": {
+            "value": 76,
+            "evidence": [
+              {
+                "source": "methods/cowvla.md",
+                "line": 794,
+                "excerpt": "Ours ... 0.760."
+              }
+            ]
+          }
+        }
+      },
+      "computeCost": {
+        "pretrainingGpuHours": 768,
+        "evidence": [
+          {
+            "source": "methods/cowvla.md",
+            "line": 1564,
+            "excerpt": "32 A800 GPUs ... 10k iterations ... roughly 24 hours."
+          }
+        ]
+      }
+    },
+    "fast-wam": {
+      "accuracy": {
+        "benchmarks": {
+          "libero": {
+            "value": 97.6,
+            "evidence": [
+              {
+                "source": "methods/fast-wam.md",
+                "line": 637,
+                "excerpt": "LIBERO average success rate 97.6%."
+              }
+            ]
+          },
+          "robotwinAllData": {
+            "value": 91.8,
+            "evidence": [
+              {
+                "source": "methods/fast-wam.md",
+                "line": 548,
+                "excerpt": "RoboTwin success rate 91.8%."
+              }
+            ]
+          }
+        }
+      },
+      "inferenceCost": {
+        "fps4090": 5.3,
+        "formula": "1000 / 190ms latency",
+        "evidence": [
+          {
+            "source": "methods/fast-wam.md",
+            "line": 443,
+            "excerpt": "Latency is 190 ms on a single NVIDIA RTX 5090D V2 32GB GPU."
+          }
+        ]
+      }
+    },
+    "svam": {
+      "inferenceCost": {
+        "fps4090": 3.3,
+        "formula": "1000 / 307.6ms forward pass",
+        "evidence": [
+          {
+            "source": "methods/s-vam.md",
+            "line": 816,
+            "excerpt": "S-VAM takes 307.6 ms per forward pass."
+          }
+        ]
+      }
+    },
+    "sim-distill": {
+      "computeCost": {
+        "pretrainingGpuHours": 28,
+        "evidence": [
+          {
+            "source": "methods/sim-distil.md",
+            "line": 917,
+            "excerpt": "Pretraining requires approximately 28 hours on a single NVIDIA RTX 4500 Ada GPU."
+          }
+        ]
+      },
+      "inferenceCost": {
+        "fps4090": 5,
+        "reported": 5,
+        "evidence": [
+          {
+            "source": "methods/sim-distil.md",
+            "line": 409,
+            "excerpt": "Control the robot at 5 Hz."
+          }
+        ]
+      }
+    },
+    "vampo": {
+      "warnings": [
+        "VAMPO reports CALVIN/L-CALVIN style results rather than the requested target benchmark scores."
+      ],
+      "computeCost": {
+        "pretrainingGpuHours": 96,
+        "finetuningGpuHours5h": 80,
+        "evidence": [
+          {
+            "source": "methods/vampo.md",
+            "line": 445,
+            "excerpt": "VPM around 1.5k steps on 64 H20 GPUs; AGM about 10 epochs on 8 H20 GPUs."
+          }
+        ]
+      },
+      "inferenceCost": {
+        "fps4090": 4,
+        "formula": "10-step diffusion-policy runtime estimate",
+        "evidence": [
+          {
+            "source": "methods/vampo.md",
+            "line": 883,
+            "excerpt": "Sampling steps 10."
+          }
+        ]
+      }
+    },
+    "eva": {
+      "warnings": [
+        "EVA reports RoboTwin/video and real-robot seen/OOD tasks, but no allowed target accuracy number was exposed in the extract."
+      ],
+      "computeCost": {
+        "finetuningGpuHours5h": 64,
+        "evidence": [
+          {
+            "source": "methods/eva.md",
+            "line": 385,
+            "excerpt": "GRPO fine-tuning uses 8 A800 GPUs and total batch size 32."
+          }
+        ]
+      },
+      "generalization": {
+        "improvementPct": 22,
+        "evidence": [
+          {
+            "source": "methods/eva.md",
+            "line": 470,
+            "excerpt": "Evaluation split contains five seen tasks and five additional out-of-distribution tasks."
+          }
+        ]
+      }
+    },
+    "vtam": {
+      "inferenceCost": {
+        "fps4090": 1,
+        "reported": 1,
+        "evidence": [
+          {
+            "source": "methods/vtam.md",
+            "line": 443,
+            "excerpt": "Inference performed at 1 Hz."
+          }
+        ]
+      }
+    },
+    "gigaworld-policy": {
+      "accuracy": {
+        "benchmarks": {
+          "robotwinAllData": {
+            "value": {
+              "clean": 87,
+              "randomized": 85
+            },
+            "context": "RoboTwin 2.0 cross-paper comparison from X-WAM",
+            "evidence": [
+              {
+                "source": "methods/x-wam.md",
+                "line": 513,
+                "excerpt": "GigaWorld-Policy 87.0 clean and 85.0 randomized on RoboTwin 2.0."
+              }
+            ]
+          }
+        }
+      },
+      "computeCost": {
+        "pretrainingGpuHours": 6000,
+        "evidence": [
+          {
+            "source": "methods/gigaworld-policy.md",
+            "line": 1061,
+            "excerpt": "Pretrain ... for 6000 GPU hours."
+          }
+        ]
+      },
+      "inferenceCost": {
+        "fps4090": 2.8,
+        "formula": "1 / 0.36s inference",
+        "evidence": [
+          {
+            "source": "methods/gigaworld-policy.md",
+            "line": 130,
+            "excerpt": "0.36 s per inference."
+          }
+        ]
+      }
+    },
+    "aim": {
+      "accuracy": {
+        "benchmarks": {
+          "robotwinAllData": {
+            "value": 94,
+            "evidence": [
+              {
+                "source": "methods/aim.md",
+                "line": 27,
+                "excerpt": "RoboTwin 2.0 average success rate 94.0%."
+              }
+            ]
+          },
+          "robotwinTaskSpecific": {
+            "value": 92.1,
+            "evidence": [
+              {
+                "source": "methods/aim.md",
+                "line": 82,
+                "excerpt": "RoboTwin 2.0 average success rate 92.1% under the Hard setting."
+              }
+            ]
+          }
+        }
+      }
+    },
+    "wav": {
+      "accuracy": {
+        "benchmarks": {
+          "libero": {
+            "value": 98.1,
+            "evidence": [
+              {
+                "source": "methods/wav-world-value-action.md",
+                "line": 646,
+                "excerpt": "Overall average score of 98.1."
+              }
+            ]
+          }
+        }
+      }
+    },
+    "dexworldmodel": {
+      "accuracy": {
+        "benchmarks": {
+          "robotwinAllData": {
+            "value": 94,
+            "evidence": [
+              {
+                "source": "methods/dexworldmodel.md",
+                "line": 1012,
+                "excerpt": "94.00%."
+              }
+            ]
+          }
+        }
+      },
+      "computeCost": {
+        "pretrainingGpuHours": 30720,
+        "pretrainingFormula": "64 H100 * 20 days * 24h",
+        "evidence": [
+          {
+            "source": "methods/dexworldmodel.md",
+            "line": 684,
+            "excerpt": "64 NVIDIA H100 GPUs; 20 days."
+          }
+        ]
+      },
+      "generalization": {
+        "improvementPct": 23.8,
+        "unseenTask": true,
+        "evidence": [
+          {
+            "source": "methods/dexworldmodel.md",
+            "line": 912,
+            "excerpt": "Real-world zero-shot sim-to-real transfer using policies trained purely in simulation."
+          }
+        ]
+      }
+    },
+    "x-wam": {
+      "accuracy": {
+        "benchmarks": {
+          "robotwinAllData": {
+            "value": 90.7,
+            "evidence": [
+              {
+                "source": "methods/x-wam.md",
+                "line": 36,
+                "excerpt": "90.7%."
+              }
+            ]
+          },
+          "robocasa": {
+            "value": 79.2,
+            "evidence": [
+              {
+                "source": "methods/x-wam.md",
+                "line": 35,
+                "excerpt": "79.2%."
+              }
+            ]
+          }
+        }
+      },
+      "inferenceCost": {
+        "fps4090": 1,
+        "formula": "1 / 1033ms latency",
+        "evidence": [
+          {
+            "source": "methods/x-wam.md",
+            "line": 706,
+            "excerpt": "1033 ms vs 4665 ms."
+          }
+        ]
+      }
+    },
+    "motubrain": {
+      "accuracy": {
+        "benchmarks": {
+          "robotwinAllData": {
+            "value": {
+              "clean": 95.8,
+              "randomized": 96.1
+            },
+            "evidence": [
+              {
+                "source": "methods/motubrain.md",
+                "line": 77,
+                "excerpt": "95.8% / 96.1%."
+              }
+            ]
+          }
+        }
+      }
+    },
+    "vidar": {
+      "accuracy": {
+        "benchmarks": {
+          "robotwinAllData": {
+            "value": {
+              "lowDataClean": 60,
+              "lowDataRandomized": 15.7,
+              "standardClean": 65.8,
+              "standardRandomized": 17.5
+            },
+            "evidence": [
+              {
+                "source": "methods/vidar.md",
+                "line": 368,
+                "excerpt": "60.0 15.7 65.8 17.5."
+              }
+            ]
+          }
+        }
+      },
+      "computeCost": {
+        "pretrainingGpuHours": 4096,
+        "finetuningGpuHours5h": 40,
+        "evidence": [
+          {
+            "source": "methods/vidar.md",
+            "line": 747,
+            "excerpt": "64 GPUs; 23k iterations; 64h."
+          }
+        ]
+      },
+      "inferenceCost": {
+        "fps4090": 0.04,
+        "formula": "1 / 25s video generation latency",
+        "evidence": [
+          {
+            "source": "methods/vidar.md",
+            "line": 306,
+            "excerpt": "60 frames; 25 sec; 8fps."
+          }
+        ]
+      },
+      "generalization": {
+        "improvementPct": 53.4,
+        "unseenTask": true,
+        "evidence": [
+          {
+            "source": "methods/vidar.md",
+            "line": 341,
+            "excerpt": "Real-world evaluation includes unseen task and unseen background settings."
+          }
+        ]
+      }
+    },
+    "genie-envisioner": {
+      "computeCost": {
+        "pretrainingGpuHours": 5376,
+        "finetuningGpuHours5h": 384,
+        "evidence": [
+          {
+            "source": "methods/genie.md",
+            "line": 356,
+            "excerpt": "32 A100 GPUs; 7 days; task adaptation on 8 A100 for 12h and 36h."
+          }
+        ]
+      },
+      "inferenceCost": {
+        "fps4090": 5,
+        "formula": "1000 / 200ms action rollout",
+        "evidence": [
+          {
+            "source": "methods/genie.md",
+            "line": 173,
+            "excerpt": "54-step torque trajectories; 200 ms."
+          }
+        ]
+      }
+    },
+    "xr-1": {
+      "computeCost": {
+        "pretrainingGpuHours": 76800,
+        "finetuningGpuHours5h": 576,
+        "pretrainingFormula": "38400 GPUh UVMC + 38400 GPUh policy pretraining",
+        "evidence": [
+          {
+            "source": "methods/xr1.md",
+            "line": 1414,
+            "excerpt": "38,400 GPU hours on 80 A100s, repeated for policy pretraining."
+          }
+        ]
+      },
+      "inferenceCost": {
+        "fps4090": 5,
+        "reported": 5,
+        "evidence": [
+          {
+            "source": "methods/xr1.md",
+            "line": 1423,
+            "excerpt": "Action chunk inference frequency is about 5 Hz."
+          }
+        ]
+      },
+      "generalization": {
+        "improvementPct": 15,
+        "evidence": [
+          {
+            "source": "methods/xr1.md",
+            "line": 714,
+            "excerpt": "Average success rate improves from 42.5% to 57.5%."
+          }
+        ]
+      }
+    },
+    "vipra": {
+      "accuracy": {
+        "benchmarks": {
+          "simpler": {
+            "value": {
+              "discrete": 69.8,
+              "continuous": 62.5
+            },
+            "evidence": [
+              {
+                "source": "methods/vipra.md",
+                "line": 1764,
+                "excerpt": "Best average success 69.8%; continuous average 62.5%."
+              }
+            ]
+          }
+        }
+      },
+      "computeCost": {
+        "pretrainingGpuHours": 2496,
+        "pretrainingFormula": "8 H100 * 168h + 8 H100 * 144h",
+        "evidence": [
+          {
+            "source": "methods/vipra.md",
+            "line": 1473,
+            "excerpt": "8 Nvidia H100 for 168 hours and 144 hours."
+          }
+        ]
+      },
+      "inferenceCost": {
+        "fps4090": 1.95,
+        "reported": 1.95,
+        "evidence": [
+          {
+            "source": "methods/vipra.md",
+            "line": 664,
+            "excerpt": "Runs at 1.95 Hz per chunk."
+          }
+        ]
+      },
+      "generalization": {
+        "improvementPct": 15,
+        "unseenTask": true,
+        "formula": "conservative normalized score from real-world unseen objects/textures/placements without extractable numeric table",
+        "evidence": [
+          {
+            "source": "methods/vipra.md",
+            "line": 2040,
+            "excerpt": "Generalization requires reasoning over unseen cloth textures and novel target objects."
+          }
+        ]
+      }
+    },
+    "lingbot-va": {
+      "accuracy": {
+        "benchmarks": {
+          "robotwinAllData": {
+            "value": 92,
+            "evidence": [
+              {
+                "source": "methods/lingbot.md",
+                "line": 971,
+                "excerpt": "92.0% on RoboTwin 2.0."
+              }
+            ]
+          },
+          "robotwinTaskSpecific": {
+            "value": {
+              "easy": 92.1,
+              "hard": 91.12
+            },
+            "evidence": [
+              {
+                "source": "methods/lingbot.md",
+                "line": 734,
+                "excerpt": "92.10% Easy and 91.12% Hard."
+              }
+            ]
+          }
+        }
+      },
+      "computeCost": {
+        "pretrainingGpuHours": 2496,
+        "pretrainingFormula": "8 H100 * 168h + 8 H100 * 144h",
+        "evidence": [
+          {
+            "source": "methods/lingbot.md",
+            "line": 1473,
+            "excerpt": "8 Nvidia H100 for 168 hours and 144 hours."
+          }
+        ]
+      },
+      "inferenceCost": {
+        "fps4090": 1.95,
+        "reported": 1.95,
+        "evidence": [
+          {
+            "source": "methods/lingbot.md",
+            "line": 664,
+            "excerpt": "1.95 Hz per chunk."
+          }
+        ]
+      },
+      "generalization": {
+        "improvementPct": 15,
+        "unseenTask": true,
+        "formula": "conservative normalized score from real-world novel-object and OOD-position evidence without extractable numeric table",
+        "evidence": [
+          {
+            "source": "methods/lingbot.md",
+            "line": 911,
+            "excerpt": "Stronger generalization in both novel object and out-of-distribution position."
+          }
+        ]
+      }
+    },
+    "dreamzero": {
+      "accuracy": {
+        "benchmarks": {
+          "robocasa": {
+            "value": 62.4,
+            "context": "RoboCasa cross-paper comparison from X-WAM",
+            "evidence": [
+              {
+                "source": "methods/x-wam.md",
+                "line": 491,
+                "excerpt": "DreamZero 62.4 average success rate on RoboCasa in X-WAM comparison table."
+              }
+            ]
+          }
+        }
+      },
+      "inferenceCost": {
+        "fps4090": 0.18,
+        "formula": "1 / 5.7s per action chunk before Flash optimization",
+        "evidence": [
+          {
+            "source": "methods/dreamzero.md",
+            "line": 367,
+            "excerpt": "5.7 seconds per action chunk."
+          }
+        ]
+      },
+      "generalization": {
+        "improvementPct": 39.5,
+        "unseenTask": true,
+        "evidence": [
+          {
+            "source": "methods/dreamzero.md",
+            "line": 877,
+            "excerpt": "On AgiBot G1, from-scratch VLAs achieve near-zero task progress (<1%), while DreamZero reaches 39.5% on average."
+          }
+        ]
+      }
+    },
+    "rhoda-dva": {
+      "computeCost": {
+        "finetuningGpuHours5h": 10,
+        "evidence": [
+          {
+            "source": "methods/rhoda-dva.md",
+            "line": 11,
+            "excerpt": "About 10 hours of robot data for the IDM."
+          }
+        ]
+      },
+      "warnings": [
+        "Local Rhoda source is a notes file rather than a full benchmark paper."
+      ]
+    },
+    "dit4dit": {
+      "accuracy": {
+        "benchmarks": {
+          "libero": {
+            "value": 98.6,
+            "evidence": [
+              {
+                "source": "methods/dit4dit.md",
+                "line": 38,
+                "excerpt": "98.6% on LIBERO."
+              }
+            ]
+          },
+          "robocasa": {
+            "value": 50.8,
+            "evidence": [
+              {
+                "source": "methods/dit4dit.md",
+                "line": 38,
+                "excerpt": "50.8% on RoboCasa GR1."
+              }
+            ]
+          }
+        }
+      },
+      "inferenceCost": {
+        "fps4090": 6,
+        "reported": 6,
+        "evidence": [
+          {
+            "source": "methods/dit4dit.md",
+            "line": 945,
+            "excerpt": "6Hz control rate on a single NVIDIA A100; real robot workstation uses RTX 4090."
+          }
+        ]
+      },
+      "generalization": {
+        "improvementPct": 60,
+        "evidence": [
+          {
+            "source": "methods/dit4dit.md",
+            "line": 853,
+            "excerpt": "70% category generalization and 50% quantity generalization."
+          }
+        ]
+      }
+    }
+  }
+}
