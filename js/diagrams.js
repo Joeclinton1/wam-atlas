@@ -1,4 +1,4 @@
-import { state, familyColors, typeColors, escapeHtml, wrapText, shortText } from './shared.js?v=refactor-modules-2';
+import { state, familyColors, typeColors, escapeHtml, wrapText, shortText } from './shared.js?v=timeline-layout-4';
 
 export function renderDiagram(container, model, options = {}) {
   const spec = getArchitectureSpec(model);

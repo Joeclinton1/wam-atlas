@@ -588,8 +588,7 @@ p {
   stroke-width: 0.8;
 }
 
-.node-name,
-.logo-initials {
+.node-name {
   fill: var(--ink);
   font-size: 11px;
   font-weight: 800;
@@ -597,12 +596,6 @@ p {
   stroke: rgba(255, 255, 255, 0.92);
   stroke-width: 4px;
   pointer-events: none;
-}
-
-.logo-initials {
-  fill: #536068;
-  font-size: 7px;
-  stroke-width: 2px;
 }
 
 .node-logo-image {
@@ -638,11 +631,6 @@ p {
   height: var(--taxonomy-logo-size, 9.6px);
 }
 
-.taxonomy-node-body .logo-initials {
-  font-size: calc(var(--taxonomy-logo-radius, 5.8px) * 0.78);
-  stroke-width: 1px;
-}
-
 .taxonomy-node-body .node-literal-dot {
   r: 2px;
 }
@@ -650,6 +638,16 @@ p {
 .taxonomy-node-body .node-name {
   font-size: var(--taxonomy-label-size, 7.2px);
   stroke-width: 2.2px;
+}
+
+.timeline-node-body .node-name {
+  font-size: 9px;
+  font-weight: 850;
+  stroke-width: 3px;
+}
+
+.timeline-node-body .node-ring {
+  stroke-width: 2;
 }
 
 .problem-link {
@@ -720,12 +718,13 @@ p {
 .timeline-spine {
   fill: none;
   stroke: rgba(23, 32, 36, 0.18);
-  stroke-width: 4;
+  stroke-width: 8;
   stroke-linecap: round;
 }
 
 .timeline-tick,
 .timeline-branch,
+.timeline-bead,
 .speed-axis,
 .speed-grid {
   fill: none;
@@ -733,21 +732,38 @@ p {
 }
 
 .timeline-tick {
-  stroke: rgba(23, 32, 36, 0.18);
-  stroke-width: 1.4;
+  stroke: rgba(23, 32, 36, 0.16);
+  stroke-width: 1.2;
+}
+
+.timeline-tick.is-major {
+  stroke: rgba(23, 32, 36, 0.3);
+  stroke-width: 1.8;
 }
 
 .timeline-date {
   fill: #7a858a;
+  font-size: 8.5px;
+  font-weight: 760;
+}
+
+.timeline-date.is-major {
+  fill: #445057;
   font-size: 10px;
-  font-weight: 850;
+  font-weight: 900;
 }
 
 .timeline-branch {
-  stroke-width: 2.4;
+  stroke-width: 2.6;
   stroke-linejoin: round;
   stroke-linecap: round;
-  opacity: 0.72;
+  opacity: 0.52;
+}
+
+.timeline-bead {
+  stroke: #ffffff;
+  stroke-width: 1.4;
+  filter: drop-shadow(0 2px 3px rgba(23, 32, 36, 0.12));
 }
 
 .speed-axis {

@@ -147,50 +147,58 @@ export const familyProblemSplits = {
 };
 
 export const institutionMeta = {
-  "gr-1": ["ByteDance", "bytedance.com"],
-  "gr-2": ["ByteDance", "bytedance.com"],
+  "gr-1": ["ByteDance Research", "bytedance.com", { logoUrl: "https://lf3-static.bytednsdoc.com/obj/eden-cn/lapzild-tss/ljhwZthlaukjlkulzlp/favicon_1/favicon.ico" }],
+  "gr-2": ["ByteDance Research", "bytedance.com", { logoUrl: "https://lf3-static.bytednsdoc.com/obj/eden-cn/lapzild-tss/ljhwZthlaukjlkulzlp/favicon_1/favicon.ico" }],
   lapa: ["KAIST", "kaist.ac.kr"],
-  vpp: ["Tsinghua", "tsinghua.edu.cn"],
+  vpp: ["Tsinghua", "tsinghua.edu.cn", { logoUrl: "https://www.tsinghua.edu.cn/favicon.ico" }],
   uva: ["UVA", "virginia.edu"],
   uwm: ["University of Washington", "washington.edu"],
   dreamgen: ["NVIDIA", "nvidia.com"],
   flare: ["NVIDIA", "nvidia.com"],
   clam: ["USC", "usc.edu"],
-  videorepa: ["Shanghai Jiao Tong", "sjtu.edu.cn"],
+  videorepa: ["Shanghai Jiao Tong", "sjtu.edu.cn", { logoUrl: "https://en.sjtu.edu.cn/favicon.ico" }],
   univla: ["HKU", "hku.hk"],
   "geometry-forcing": ["Microsoft Research", "microsoft.com"],
   trivla: ["Fudan", "fudan.edu.cn"],
   "video-generators-robot-policies": ["Columbia", "columbia.edu"],
   "villa-x": ["Microsoft Research", "microsoft.com"],
-  mowm: ["Tsinghua", "tsinghua.edu.cn"],
+  mowm: ["Tsinghua", "tsinghua.edu.cn", { logoUrl: "https://www.tsinghua.edu.cn/favicon.ico" }],
   dust: ["KAIST", "kaist.ac.kr"],
   "ud-vla": ["Monash", "monash.edu"],
-  "rynnvla-002": ["Alibaba DAMO", "alibabagroup.com"],
-  motus: ["Tsinghua", "tsinghua.edu.cn"],
+  "rynnvla-002": ["Alibaba DAMO", "damo.alibaba.com", { logoUrl: "https://damo.alibaba.com/favicon.ico" }],
+  motus: ["Tsinghua", "tsinghua.edu.cn", { logoUrl: "https://www.tsinghua.edu.cn/favicon.ico" }],
   videovla: ["Microsoft Research Asia", "microsoft.com"],
   act2goal: ["AgiBot", "agibot.com"],
   "mimic-video": ["mimic robotics", "mimicrobotics.com"],
-  clap: ["Tsinghua", "tsinghua.edu.cn"],
+  clap: ["Tsinghua", "tsinghua.edu.cn", { logoUrl: "https://www.tsinghua.edu.cn/favicon.ico" }],
   "cosmos-policy": ["NVIDIA", "nvidia.com"],
-  wog: ["ByteDance Seed", "seed.bytedance.com"],
+  wog: ["ByteDance Seed", "seed.bytedance.com", { logoUrl: "https://lf3-static.bytednsdoc.com/obj/eden-cn/lapzild-tss/ljhwZthlaukjlkulzlp/favicon_1/favicon.ico" }],
   "vla-jepa": ["USTC", "ustc.edu.cn"],
-  frappe: ["Zhejiang University", "zju.edu.cn"],
+  frappe: ["Zhejiang University", "zju.edu.cn", { logoUrl: "https://www.zju.edu.cn/_upload/tpl/0b/bf/3007/template3007/favicon.ico" }],
   ldamodel: ["Peking University", "pku.edu.cn"],
   adaworldpolicy: ["HKU", "hku.hk"],
   "say-dream-act": ["Fudan", "fudan.edu.cn"],
   cowvla: ["Peking University", "pku.edu.cn"],
-  "fast-wam": ["Tsinghua", "tsinghua.edu.cn"],
+  "fast-wam": ["Galaxea AI", "galaxea.ai", { logoUrl: "https://galaxea.ai/favicon.ico" }],
   svam: ["HKUST(GZ)", "hkust-gz.edu.cn"],
-  "sim-distill": ["SimDist", "github.io"],
-  vampo: ["Zhejiang University", "zju.edu.cn"],
+  "sim-distill": ["UT Austin", "utexas.edu"],
+  vampo: ["Zhejiang University", "zju.edu.cn", { logoUrl: "https://www.zju.edu.cn/_upload/tpl/0b/bf/3007/template3007/favicon.ico" }],
   eva: ["CUHK-Shenzhen", "cuhk.edu.cn"],
   vtam: ["UIUC", "illinois.edu"],
-  "gigaworld-policy": ["GigaWorld", "github.io"],
+  "gigaworld-policy": ["GigaAI", "gigaai.cc", { logoUrl: "https://gigaai.cc/assets/favicon-hKtW4-r9.ico" }],
   aim: ["HKU", "hku.hk"],
-  wav: ["Westlake", "westlake.edu.cn"],
-  dexworldmodel: ["DexWorldModel", "github.io"],
-  "x-wam": ["Tsinghua", "tsinghua.edu.cn"],
-  motubrain: ["MotuBrain", "shengshu.com"]
+  wav: ["Westlake", "westlake.edu.cn", { logoUrl: "https://www.westlake.edu.cn/favicon.ico" }],
+  dexworldmodel: ["DexForce AI", "dexforce.com", { logoUrl: "https://www.dexforce.com/kuawei/2025/11/07/5mvfHqPBS7Ccu.ico" }],
+  "x-wam": ["Tsinghua", "tsinghua.edu.cn", { logoUrl: "https://www.tsinghua.edu.cn/favicon.ico" }],
+  motubrain: ["MotuBrain", "shengshu.com"],
+  vidar: ["Tsinghua", "tsinghua.edu.cn", { logoUrl: "https://www.tsinghua.edu.cn/favicon.ico" }],
+  "genie-envisioner": ["AgiBot", "agibot.com"],
+  "xr-1": ["Peking University", "pku.edu.cn"],
+  vipra: ["Carnegie Mellon", "cmu.edu"],
+  "lingbot-va": ["Robbyant", "technology.robbyant.com", { logoUrl: "https://mdn.alipayobjects.com/huamei_u94ywh/afts/img/xEyrTpmj4LUAAAAAQEAAAAgADkxfAQFr/original" }],
+  dreamzero: ["NVIDIA", "nvidia.com"],
+  "rhoda-dva": ["Rhoda AI", "rhoda.ai", { logoUrl: "https://www.rhoda.ai/assets/images/logo/rhoda-logo-light.svg" }],
+  dit4dit: ["Mondo Robotics", "mondorobotics.com"]
 };
 
 export const typeColors = {
@@ -218,8 +226,11 @@ export function escapeHtml(value) {
 }
 
 export function slugDate(model) {
-  const month = Number(model.month || 6);
-  return model.year + (Math.max(1, Math.min(12, month)) - 1) / 12;
+  const year = Number(model.year);
+  const month = Math.max(1, Math.min(12, Number(model.month || 6)));
+  const maxDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const day = Math.max(1, Math.min(maxDay, Number(model.day || Math.ceil(maxDay / 2))));
+  return year + ((month - 1) + (day - 1) / maxDay) / 12;
 }
 
 export function scoreLabel(value) {

@@ -8,6 +8,8 @@
       "world_action_models.bib",
       "wam_additional_notes.md",
       "__vla_video_model_adaption_latest.md",
+      "VLA Video Model Adaption.docx",
+      "downloaded paper PDFs and Rhoda DVA research HTML",
       "local extracted paper txt files"
     ],
     "normalizationNote": "Fields are normalized for comparison. They are not direct quotations unless explicitly marked elsewhere.",
@@ -23,6 +25,7 @@
     "title": "Full paper title.",
     "year": "Publication/preprint year.",
     "month": "Publication/preprint month when available.",
+    "day": "Publication/preprint release day when available.",
     "paperUrl": "Canonical paper URL.",
     "localText": "Local extracted text filename when available.",
     "family": "One of pixel_idm, latent_idm, encoder_only, joint_latent, unified, multi_stream, implicit_future, latent_action, alignment, multimodal, online_adaptation, speedup.",

@@ -6,7 +6,9 @@
     "Start from the user's structured LaTeX survey and BibTeX references.",
     "Normalize each paper by the role of predictive state in the action pathway.",
     "Represent training data, training objectives, runtime path, and action interface separately so architecture and methodology can be compared in one diagram.",
-    "Use uncertainty notes where a card is survey-derived or where the local paper text was not present."
+    "Use arXiv published timestamps for year, month, and day release placement on the timeline.",
+    "Use uncertainty notes where a card is survey-derived or where the local paper text was not present.",
+    "Add missing VLA Video Model Adaption survey papers by reading the DOCX notes and local method sections for Vidar, Rhoda DVA, Genie Envisioner, DiT4DiT, DreamZero, LingBot-VA, XR-1, and ViPRA."
   ],
   "models": [
     {
@@ -15,6 +17,7 @@
       "title": "Unleashing Large-Scale Video Generative Pre-training for Visual Robot Manipulation",
       "year": 2023,
       "month": "12",
+      "day": "20",
       "paperUrl": "https://arxiv.org/abs/2312.13139",
       "localText": "gr1.txt",
       "family": "unified",
@@ -140,6 +143,7 @@
       "title": "GR-2: A Generative Video-Language-Action Model with Web-Scale Knowledge for Robot Manipulation",
       "year": 2024,
       "month": "10",
+      "day": "08",
       "paperUrl": "https://arxiv.org/abs/2410.06158",
       "localText": "gr2.txt",
       "family": "unified",
@@ -261,6 +265,7 @@
       "title": "Latent Action Pretraining from Videos",
       "year": 2024,
       "month": "10",
+      "day": "15",
       "paperUrl": "https://arxiv.org/abs/2410.11758",
       "localText": "LAPA.txt",
       "family": "latent_action",
@@ -388,6 +393,7 @@
       "title": "Video Prediction Policy: A Generalist Robot Policy with Predictive Visual Representations",
       "year": 2024,
       "month": "12",
+      "day": "19",
       "paperUrl": "https://arxiv.org/abs/2412.14803",
       "localText": "vpp.txt",
       "family": "latent_idm",
@@ -516,7 +522,8 @@
       "name": "UVA",
       "title": "Unified Video Action Model",
       "year": 2025,
-      "month": "03",
+      "month": "02",
+      "day": "28",
       "paperUrl": "https://arxiv.org/abs/2503.00200",
       "localText": "uva.txt",
       "family": "encoder_only",
@@ -641,6 +648,7 @@
       "title": "Unified World Models: Coupling Video and Action Diffusion for Pretraining on Large Robotic Datasets",
       "year": 2025,
       "month": "04",
+      "day": "03",
       "paperUrl": "https://arxiv.org/abs/2504.02792",
       "localText": "uwm.txt",
       "family": "unified",
@@ -769,6 +777,7 @@
       "title": "DreamGen: Unlocking Generalization in Robot Learning through Video World Models",
       "year": 2025,
       "month": "05",
+      "day": "19",
       "paperUrl": "https://arxiv.org/abs/2505.12705",
       "localText": "dreamgen.txt",
       "family": "pixel_idm",
@@ -895,6 +904,7 @@
       "title": "FLARE: Robot Learning with Implicit World Modeling",
       "year": 2025,
       "month": "05",
+      "day": "21",
       "paperUrl": "https://arxiv.org/abs/2505.15659",
       "localText": "FLARE.txt",
       "family": "implicit_future",
@@ -1022,6 +1032,7 @@
       "title": "CLAM: Continuous Latent Action Models for Robot Learning from Unlabeled Demonstrations",
       "year": 2025,
       "month": "05",
+      "day": "08",
       "paperUrl": "https://arxiv.org/abs/2505.04999",
       "localText": "CLAM.txt",
       "family": "latent_action",
@@ -1148,6 +1159,7 @@
       "title": "VideoREPA: Learning Physics for Video Generation through Relational Alignment with Foundation Models",
       "year": 2025,
       "month": "05",
+      "day": "29",
       "paperUrl": "https://arxiv.org/abs/2505.23656",
       "localText": "VideoREPA.txt",
       "family": "alignment",
@@ -1266,6 +1278,7 @@
       "title": "UniVLA: Learning to Act Anywhere with Task-centric Latent Actions",
       "year": 2025,
       "month": "05",
+      "day": "09",
       "paperUrl": "https://arxiv.org/abs/2505.06111",
       "localText": "UniVLA.txt",
       "family": "latent_action",
@@ -1399,6 +1412,7 @@
       "title": "Geometry Forcing: Marrying Video Diffusion and 3D Representation for Consistent World Modeling",
       "year": 2025,
       "month": "07",
+      "day": "10",
       "paperUrl": "https://arxiv.org/abs/2507.07982",
       "localText": "Geometry forcing.txt",
       "family": "alignment",
@@ -1519,6 +1533,7 @@
       "title": "TriVLA: A Triple-System-Based Unified Vision-Language-Action Model with Episodic World Modeling for General Robot Control",
       "year": 2025,
       "month": "07",
+      "day": "02",
       "paperUrl": "https://arxiv.org/abs/2507.01424",
       "localText": "TriVLA.txt",
       "family": "latent_idm",
@@ -1650,6 +1665,7 @@
       "title": "VideoPolicy: Video Generators are Robot Policies",
       "year": 2025,
       "month": "08",
+      "day": "01",
       "paperUrl": "https://arxiv.org/abs/2508.00795",
       "localText": "video-generators.txt",
       "family": "latent_idm",
@@ -1776,7 +1792,8 @@
       "name": "villa-X",
       "title": "villa-X: Enhancing Latent Action Modeling in Vision-Language-Action Models",
       "year": 2025,
-      "month": "09",
+      "month": "07",
+      "day": "31",
       "paperUrl": "https://arxiv.org/abs/2507.23682",
       "localText": "villa-X.txt",
       "family": "latent_action",
@@ -1905,6 +1922,7 @@
       "title": "MoWM: Mixture-of-World-Models for Embodied Planning via Latent-to-Pixel Feature Modulation",
       "year": 2025,
       "month": "09",
+      "day": "26",
       "paperUrl": "https://arxiv.org/abs/2509.21797",
       "localText": "mowm.txt",
       "family": "implicit_future",
@@ -2028,6 +2046,7 @@
       "title": "Dual-Stream Diffusion for World-Model Augmented Vision-Language-Action Model",
       "year": 2025,
       "month": "10",
+      "day": "31",
       "paperUrl": "https://arxiv.org/abs/2510.27607",
       "localText": "DUST.txt",
       "family": "multi_stream",
@@ -2156,6 +2175,7 @@
       "title": "Unified Diffusion VLA: Vision-Language-Action Model via Joint Discrete Denoising Diffusion Process",
       "year": 2025,
       "month": "11",
+      "day": "03",
       "paperUrl": "https://arxiv.org/abs/2511.01718",
       "localText": "UD-VLA.txt",
       "family": "unified",
@@ -2288,6 +2308,7 @@
       "title": "RynnVLA-002: A Unified Vision-Language-Action and World Model",
       "year": 2025,
       "month": "11",
+      "day": "21",
       "paperUrl": "https://arxiv.org/abs/2511.17502",
       "localText": "RynnVLA-002.txt",
       "family": "unified",
@@ -2412,6 +2433,7 @@
       "title": "Motus: A Unified Latent Action World Model",
       "year": 2025,
       "month": "12",
+      "day": "15",
       "paperUrl": "https://arxiv.org/abs/2512.13030",
       "localText": "Motus.txt",
       "family": "multi_stream",
@@ -2553,6 +2575,7 @@
       "title": "VideoVLA: Video Generators Can Be Generalizable Robot Manipulators",
       "year": 2025,
       "month": "12",
+      "day": "07",
       "paperUrl": "https://arxiv.org/abs/2512.06963",
       "localText": "videovla.txt",
       "family": "unified",
@@ -2683,6 +2706,7 @@
       "title": "Act2Goal: From World Model To General Goal-conditioned Policy",
       "year": 2025,
       "month": "12",
+      "day": "29",
       "paperUrl": "https://arxiv.org/abs/2512.23541",
       "localText": "Act2Goal.txt",
       "family": "pixel_idm",
@@ -2817,6 +2841,7 @@
       "title": "mimic-video: Video-Action Models for Generalizable Robot Control Beyond VLAs",
       "year": 2025,
       "month": "12",
+      "day": "17",
       "paperUrl": "https://arxiv.org/abs/2512.15692",
       "localText": "mimic-video.txt",
       "family": "latent_idm",
@@ -2958,6 +2983,7 @@
       "title": "CLAP: Contrastive Latent Action Pretraining for Learning Vision-Language-Action Models from Human Videos",
       "year": 2026,
       "month": "01",
+      "day": "07",
       "paperUrl": "https://arxiv.org/abs/2601.04061",
       "localText": "CLAP.txt",
       "family": "latent_action",
@@ -3107,6 +3133,7 @@
       "title": "Cosmos Policy: Fine-Tuning Video Models for Visuomotor Control and Planning",
       "year": 2026,
       "month": "01",
+      "day": "22",
       "paperUrl": "https://arxiv.org/abs/2601.16163",
       "localText": "cosmos-policy.txt",
       "family": "joint_latent",
@@ -3242,6 +3269,7 @@
       "title": "World Guidance: World Modeling in Condition Space for Action Generation",
       "year": 2026,
       "month": "02",
+      "day": "25",
       "paperUrl": "https://arxiv.org/abs/2602.22010",
       "localText": "WoG.txt",
       "family": "implicit_future",
@@ -3375,6 +3403,7 @@
       "title": "VLA-JEPA: Enhancing Vision-Language-Action Model with Latent World Model",
       "year": 2026,
       "month": "02",
+      "day": "10",
       "paperUrl": "https://arxiv.org/abs/2602.10098",
       "localText": "VLA-JEPA.txt",
       "family": "latent_idm",
@@ -3508,6 +3537,7 @@
       "title": "FRAPPE: Infusing World Modeling into Generalist Policies via Multiple Future Representation Alignment",
       "year": 2026,
       "month": "02",
+      "day": "19",
       "paperUrl": "https://arxiv.org/abs/2602.17259",
       "localText": "FRAPPE.txt",
       "family": "implicit_future",
@@ -3650,6 +3680,7 @@
       "title": "LDA-1B: Scaling Latent Dynamics Action Model via Universal Embodied Data Ingestion",
       "year": 2026,
       "month": "02",
+      "day": "12",
       "paperUrl": "https://arxiv.org/abs/2602.12215",
       "localText": "LDA-1B.txt",
       "family": "multi_stream",
@@ -3795,6 +3826,7 @@
       "title": "World-Model-Driven Diffusion Policy with Online Adaptive Learning for Robotic Manipulation",
       "year": 2026,
       "month": "02",
+      "day": "23",
       "paperUrl": "https://arxiv.org/abs/2602.20057",
       "localText": "AdaWorldPolicy.txt",
       "family": "online_adaptation",
@@ -3943,6 +3975,7 @@
       "title": "Say, Dream, and Act: Learning Video World Models for Instruction-Driven Robot Manipulation",
       "year": 2026,
       "month": "02",
+      "day": "11",
       "paperUrl": "https://arxiv.org/abs/2602.10717",
       "localText": "Say-Dream-Act.txt",
       "family": "pixel_idm",
@@ -4090,6 +4123,7 @@
       "title": "Chain of World: World Model Thinking in Latent Motion",
       "year": 2026,
       "month": "03",
+      "day": "03",
       "paperUrl": "https://arxiv.org/abs/2603.03195",
       "localText": "CoWVLA.txt",
       "family": "joint_latent",
@@ -4234,6 +4268,7 @@
       "title": "Fast-WAM: Do World Action Models Need Test-time Future Imagination?",
       "year": 2026,
       "month": "03",
+      "day": "17",
       "paperUrl": "https://arxiv.org/abs/2603.16666",
       "localText": "Fast-WAM.txt",
       "family": "encoder_only",
@@ -4376,6 +4411,7 @@
       "title": "S-VAM: Shortcut Video-Action Model by Self-Distilling Geometric and Semantic Foresight",
       "year": 2026,
       "month": "03",
+      "day": "17",
       "paperUrl": "https://arxiv.org/abs/2603.16195",
       "localText": "S-VAM.txt",
       "family": "speedup",
@@ -4518,6 +4554,7 @@
       "title": "Simulation Distillation: Pretraining World Models in Simulation for Rapid Real-World Adaptation",
       "year": 2026,
       "month": "03",
+      "day": "16",
       "paperUrl": "https://arxiv.org/abs/2603.15759",
       "localText": "Sim Distil.txt",
       "family": "alignment",
@@ -4663,6 +4700,7 @@
       "title": "VAMPO: Policy Optimization for Improving Visual Dynamics in Video Action Models",
       "year": 2026,
       "month": "03",
+      "day": "19",
       "paperUrl": "https://arxiv.org/abs/2603.19370",
       "localText": "VAMPO.txt",
       "family": "alignment",
@@ -4800,6 +4838,7 @@
       "title": "EVA: Aligning Video World Models with Executable Robot Actions via Inverse Dynamics Rewards",
       "year": 2026,
       "month": "03",
+      "day": "18",
       "paperUrl": "https://arxiv.org/abs/2603.17808",
       "localText": "EVA.txt",
       "family": "alignment",
@@ -4937,6 +4976,7 @@
       "title": "VTAM: Video-Tactile-Action Models for Complex Physical Interaction Beyond VLAs",
       "year": 2026,
       "month": "03",
+      "day": "24",
       "paperUrl": "https://arxiv.org/abs/2603.23481",
       "localText": "VTAM.txt",
       "family": "multimodal",
@@ -5082,6 +5122,7 @@
       "title": "GigaWorld-Policy: An Efficient Action-Centered World-Action Model",
       "year": 2026,
       "month": "03",
+      "day": "18",
       "paperUrl": "https://arxiv.org/abs/2603.17240",
       "localText": "GigaWorld-Policy.txt",
       "family": "joint_latent",
@@ -5221,6 +5262,7 @@
       "title": "AIM: Intent-Aware Unified World Action Modeling with Spatial Value Maps",
       "year": 2026,
       "month": "04",
+      "day": "13",
       "paperUrl": "https://arxiv.org/abs/2604.11135",
       "localText": "AIM.txt",
       "family": "implicit_future",
@@ -5370,6 +5412,7 @@
       "title": "World-Value-Action Model: Implicit Planning for Vision-Language-Action Systems",
       "year": 2026,
       "month": "04",
+      "day": "16",
       "paperUrl": "https://arxiv.org/abs/2604.14732",
       "localText": "WAV-World-Value-Action.txt",
       "family": "implicit_future",
@@ -5512,6 +5555,7 @@
       "title": "Causal Latent World Modeling towards Automated Learning of Embodied Tasks",
       "year": 2026,
       "month": "04",
+      "day": "13",
       "paperUrl": "https://arxiv.org/abs/2604.16484",
       "localText": "DexWorldModel.txt",
       "family": "online_adaptation",
@@ -5661,6 +5705,7 @@
       "title": "Unified 4D World Action Modeling from Video Priors with Asynchronous Denoising",
       "year": 2026,
       "month": "04",
+      "day": "29",
       "paperUrl": "https://arxiv.org/abs/2604.26694",
       "localText": "X-WAM.txt",
       "family": "multimodal",
@@ -5809,6 +5854,7 @@
       "title": "MotuBrain: An Advanced World Action Model for Robot Control",
       "year": 2026,
       "month": "04",
+      "day": "30",
       "paperUrl": "https://arxiv.org/abs/2604.27792",
       "localText": "MotuBrain.txt",
       "family": "multi_stream",
@@ -5962,6 +6008,1222 @@
           "run V2A-style schedule with a short joint video/action prefix and an action-only suffix using cached visual-language K/V",
           "smooth action chunks with Savitzky-Golay filtering and frequency-aware interpolation",
           "run model inference asynchronously from robot execution and constrain the next chunk with the unexecuted remainder of the previous chunk using a latency-aware fusion window"
+        ]
+      }
+    },
+    {
+      "id": "vidar",
+      "name": "Vidar",
+      "title": "Vidar: Embodied Video Diffusion Model for Generalist Manipulation",
+      "year": 2025,
+      "month": "07",
+      "day": "17",
+      "paperUrl": "https://arxiv.org/abs/2507.12898",
+      "localText": "vidar.txt",
+      "family": "pixel_idm",
+      "category": "Pixel-space IDM",
+      "problem": "New robot embodiments should not need large homogeneous action-labeled datasets before video priors become useful.",
+      "oneLine": "A pretrained video diffusion prior generates embodied rollouts, then a masked inverse dynamics model converts action-relevant pixels into controls.",
+      "insights": {
+        "problem": "End-to-end pixel-to-action policies are brittle under embodiment, viewpoint, and background shift when target demonstrations are scarce.",
+        "method": "Continue-pretrain Wan/Vidu-style video diffusion on 750K multi-view robot episodes in a unified observation space, adapt on about 20 minutes of target videos, and decode actions with MIDM.",
+        "novelty": "Separates a large embodiment-aware video prior from a lightweight sparse-mask inverse dynamics adapter trained without dense segmentation labels.",
+        "limitation": "Open-loop video generation is very slow: one 60-frame rollout is reported at about 25 seconds on 8x80GB GPUs, with test-time reranking adding more compute.",
+        "related": "VPP, VideoPolicy, Act2Goal, Rhoda DVA"
+      },
+      "metrics": {
+        "runtimeCost": 5,
+        "computeScale": 5,
+        "evidence": 4,
+        "runtimeNote": "Open-loop 60-frame video generation is reported at about 25 seconds on 8x80GB GPUs; K=3 rollouts are reranked."
+      },
+      "diagram": {
+        "pattern": "pixel_idm",
+        "inputs": [
+          "language",
+          "multi-view RGB observation",
+          "robot/camera/task descriptors",
+          "target robot demonstrations"
+        ],
+        "data": [
+          "AgiBot-World",
+          "RoboMind",
+          "RDT",
+          "EgoDex for simulation",
+          "20 minutes target demos"
+        ],
+        "predictiveState": {
+          "form": "decoded future video rollout",
+          "runtime": "full",
+          "rendered": true
+        },
+        "components": [
+          "Unified observation builder",
+          "Embodied video diffusion model",
+          "Test-time video reranker",
+          "Masked inverse dynamics model",
+          "Action regressor"
+        ],
+        "trainingStages": [
+          {
+            "name": "Embodied video pretraining",
+            "data": "746K/750K multi-view robot episodes",
+            "objective": "rectified-flow video prediction in unified observation space"
+          },
+          {
+            "name": "Target embodiment SFT",
+            "data": "232 target episodes / about 20 minutes",
+            "objective": "adapt all video-model parameters to target robot videos"
+          },
+          {
+            "name": "MIDM training",
+            "data": "same target embodiment demonstrations",
+            "objective": "Huber action loss plus L1 sparse mask regularization"
+          }
+        ],
+        "runtimePath": [
+          "observation prefix",
+          "sample K future videos",
+          "rank rollout",
+          "MIDM mask",
+          "ResNet action regression"
+        ],
+        "outputs": [
+          "selected future video",
+          "embodiment-specific action"
+        ]
+      },
+      "uncertainty": "Low; local PDF method section and DOCX notes were inspected. Release date uses arXiv first published timestamp.",
+      "literalArchitecture": {
+        "sourceExtract": "methods/vidar.md",
+        "sourceLines": [
+          "vidar.txt:144-181",
+          "vidar.txt:187-240",
+          "vidar.txt:242-317"
+        ],
+        "inputTokens": [
+          "image instruction pair",
+          "multi-view RGB streams",
+          "robot-type/camera-placement/task descriptors",
+          "proprioceptive traces",
+          "embodiment tokens",
+          "generated short video windows"
+        ],
+        "tokenization": [
+          "project all robot data into a fixed unified observation space",
+          "aggregate resized camera views with missing-view compatibility",
+          "concatenate robot, camera, and task text into the conditioning language",
+          "downsample videos to 8 fps",
+          "MIDM rounds a learned mask and multiplies it with frames before action regression"
+        ],
+        "backbone": [
+          "rectified-flow video diffusion initialized from Wan2.2, Vidu 2.0, or HunyuanVideo",
+          "video generator G maps language plus observation context to future videos",
+          "inverse dynamics model I maps generated videos to actions",
+          "U-Net mask predictor plus ResNet action regressor"
+        ],
+        "branches": [
+          "video branch predicts action-agnostic embodied rollouts",
+          "test-time scaling samples K candidate videos",
+          "GPT-4o/CLIP-style evaluator reranks videos",
+          "MIDM branch learns sparse masks over hands/tools/contact patches",
+          "action branch predicts embodiment-specific controls"
+        ],
+        "attention": [
+          "video conditioning includes robot, camera, task, and multi-view context",
+          "MIDM focuses through an implicit learned spatial mask",
+          "action-agnostic video pretraining reduces morphology dependence"
+        ],
+        "heads": [
+          "rectified-flow velocity head",
+          "U-Net mask head",
+          "ResNet action head",
+          "external rollout evaluator"
+        ],
+        "objectives": [
+          "video rectified-flow matching",
+          "target-platform supervised fine-tuning",
+          "MIDM Huber action loss",
+          "L1 mask sparsity",
+          "straight-through rounded mask training"
+        ],
+        "trainingRecipe": [
+          "pretrain on AgiBot-World, RoboMind, and RDT, totalling 746,533 real-world episodes",
+          "add EgoDex for simulation experiments",
+          "fine-tune on 20 minutes of real target videos across 81 tasks and 232 episodes",
+          "train MIDM only on the target fine-tuning dataset"
+        ],
+        "inferenceRecipe": [
+          "generate a full future video batch open-loop",
+          "sample K=3 rollouts in parallel",
+          "rank candidates with GPT-4o in real-world experiments",
+          "apply selected video to MIDM",
+          "run lightweight action predictor locally while video generation can be remote"
+        ]
+      }
+    },
+    {
+      "id": "genie-envisioner",
+      "name": "Genie Envisioner",
+      "title": "Genie Envisioner: A Unified World Foundation Platform for Robotic Manipulation",
+      "year": 2025,
+      "month": "08",
+      "day": "07",
+      "paperUrl": "https://arxiv.org/abs/2508.05635",
+      "localText": "genie.txt",
+      "family": "multi_stream",
+      "category": "Separate video-action streams",
+      "problem": "Robot world models, action policies, and simulators are usually trained and evaluated as separate systems.",
+      "oneLine": "AgiBot GE-Base learns multi-view robotic video dynamics, while GE-Act mirrors the video DiT with a lightweight action DiT that cross-attends to visual latents.",
+      "insights": {
+        "problem": "Robotic manipulation needs one foundation platform for policy learning, evaluation, and simulation rather than disconnected models.",
+        "method": "Train GE-Base as a multi-view instruction-conditioned video DiT on AgiBot-World, then attach GE-Act, a 160M action DiT decoder conditioned on cached visual latents.",
+        "novelty": "Uses slow-fast asynchronous inference: sparse visual latent generation at 5 Hz feeds dense 30 Hz action denoising without decoding full video at deployment.",
+        "limitation": "The core pretraining corpus is AgiBot-World-Beta, so platform coverage and external reproducibility depend on dataset release and transfer quality.",
+        "related": "LingBot-VA, MotuBrain, DiT4DiT, DreamZero"
+      },
+      "metrics": {
+        "runtimeCost": 2,
+        "computeScale": 5,
+        "evidence": 4,
+        "runtimeNote": "Reports 54 action steps in about 200 ms on onboard RTX 4090 using one video denoise step plus five action denoise steps."
+      },
+      "diagram": {
+        "pattern": "multi_stream",
+        "inputs": [
+          "instruction",
+          "head/left/right camera views",
+          "sparse memory frames",
+          "noisy action tokens"
+        ],
+        "data": [
+          "AgiBot-World-Beta multi-view videos",
+          "text-video-policy triplets",
+          "task-specific subsets"
+        ],
+        "predictiveState": {
+          "form": "cached multi-view visual latent tokens",
+          "runtime": "async",
+          "rendered": false
+        },
+        "components": [
+          "GE-Base video encoder",
+          "Video DiT blocks",
+          "Cross-view attention",
+          "GE-Act action DiT blocks",
+          "Flow-matching action decoder"
+        ],
+        "trainingStages": [
+          {
+            "name": "GE-Base multi-resolution adaptation",
+            "data": "1M AgiBot episodes / 2967 hours",
+            "objective": "robotic video denoising across 3-30 Hz clips"
+          },
+          {
+            "name": "Low-frequency policy alignment",
+            "data": "9-frame 5 Hz clips plus memory frames",
+            "objective": "align video latent abstraction to action policy timescale"
+          },
+          {
+            "name": "GE-Act pretraining and specialization",
+            "data": "text-video-policy triplets and task subsets",
+            "objective": "54-step action trajectory flow matching"
+          }
+        ],
+        "runtimePath": [
+          "multi-view observation",
+          "single-step video latent update",
+          "cache visual latents",
+          "five-step action denoising",
+          "30 Hz action execution"
+        ],
+        "outputs": [
+          "54-step action trajectory",
+          "optional generated video",
+          "GE-Sim rollout"
+        ]
+      },
+      "uncertainty": "Low; local PDF method section and DOCX notes were inspected. Release date uses arXiv first published timestamp.",
+      "literalArchitecture": {
+        "sourceExtract": "methods/genie.md",
+        "sourceLines": [
+          "genie.txt:273-366",
+          "genie.txt:450-567",
+          "genie.txt:571-591"
+        ],
+        "inputTokens": [
+          "instruction encoded by frozen T5-XXL",
+          "head/left/right camera visual tokens",
+          "view-specific noise maps",
+          "four sparse memory frames",
+          "noise-initialized action tokens"
+        ],
+        "tokenization": [
+          "synchronized multi-view videos are encoded by a frozen video encoder/VAE",
+          "selected DiT blocks reshape hidden states for sparse cross-view self-attention",
+          "GE-Base-MR encodes 57-frame clips into an 8-frame latent space",
+          "GE-Base-LF maps 9-frame 5 Hz clips plus memory frames into two latent frames",
+          "GE-Act predicts 54 actions at 30 Hz"
+        ],
+        "backbone": [
+          "LTX-Video-based instruction-conditioned multi-view video diffusion model",
+          "frozen T5-XXL instruction encoder",
+          "GE-Act mirrors GE-Base DiT depth with reduced hidden size and about 160M parameters",
+          "visual DiT blocks plus action-specific DiT blocks",
+          "GE-Sim action-conditioned simulator branch"
+        ],
+        "branches": [
+          "GE-Base video branch",
+          "GE-Act parallel action branch",
+          "cross-attention from action tokens to visual features",
+          "GE-Sim neural simulator branch",
+          "EWMBench evaluation branch"
+        ],
+        "attention": [
+          "sparse cross-view self-attention over camera perspectives",
+          "instruction cross-attention inside the DiT",
+          "action DiT cross-attends to same-layer visual DiT features",
+          "cached visual latents are reused throughout action generation"
+        ],
+        "heads": [
+          "video denoising/flow head",
+          "action flow-matching head",
+          "video token output projection",
+          "action token output projection",
+          "GE-Sim video output"
+        ],
+        "objectives": [
+          "GE-Base robotic video denoising",
+          "GE-Act supervised action trajectory loss",
+          "task-specific video adaptation with task data upweighted 10x",
+          "task-specific action specialization over 54-step actions"
+        ],
+        "trainingRecipe": [
+          "train GE-Base-MR on 57-frame clips sampled between 3 Hz and 30 Hz using 32 A100s for about 7 days",
+          "train GE-Base-LF on 9-frame 5 Hz clips with memory frames using 32 A100s for about 3 days",
+          "freeze GE-Base-LF and train action decoder for 3 days on 16 A100s",
+          "run task video adaptation for about 12 hours and action specialization for about 36 hours on 8 A100s"
+        ],
+        "inferenceRecipe": [
+          "disable explicit video decoding when only control is needed",
+          "run one flow-matching denoise step in the video DiT",
+          "cache visual latent tokens",
+          "run five action denoising steps",
+          "operate video at 5 Hz and action at 30 Hz"
+        ]
+      }
+    },
+    {
+      "id": "xr-1",
+      "name": "XR-1",
+      "title": "XR-1: Towards Versatile Vision-Language-Action Models via Learning Unified Vision-Motion Representations",
+      "year": 2025,
+      "month": "11",
+      "day": "04",
+      "paperUrl": "https://arxiv.org/abs/2511.02776",
+      "localText": "xr1.txt",
+      "family": "latent_action",
+      "category": "Latent action interface",
+      "problem": "Cross-embodiment VLA training needs a representation that connects visual dynamics with robot motion instead of treating them as separate signals.",
+      "oneLine": "A dual-branch VQ-VAE learns Unified Vision-Motion Codes, then a VLM predicts those codes as auxiliary structure while training an action head.",
+      "insights": {
+        "problem": "VLAs struggle to reuse human/actionless visual dynamics and robot motion data across embodiments.",
+        "method": "Learn a shared discrete codebook from future-frame visual dynamics and proprioceptive action-motion sequences, then inject learnable UVMC tokens into VLM pretraining.",
+        "novelty": "Makes the latent code explicitly bimodal: visual future changes and low-level robot motion quantize into one code space with alignment regularization.",
+        "limitation": "The system is large and data-heavy; attribution between UVMC learning, dataset scale, and downstream post-training is difficult.",
+        "related": "ViPRA, UniVLA, LAPA, CLAP"
+      },
+      "metrics": {
+        "runtimeCost": 2,
+        "computeScale": 5,
+        "evidence": 5,
+        "runtimeNote": "Runtime is VLA-style action inference; the code learning is mostly pretraining-time supervision."
+      },
+      "diagram": {
+        "pattern": "latent_action",
+        "inputs": [
+          "language",
+          "K RGB images",
+          "proprioceptive state",
+          "future frame pairs",
+          "action/proprio trajectories"
+        ],
+        "data": [
+          "Ego4D",
+          "Open X-Embodiment",
+          "RoboMIND",
+          "XR-D"
+        ],
+        "predictiveState": {
+          "form": "Unified Vision-Motion Codes",
+          "runtime": "implicit",
+          "rendered": false
+        },
+        "components": [
+          "Vision dynamics encoder/decoder",
+          "Motion encoder/decoder",
+          "Shared VQ codebook",
+          "UVMC-aware VLM tokens",
+          "Action head"
+        ],
+        "trainingStages": [
+          {
+            "name": "UVMC learning",
+            "data": "visual frame pairs and robot motion sequences",
+            "objective": "VQ reconstruction plus alignment"
+          },
+          {
+            "name": "UVMC-guided pretraining",
+            "data": "large cross-embodiment datasets",
+            "objective": "predict UVMC and actions jointly"
+          },
+          {
+            "name": "Deployment post-training",
+            "data": "target task data",
+            "objective": "refine action head and embodiment control"
+          }
+        ],
+        "runtimePath": [
+          "observation + instruction",
+          "VLM with learnable UVMC token",
+          "action head"
+        ],
+        "outputs": [
+          "joint positions",
+          "gripper commands"
+        ]
+      },
+      "uncertainty": "Low; local PDF method section and DOCX notes were inspected. Release date uses arXiv first published timestamp.",
+      "literalArchitecture": {
+        "sourceExtract": "methods/xr1.md",
+        "sourceLines": [
+          "xr1.txt:277-336",
+          "xr1.txt:337-463",
+          "xr1.txt:1242-1322"
+        ],
+        "inputTokens": [
+          "language instruction",
+          "K RGB images",
+          "proprioceptive state",
+          "current/future frame pair",
+          "action and proprioceptive sequence",
+          "learnable UVMC-aware tokens"
+        ],
+        "tokenization": [
+          "dual-branch VQ-VAE quantizes visual dynamics and robotic motion into one codebook",
+          "vision encoder compresses temporal changes between frames",
+          "vision decoder predicts the future frame",
+          "motion encoder consumes action/proprio without images or language",
+          "motion decoder reconstructs action sequences",
+          "VLM predicts UVMC embeddings from learnable token positions"
+        ],
+        "backbone": [
+          "asymmetric VQ-VAE vision branch",
+          "motion VQ-VAE branch",
+          "shared Unified Vision-Motion Codebook",
+          "VLM augmented with UVMC prediction",
+          "generative or autoregressive action head depending on variant"
+        ],
+        "branches": [
+          "visual dynamics branch",
+          "robotic motion branch",
+          "alignment branch",
+          "UVMC-guided pretraining branch",
+          "deployment post-training branch"
+        ],
+        "attention": [
+          "learnable UVMC token positions attend over observation and language context",
+          "UVMC loss runs in parallel with action loss",
+          "motion branch excludes raw image/instruction inputs to focus codes on dynamics"
+        ],
+        "heads": [
+          "future-frame decoder",
+          "motion decoder",
+          "UVMC prediction head",
+          "VLA action head"
+        ],
+        "objectives": [
+          "visual VQ reconstruction plus codebook/commitment losses",
+          "motion VQ reconstruction plus codebook/commitment losses",
+          "vision-motion alignment regularization",
+          "UVMC MSE prediction loss",
+          "action loss during pretraining and post-training"
+        ],
+        "trainingRecipe": [
+          "Stage 1 learns UVMC from Ego4D, OXE, RoboMIND, and XR-D",
+          "Stage 2 performs large-scale UVMC-guided action pretraining",
+          "Stage 3 post-trains on target embodiment tasks",
+          "evaluation covers six robot embodiments and more than 120 tasks"
+        ],
+        "inferenceRecipe": [
+          "receive language, RGB observations, and proprioception",
+          "use UVMC-aware VLM representation",
+          "predict joint-position and gripper commands",
+          "do not decode future video at runtime"
+        ]
+      }
+    },
+    {
+      "id": "vipra",
+      "name": "ViPRA",
+      "title": "ViPRA: Video Prediction for Robot Actions",
+      "year": 2025,
+      "month": "11",
+      "day": "11",
+      "paperUrl": "https://arxiv.org/abs/2511.07732",
+      "localText": "VIPRA.txt",
+      "family": "latent_action",
+      "category": "Latent action interface",
+      "problem": "Actionless human and robot videos contain dynamics but not executable robot labels.",
+      "oneLine": "ViPRA learns discrete motion-centric latent actions from videos, pretrains a video-language model to predict future visual tokens and latent actions, then maps latents to continuous chunks with flow matching.",
+      "insights": {
+        "problem": "Large video corpora are useful for robot control only if the model can extract action-like dynamics without action annotations.",
+        "method": "Train a quantized latent action model with inverse and forward dynamics, predict future visual tokens plus latent action chunks with LWM, then fine-tune a continuous flow decoder on small robot demos.",
+        "novelty": "Combines future-state prediction and multi-step latent action chunking rather than treating latent actions as one-step autoregressive policy labels.",
+        "limitation": "The latent action pretraining corpus is still limited, and real-world finetuning is required for smooth continuous control.",
+        "related": "XR-1, LAPA, UniVLA, CLAP"
+      },
+      "metrics": {
+        "runtimeCost": 2,
+        "computeScale": 4,
+        "evidence": 4,
+        "runtimeNote": "Reports effective control up to 22 Hz via chunked action decoding; flow decoder uses 10 Euler steps."
+      },
+      "diagram": {
+        "pattern": "latent_action",
+        "inputs": [
+          "past frames",
+          "task description",
+          "actionless videos",
+          "noisy action chunks"
+        ],
+        "data": [
+          "Something-Something v2",
+          "Fractal",
+          "BridgeV2",
+          "Kuka",
+          "100-200 downstream demos"
+        ],
+        "predictiveState": {
+          "form": "discrete latent action sequence plus future visual tokens",
+          "runtime": "implicit",
+          "rendered": false
+        },
+        "components": [
+          "Latent action tokenizer",
+          "Forward video decoder",
+          "LWM video-language backbone",
+          "Latent action token decoder",
+          "Flow matching action decoder"
+        ],
+        "trainingStages": [
+          {
+            "name": "Latent action learning",
+            "data": "human and robot videos without actions",
+            "objective": "inverse latent code plus forward frame prediction and optical-flow consistency"
+          },
+          {
+            "name": "Multimodal pretraining",
+            "data": "past frames and task text",
+            "objective": "future visual token CE plus latent action CE"
+          },
+          {
+            "name": "Continuous finetuning",
+            "data": "100-200 robot demos",
+            "objective": "chunked continuous action flow matching"
+          }
+        ],
+        "runtimePath": [
+          "two-frame history",
+          "language",
+          "video-language transformer",
+          "flow action decoder"
+        ],
+        "outputs": [
+          "H-step continuous action chunk",
+          "optional latent action sequence"
+        ]
+      },
+      "uncertainty": "Low; local PDF method section and DOCX notes were inspected. Release date uses arXiv first published timestamp.",
+      "literalArchitecture": {
+        "sourceExtract": "methods/vipra.md",
+        "sourceLines": [
+          "VIPRA.txt:242-248",
+          "VIPRA.txt:256-380",
+          "VIPRA.txt:393-449",
+          "VIPRA.txt:672-681"
+        ],
+        "inputTokens": [
+          "length L+1 observation clips",
+          "two recent frames",
+          "task description",
+          "future frame target",
+          "discrete latent action sequence",
+          "noisy continuous action chunk"
+        ],
+        "tokenization": [
+          "inverse dynamics encoder predicts N_latent discrete tokens per timestep",
+          "each latent action component uses a shared codebook of size 8",
+          "LWM VQ-VAE tokenizes frames into visual tokens",
+          "latent action embedding maps discrete latents into transformer token space",
+          "action encoder embeds noisy continuous action chunks and flow timestep"
+        ],
+        "backbone": [
+          "inverse latent action encoder plus forward video decoder",
+          "instruction-tuned LWM-Chat-1M",
+          "autoregressive future visual-token and latent-action predictor",
+          "continuous flow matching action decoder"
+        ],
+        "branches": [
+          "motion-centric latent action branch",
+          "forward future-frame prediction branch",
+          "multimodal future-token/latent-action branch",
+          "continuous action finetuning branch",
+          "ViPRA-AR and ViPRA-FM variants"
+        ],
+        "attention": [
+          "latent action encoder is non-causal over the full clip",
+          "LWM autoregressively predicts future visual tokens",
+          "latent token decoder autoregressively predicts next latent token",
+          "flow decoder conditions on image tokens, language, noisy actions, and flow timestep"
+        ],
+        "heads": [
+          "latent action token decoder MLP",
+          "future visual token head",
+          "flow matching action decoder",
+          "action encoder",
+          "forward frame decoder"
+        ],
+        "objectives": [
+          "latent action reconstruction/dynamics loss",
+          "perceptual and optical-flow consistency",
+          "future visual token cross-entropy",
+          "latent action token cross-entropy",
+          "continuous action flow matching with Beta(1.5,1) timestep sampling"
+        ],
+        "trainingRecipe": [
+          "pretrain with 198K Something-Something videos plus Fractal, BridgeV2, and Kuka robot videos",
+          "use future-state and latent-action chunk prediction during pretraining only",
+          "fine-tune with 100 diverse SIMPLER trajectories or 100-200 real demos",
+          "real robot uses Franka/bimanual Franka and front-facing camera",
+          "H=14 action chunks and replan after 7 steps"
+        ],
+        "inferenceRecipe": [
+          "condition on recent frames and language",
+          "initialize continuous action chunk from Gaussian noise",
+          "solve with 10 Euler steps",
+          "execute chunks with replanning",
+          "KV caching supports effective control up to 22 Hz"
+        ]
+      }
+    },
+    {
+      "id": "lingbot-va",
+      "name": "LingBot-VA",
+      "title": "Causal World Modeling for Robot Control",
+      "year": 2026,
+      "month": "01",
+      "day": "29",
+      "paperUrl": "https://arxiv.org/abs/2601.21998",
+      "localText": "lingbot.txt",
+      "family": "multi_stream",
+      "category": "Separate video-action streams",
+      "problem": "Chunked or bidirectional WAMs lose causality, long-context memory, or reactivity during closed-loop control.",
+      "oneLine": "An autoregressive dual-stream diffusion transformer interleaves sparse video tokens and high-frequency action tokens, with MoT fusion, KV cache, partial denoising, and asynchronous execution.",
+      "insights": {
+        "problem": "Robot policies need persistent memory and real feedback rather than open-loop chunk rollouts.",
+        "method": "Initialize a Wan2.2-5B video stream, add a narrower action stream, fuse them through MoT attention, and train causal video/action flow matching over interleaved tokens.",
+        "novelty": "Combines causal KV-cache rollout, partial denoising for video latents, and FDM-grounded asynchronous inference to avoid stale hallucinated context.",
+        "limitation": "The architecture relies on a large 5.3B model and substantial mixed robot data; web-scale pretraining details are less transparent than method mechanics.",
+        "related": "DreamZero, Genie Envisioner, MotuBrain, UWM"
+      },
+      "metrics": {
+        "runtimeCost": 3,
+        "computeScale": 5,
+        "evidence": 4,
+        "runtimeNote": "Uses 3 video Euler steps to partial denoising plus 10 action steps, KV cache, and async execution."
+      },
+      "diagram": {
+        "pattern": "multi_stream",
+        "inputs": [
+          "language",
+          "video history",
+          "action history",
+          "robot observations"
+        ],
+        "data": [
+          "Agibot",
+          "RoboMind",
+          "InternData-A1",
+          "OXE",
+          "UMI",
+          "RoboCOIN",
+          "internal demos"
+        ],
+        "predictiveState": {
+          "form": "interleaved sparse video and action latent tokens",
+          "runtime": "async",
+          "rendered": false
+        },
+        "components": [
+          "Wan2.2 video stream",
+          "narrow action stream",
+          "MoT cross-modal fusion",
+          "KV cache",
+          "FDM-grounded async loop"
+        ],
+        "trainingStages": [
+          {
+            "name": "Autoregressive video-action pretraining",
+            "data": "about 16K hours / six-source robot corpus",
+            "objective": "causal flow matching for dynamics and inverse dynamics"
+          },
+          {
+            "name": "Noisy history augmentation",
+            "data": "partially noised video history",
+            "objective": "action robustness to partial video denoising"
+          },
+          {
+            "name": "Post-training",
+            "data": "as few as 50 target demonstrations",
+            "objective": "adapt to novel robot platform/tasks"
+          }
+        ],
+        "runtimePath": [
+          "encode observation",
+          "predict partial future video chunk",
+          "denoise action chunk",
+          "execute while predicting next chunk",
+          "ground cache with real observations"
+        ],
+        "outputs": [
+          "video latent chunk",
+          "action chunk"
+        ]
+      },
+      "uncertainty": "Low; local PDF method section and DOCX notes were inspected. Release date uses arXiv first published timestamp.",
+      "literalArchitecture": {
+        "sourceExtract": "methods/lingbot.md",
+        "sourceLines": [
+          "lingbot.txt:277-343",
+          "lingbot.txt:345-477",
+          "lingbot.txt:479-551",
+          "lingbot.txt:573-614"
+        ],
+        "inputTokens": [
+          "Wan2.2 VAE latent visual state",
+          "action vectors projected by MLP",
+          "frozen T5 language instruction",
+          "observation/action history",
+          "interleaved sparse video and high-frequency action tokens"
+        ],
+        "tokenization": [
+          "Wan2.2 causal VAE compresses video by 4x16x16",
+          "video tokens are downsampled by factor 4",
+          "sequence interleaves one video token with multiple action tokens",
+          "universal dual-arm 30D action representation",
+          "single-layer MLP action encoder/decoder with quantile normalization"
+        ],
+        "backbone": [
+          "Wan2.2-5B video stream with 3072 hidden dim and 30 layers",
+          "action stream with same depth and 768 hidden dim",
+          "Mixture-of-Transformers fusion",
+          "interpolated video weights initialize the action stream",
+          "RoPE positional encoding"
+        ],
+        "branches": [
+          "video dynamics branch",
+          "inverse dynamics/action branch",
+          "FDM grounding branch",
+          "KV-cache memory branch",
+          "limited-demo post-training branch"
+        ],
+        "attention": [
+          "causal attention mask over temporal sequence",
+          "separate video/action QKV projections",
+          "action tokens project to video dimension for joint attention then project back",
+          "teacher forcing with ground-truth history",
+          "packed sequences up to 10K tokens"
+        ],
+        "heads": [
+          "video flow velocity head",
+          "action flow velocity head",
+          "linear action projection head",
+          "FDM prediction head",
+          "KV-cache inference loop"
+        ],
+        "objectives": [
+          "video dynamics flow loss",
+          "inverse dynamics action flow loss",
+          "L = Ldyn + lambda Linv",
+          "noisy history augmentation",
+          "teacher-forced autoregressive training"
+        ],
+        "trainingRecipe": [
+          "aggregate about 16K hours from six public/internal robot sources",
+          "random chunk size K in [1,4], K=4 at deployment",
+          "pretrain for 1.4T tokens with AdamW",
+          "post-train with as few as 50 demonstrations",
+          "uniform source sampling and text dropout 0.1"
+        ],
+        "inferenceRecipe": [
+          "initialize KV cache from observation",
+          "partially denoise video to about s=0.6 with 3 Euler steps",
+          "denoise actions to s=1.0 with 10 Euler steps",
+          "execute current chunk while predicting next",
+          "insert real observations and use FDM grounding to avoid stale rollouts"
+        ]
+      }
+    },
+    {
+      "id": "dreamzero",
+      "name": "DreamZero",
+      "title": "World Action Models are Zero-shot Policies",
+      "year": 2026,
+      "month": "02",
+      "day": "17",
+      "paperUrl": "https://arxiv.org/abs/2602.15922",
+      "localText": "dreamzero.txt",
+      "family": "unified",
+      "category": "Unified action-observation prediction",
+      "problem": "WAMs need zero-shot generalization, cross-embodiment transfer, and real-time control without separating video and action too loosely.",
+      "oneLine": "A 14B autoregressive video diffusion transformer jointly denoises future video latents and action tokens in one sequence, then uses cache, async execution, and Flash distillation for real-time control.",
+      "insights": {
+        "problem": "Separate video prediction plus IDM can misalign futures and actions, while bidirectional chunk models accumulate errors in closed-loop control.",
+        "method": "Fine-tune Wan2.1-I2V with action tokens in the same autoregressive chunk sequence as video latents, using teacher-forced flow matching and closed-loop KV cache replacement.",
+        "novelty": "Treats WAM pretraining itself as a zero-shot policy objective over diverse non-repetitive robot video/action data.",
+        "limitation": "The strongest model is very large and system-heavy; many speedups depend on hardware, caching, quantization, and a Flash variant.",
+        "related": "LingBot-VA, UWM, GR-2, Cosmos Policy"
+      },
+      "metrics": {
+        "runtimeCost": 3,
+        "computeScale": 5,
+        "evidence": 5,
+        "runtimeNote": "Baseline is about 5.7 s per chunk; reported optimizations plus DreamZero-Flash reduce latency to about 150 ms on GB200."
+      },
+      "diagram": {
+        "pattern": "unified",
+        "inputs": [
+          "language",
+          "visual context",
+          "proprioceptive state",
+          "noisy future video/action chunks"
+        ],
+        "data": [
+          "500h AgiBot G1",
+          "DROID-Franka",
+          "YAM robot",
+          "human egocentric transfer videos"
+        ],
+        "predictiveState": {
+          "form": "joint autoregressive video/action latent chunks",
+          "runtime": "async",
+          "rendered": true
+        },
+        "components": [
+          "Frozen text/image/VAE encoders",
+          "State encoder",
+          "Autoregressive video-action DiT",
+          "Video decoder",
+          "Action decoder",
+          "KV-cache closed loop"
+        ],
+        "trainingStages": [
+          {
+            "name": "WAM pretraining",
+            "data": "diverse non-repetitive robot trajectories",
+            "objective": "joint flow matching over video and action chunks"
+          },
+          {
+            "name": "Cross-embodiment co-training",
+            "data": "YAM or human videos mixed with AgiBot data",
+            "objective": "transfer embodiment/task priors"
+          },
+          {
+            "name": "Post-training and Flash",
+            "data": "task-specific data plus distillation",
+            "objective": "adapt tasks and reduce denoising steps"
+          }
+        ],
+        "runtimePath": [
+          "real observation context",
+          "joint video/action denoising",
+          "execute action chunk",
+          "replace generated frames with real observations in KV cache"
+        ],
+        "outputs": [
+          "future video chunk",
+          "continuous action chunk"
+        ]
+      },
+      "uncertainty": "Low; local PDF method section and DOCX notes were inspected. Release date uses arXiv first published timestamp.",
+      "literalArchitecture": {
+        "sourceExtract": "methods/dreamzero.md",
+        "sourceLines": [
+          "dreamzero.txt:311-337",
+          "dreamzero.txt:339-428",
+          "dreamzero.txt:429-566",
+          "dreamzero.txt:571-666"
+        ],
+        "inputTokens": [
+          "VAE visual context",
+          "frozen text instruction",
+          "trainable proprioceptive state token",
+          "noisy future video latent chunk",
+          "noisy normalized action chunk",
+          "clean previous chunks"
+        ],
+        "tokenization": [
+          "Wan2.1-I2V video latents for future frames",
+          "relative joint-position action representation",
+          "video and action vectors concatenated per chunk",
+          "all frames/actions in a chunk share one timestep",
+          "multi-view cameras can be spatially concatenated"
+        ],
+        "backbone": [
+          "Wan2.1-I2V-14B-480P autoregressive DiT",
+          "update all DiT blocks plus state/action encoder/decoder",
+          "freeze text/image encoders and VAE",
+          "DreamZero-Flash fast variant",
+          "5B Wan ablation"
+        ],
+        "branches": [
+          "single joint video-action denoising branch",
+          "video decoder branch",
+          "continuous action decoder branch",
+          "system optimization branch",
+          "closed-loop KV replacement branch"
+        ],
+        "attention": [
+          "autoregressive chunk-level attention",
+          "teacher forcing with clean previous chunks",
+          "real observations replace generated frames in KV cache",
+          "action-video masking prevents future leakage"
+        ],
+        "heads": [
+          "joint velocity prediction head",
+          "VAE video decoder",
+          "continuous action decoder",
+          "KV-cache memory",
+          "DreamZero-Flash variant"
+        ],
+        "objectives": [
+          "joint video/action flow matching",
+          "shared denoising timestep for video and action",
+          "trajectory-level masked updates",
+          "teacher-forced current-chunk denoising",
+          "post-training and Flash distillation"
+        ],
+        "trainingRecipe": [
+          "train on about 500h AgiBot G1 across 22 environments and 7193 episodes",
+          "also train on DROID for Franka",
+          "100K steps with global batch size 128 per major dataset",
+          "filter idle actions",
+          "mix YAM or human egocentric data for cross-embodiment transfer"
+        ],
+        "inferenceRecipe": [
+          "naive 14B inference uses 16 denoising steps and costs about 5.7s per chunk",
+          "asynchronous execution overlaps inference with a 48-step/1.6s action chunk",
+          "CFG parallelism splits cond/uncond passes",
+          "DiT caching reduces effective steps",
+          "compile, CUDA graphs, kernels, quantization, and Flash reduce latency to about 150ms on GB200"
+        ]
+      }
+    },
+    {
+      "id": "rhoda-dva",
+      "name": "Rhoda DVA",
+      "title": "Causal Video Models Are Data-Efficient Robot Policy Learners",
+      "year": 2026,
+      "month": "03",
+      "day": "15",
+      "paperUrl": "https://www.rhoda.ai/research/direct-video-action",
+      "localText": "rhoda-direct-video-action.html",
+      "family": "pixel_idm",
+      "category": "Pixel-space IDM",
+      "problem": "Direct robot policies need the scale and long-context memory of video models without waiting for massive robot-action datasets.",
+      "oneLine": "Rhoda DVA uses a causal video model as the decision-maker, then translates generated futures to real-time actions through an inverse dynamics model and leapfrog execution.",
+      "insights": {
+        "problem": "VLAs have short visual context and require much more robot data than video models can learn from at web scale.",
+        "method": "Autoregressively generate video from long context, translate predicted video to actions with an IDM, and overlap generation with execution in a closed-loop leapfrog pipeline.",
+        "novelty": "Frames robot control as direct causal video generation with long-context visual memory and in-context human-demo conditioning.",
+        "limitation": "The public source is a research page with qualitative videos and no conventional benchmark table or detailed architecture paper.",
+        "related": "Vidar, Act2Goal, VPP, DreamZero"
+      },
+      "metrics": {
+        "runtimeCost": 3,
+        "computeScale": 4,
+        "evidence": 2,
+        "runtimeNote": "Claims real-time closed-loop operation via leapfrog inference, but public latency/model-scale details are limited."
+      },
+      "diagram": {
+        "pattern": "pixel_idm",
+        "inputs": [
+          "long video context",
+          "real observations",
+          "optional in-context human demo",
+          "generated action rollout"
+        ],
+        "data": [
+          "web video",
+          "about 10 hours robot data for IDM/task learning per notes",
+          "internal robot videos"
+        ],
+        "predictiveState": {
+          "form": "autoregressive generated video",
+          "runtime": "async",
+          "rendered": true
+        },
+        "components": [
+          "Causal video model",
+          "Generated video rollout",
+          "Inverse dynamics model",
+          "Leapfrog scheduler",
+          "KV-cache visual memory"
+        ],
+        "trainingStages": [
+          {
+            "name": "Causal video pretraining",
+            "data": "large-scale video",
+            "objective": "next-video prediction with long context"
+          },
+          {
+            "name": "IDM/action adaptation",
+            "data": "small robot dataset",
+            "objective": "translate generated video to executable actions"
+          },
+          {
+            "name": "Closed-loop deployment",
+            "data": "real observations during execution",
+            "objective": "ground context and avoid drift"
+          }
+        ],
+        "runtimePath": [
+          "video context",
+          "causal video model",
+          "generated video",
+          "IDM",
+          "action rollout",
+          "real observation feedback"
+        ],
+        "outputs": [
+          "generated future video",
+          "action rollout"
+        ]
+      },
+      "uncertainty": "Medium to high; source is Rhoda public research HTML plus DOCX notes rather than a full method-section PDF. Month-only page date is placed at March 15 for timeline layout.",
+      "literalArchitecture": {
+        "sourceExtract": "methods/rhoda-dva.md",
+        "sourceLines": [
+          "rhoda-direct-video-action.html:Direct Video-Action Models section",
+          "VLA Video Model Adaption.docx:Rhoda AI section"
+        ],
+        "inputTokens": [
+          "hundreds of frames of video context",
+          "current real observation frames",
+          "generated future video frames",
+          "optional one-shot human demo video",
+          "action rollout"
+        ],
+        "tokenization": [
+          "causal video model maintains long visual context autoregressively",
+          "KV cache/prefill reuses encoded context",
+          "IDM receives generated video and outputs actions",
+          "real observations ground robot-control context",
+          "autoregressive video rollouts are used for visualization/debugging"
+        ],
+        "backbone": [
+          "native causal video model",
+          "inverse dynamics model",
+          "Direct Video-Action loop",
+          "long-context visual memory"
+        ],
+        "branches": [
+          "video generation branch",
+          "IDM action branch",
+          "leapfrog runtime branch",
+          "debug video rollout branch"
+        ],
+        "attention": [
+          "causal temporal attention over video context",
+          "long-context memory through autoregressive state and KV cache",
+          "closed-loop control uses real observations as context"
+        ],
+        "heads": [
+          "causal video prediction head",
+          "inverse dynamics action head",
+          "action rollout scheduler",
+          "debug video rollout output"
+        ],
+        "objectives": [
+          "causal video generation",
+          "IDM action prediction",
+          "small-data closed-loop task learning",
+          "qualitative long-horizon and one-shot demo evaluation"
+        ],
+        "trainingRecipe": [
+          "pretrain causal video model from scratch according to notes",
+          "train/adapt IDM with about 10 hours robot data according to notes",
+          "tasks emphasize long-horizon memory and one-shot demos",
+          "public source is a research page rather than benchmark paper"
+        ],
+        "inferenceRecipe": [
+          "reuse encoded context with KV caching",
+          "generate next video-action chunk while executing previous chunk",
+          "feed real observations back into context",
+          "use generated videos for interpretability and safety/debug inspection"
+        ]
+      }
+    },
+    {
+      "id": "dit4dit",
+      "name": "DiT4DiT",
+      "title": "DiT4DiT: Jointly Modeling Video Dynamics and Actions for Generalizable Robot Control",
+      "year": 2026,
+      "month": "03",
+      "day": "11",
+      "paperUrl": "https://arxiv.org/abs/2603.10448",
+      "localText": "dit4dit.txt",
+      "family": "latent_idm",
+      "category": "Latent-space IDM",
+      "problem": "Action policies should exploit video diffusion dynamics directly, not only decoded future frames or frozen hidden features.",
+      "oneLine": "A cascaded video DiT and action DiT are jointly trained with dual flow matching; the action DiT cross-attends to intermediate denoising features at a fixed feature timestep.",
+      "insights": {
+        "problem": "Separate video generation and action training can underuse the video model and produce unstable action features.",
+        "method": "Initialize video DiT from Cosmos-Predict2.5, hook intermediate hidden states at tau_f, and train a GR00T-style action DiT jointly with video flow loss.",
+        "novelty": "Introduces a tri-timestep scheme separating video denoising timestep, feature-extraction timestep, and action denoising timestep.",
+        "limitation": "Still depends on a heavy video backbone and reaches about 6 Hz in the reported A100 setup; view occlusion remains a concern in egocentric setups.",
+        "related": "mimic-video, VPP, Vidar, Genie Envisioner"
+      },
+      "metrics": {
+        "runtimeCost": 3,
+        "computeScale": 5,
+        "evidence": 4,
+        "runtimeNote": "Action path uses a single deterministic video feature extraction pass plus action denoising; reported around 6 Hz on A100."
+      },
+      "diagram": {
+        "pattern": "latent_idm",
+        "inputs": [
+          "current observation",
+          "language goal",
+          "proprioceptive state",
+          "noisy future latent",
+          "noisy action trajectory"
+        ],
+        "data": [
+          "RoboCasa GR1",
+          "LIBERO",
+          "Unitree G1 real-world data"
+        ],
+        "predictiveState": {
+          "form": "intermediate video DiT denoising hidden states",
+          "runtime": "partial",
+          "rendered": false
+        },
+        "components": [
+          "Causal video VAE",
+          "Video diffusion transformer",
+          "Hidden-state hook at tau_f",
+          "Action diffusion transformer",
+          "Linear action velocity head"
+        ],
+        "trainingStages": [
+          {
+            "name": "Video-generation proxy validation",
+            "data": "robot observations",
+            "objective": "self-supervised video generation scaling proxy"
+          },
+          {
+            "name": "Joint dual-DiT training",
+            "data": "observation/action/language trajectories",
+            "objective": "L_action + lambda L_video flow matching"
+          },
+          {
+            "name": "Inference",
+            "data": "current obs/state/language",
+            "objective": "extract one stable visual feature and denoise actions"
+          }
+        ],
+        "runtimePath": [
+          "VAE encode observation",
+          "fixed-timestep video DiT feature hook",
+          "action DiT cross-attention",
+          "Euler action denoising"
+        ],
+        "outputs": [
+          "continuous action trajectory",
+          "optional future frame"
+        ]
+      },
+      "uncertainty": "Low; local PDF method section and DOCX notes were inspected. Release date uses arXiv first published timestamp.",
+      "literalArchitecture": {
+        "sourceExtract": "methods/dit4dit.md",
+        "sourceLines": [
+          "dit4dit.txt:210-214",
+          "dit4dit.txt:274-350",
+          "dit4dit.txt:351-452",
+          "dit4dit.txt:457-501"
+        ],
+        "inputTokens": [
+          "condition observation frames",
+          "future frame target",
+          "Cosmos-Reason language goal embeddings",
+          "proprioceptive state embeddings",
+          "noisy action trajectory tokens",
+          "learnable future query tokens"
+        ],
+        "tokenization": [
+          "causal video VAE compresses frames into latent z_t/z_t+1",
+          "video DiT operates on noisy future latent at tau_v",
+          "hook extracts intermediate activations at tau_f",
+          "action DiT concatenates proprioception, noisy actions, and learnable future tokens",
+          "Euler integration refines actions"
+        ],
+        "backbone": [
+          "Cosmos-Predict2.5-2B video backbone",
+          "Cosmos-Reason1 language embeddings",
+          "GR00T-N1-style action diffusion transformer",
+          "AdaLN action timestep injection",
+          "frozen text encoder and VAE, jointly fine-tuned DiTs"
+        ],
+        "branches": [
+          "video latent dynamics branch",
+          "intermediate hidden-state extraction branch",
+          "action inverse dynamics branch",
+          "optional video decoding branch"
+        ],
+        "attention": [
+          "action DiT cross-attends to h_tau_f visual features",
+          "AdaLN injects tau_a",
+          "tri-timestep decouples tau_v/tau_f/tau_a",
+          "tau_a Beta sampling emphasizes critical action-flow phases"
+        ],
+        "heads": [
+          "video velocity field head",
+          "hidden-state hook interface",
+          "linear action velocity head",
+          "VAE future-frame decoder"
+        ],
+        "objectives": [
+          "video flow-matching loss",
+          "masked action flow-matching loss",
+          "L_total = L_action + lambda L_video",
+          "fixed feature timestep stabilization",
+          "video generation proxy validation"
+        ],
+        "trainingRecipe": [
+          "jointly update video and action DiTs",
+          "sample tau_v uniformly",
+          "sample tau_f from fixed feature extraction points",
+          "sample tau_a from a Beta-derived distribution",
+          "evaluate on LIBERO, RoboCasa GR1, and Unitree G1"
+        ],
+        "inferenceRecipe": [
+          "encode current observation with frozen VAE",
+          "optionally sample full future video",
+          "perform one video backbone pass at tau_f for action",
+          "denoise action trajectory with Na Euler steps",
+          "can run video, action, or both"
         ]
       }
     }

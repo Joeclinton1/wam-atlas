@@ -16,8 +16,8 @@ import {
   scoreLabel,
   wrapText,
   shortText
-} from './shared.js?v=refactor-modules-2';
-import { renderDiagram, getArchitectureSpec } from './diagrams.js?v=refactor-modules-2';
+} from './shared.js?v=logo-metadata-4';
+import { renderDiagram, getArchitectureSpec } from './diagrams.js?v=logo-metadata-4';
 function filteredModels() {
   const q = state.query.trim().toLowerCase();
   if (!q) return state.models;
@@ -676,21 +676,36 @@ function translateProblemGroup(group, dx, dy) {
 function timelineGeometry(models, bounds) {
   const sorted = models.slice().sort((a, b) => slugDate(a) - slugDate(b) || a.name.localeCompare(b.name));
   const dates = sorted.map(slugDate);
-  const min = Math.floor(Math.min(...dates));
-  const max = Math.ceil(Math.max(...dates));
-  const span = Math.max(0.1, max - min);
+  const minDate = Math.min(...dates);
+  const maxDate = Math.max(...dates);
+  const domainMin = minDate - 0.055;
+  const domainMax = maxDate + 0.07;
+  const span = Math.max(0.1, domainMax - domainMin);
+  const timelineWidth = Math.max(bounds.width * 1.72, 1680);
   const left = 92;
-  const right = bounds.width - 84;
+  const right = timelineWidth - 92;
   const centerY = bounds.height / 2 + 8;
   const positions = new Map();
   const connectors = [];
+  const monthTicks = timelineMonthTicks(domainMin, domainMax);
+  const laneState = { top: [], bottom: [] };
+  const laneGap = bounds.width < 760 ? 34 : 38;
+  const baseGap = bounds.width < 760 ? 50 : 56;
+  const topLanes = clamp(Math.floor((centerY - 58 - baseGap) / laneGap) + 1, 2, 5);
+  const bottomLanes = clamp(Math.floor((bounds.height - 58 - centerY - baseGap) / laneGap) + 1, 2, 5);
 
   sorted.forEach((model, index) => {
-    const x = left + ((slugDate(model) - min) / span) * (right - left);
-    const side = index % 2 === 0 ? -1 : 1;
-    const lane = Math.floor(index / 2) % 5;
-    const y = centerY + side * (72 + lane * 46);
-    const nodeX = clamp(x + (((index % 4) - 1.5) * 18), 60, bounds.width - 60);
+    const x = left + ((slugDate(model) - domainMin) / span) * (right - left);
+    const labelW = timelinePaperLabelWidth(model);
+    const preferredSide = pickTimelineSide(model, index);
+    const lanePick = assignTimelineSlot(laneState, preferredSide, x, labelW, { top: topLanes, bottom: bottomLanes }, {
+      minX: 54
+    });
+    const sideKey = lanePick.side;
+    const side = sideKey === "top" ? -1 : 1;
+    const lane = lanePick.lane;
+    const y = centerY + side * (baseGap + lane * laneGap);
+    const nodeX = lanePick.x;
     const nodeY = clamp(y, 56, bounds.height - 56);
     positions.set(model.id, { x: nodeX, y: nodeY });
     connectors.push({
@@ -703,7 +718,93 @@ function timelineGeometry(models, bounds) {
     });
   });
 
-  return { min, max, left, right, centerY, positions, connectors };
+  return {
+    domainMin,
+    domainMax,
+    left,
+    right,
+    centerY,
+    positions,
+    connectors,
+    monthTicks
+  };
+}
+
+function pickTimelineSide(model, index) {
+  const familyBias = {
+    unified: "top",
+    joint_latent: "top",
+    multi_stream: "top",
+    encoder_only: "top",
+    pixel_idm: "bottom",
+    latent_idm: "bottom",
+    implicit_future: "bottom",
+    latent_action: "bottom",
+    alignment: "bottom",
+    multimodal: "top",
+    online_adaptation: "bottom",
+    speedup: "top"
+  };
+  return familyBias[model.family] || (index % 2 === 0 ? "top" : "bottom");
+}
+
+function assignTimelineSlot(laneState, preferredSide, x, labelW, maxLanes, bounds) {
+  const otherSide = preferredSide === "top" ? "bottom" : "top";
+  const preferred = timelineLaneCandidate(laneState[preferredSide], x, labelW, maxLanes[preferredSide], bounds);
+  const alternate = timelineLaneCandidate(laneState[otherSide], x, labelW, maxLanes[otherSide], bounds);
+  const useAlternate = alternate.overflow + 12 < preferred.overflow;
+  const chosen = useAlternate ? alternate : preferred;
+  const side = useAlternate ? otherSide : preferredSide;
+  laneState[side][chosen.lane] = chosen.x;
+  return { ...chosen, side };
+}
+
+function timelineLaneCandidate(lanes, x, labelW, maxLanes, bounds) {
+  const gap = 16;
+  let bestLane = 0;
+  let bestOverflow = Infinity;
+  let bestX = x;
+  for (let lane = 0; lane < maxLanes; lane += 1) {
+    const lastX = lanes[lane] ?? -Infinity;
+    const overflow = lastX + labelW + gap - x;
+    if (overflow <= 0) {
+      const placedX = Math.max(bounds.minX, x);
+      return { lane, x: placedX, overflow: 0 };
+    }
+    if (overflow < bestOverflow) {
+      bestOverflow = overflow;
+      bestLane = lane;
+      bestX = Math.max(x, lastX + labelW + gap);
+    }
+  }
+  const placedX = Math.max(bounds.minX, bestX);
+  return { lane: bestLane, x: placedX, overflow: bestOverflow };
+}
+
+function timelinePaperLabelWidth(model) {
+  return clamp(shortPaperName(model.name).length * 6.1 + 26, 66, 116);
+}
+
+function timelineMonthTicks(domainMin, domainMax) {
+  const labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const startIndex = Math.floor(domainMin * 12);
+  const endIndex = Math.ceil(domainMax * 12);
+  const ticks = [];
+  for (let index = startIndex; index <= endIndex; index += 1) {
+    const year = Math.floor(index / 12);
+    const monthIndex = ((index % 12) + 12) % 12;
+    const value = year + monthIndex / 12;
+    if (value < domainMin || value > domainMax) continue;
+    const isYearStart = monthIndex === 0;
+    const isEdge = ticks.length === 0 || index === endIndex;
+    ticks.push({
+      value,
+      label: isYearStart || isEdge ? `${labels[monthIndex]} '${String(year).slice(-2)}` : labels[monthIndex],
+      major: isYearStart || isEdge,
+      side: ticks.length % 2 === 0 ? "top" : "bottom"
+    });
+  }
+  return ticks;
 }
 
 function drawProblemBackdrop(group, defs, geometry) {
@@ -757,17 +858,23 @@ function paperTetherPath(leaf, point) {
 
 function drawTimelineBackdrop(group, geometry) {
   const layer = atlasAnnotationLayer("timeline-map");
-  const ticks = [];
-  for (let year = geometry.min; year <= geometry.max; year += 1) {
-    const x = geometry.left + ((year - geometry.min) / Math.max(0.1, geometry.max - geometry.min)) * (geometry.right - geometry.left);
-    ticks.push(`
-      <line class="timeline-tick" x1="${x}" y1="${geometry.centerY - 8}" x2="${x}" y2="${geometry.centerY + 8}"></line>
-      <text class="timeline-date" x="${x}" y="${geometry.centerY + 31}" text-anchor="middle">${year}</text>
-    `);
-  }
+  const ticks = geometry.monthTicks.map((tick) => {
+    const x = geometry.left + ((tick.value - geometry.domainMin) / Math.max(0.1, geometry.domainMax - geometry.domainMin)) * (geometry.right - geometry.left);
+    const cls = tick.major ? "timeline-tick is-major" : "timeline-tick";
+    const labelY = geometry.centerY + (tick.side === "top" ? -14 : 23);
+    return `
+      <line class="${cls}" x1="${x}" y1="${geometry.centerY - (tick.major ? 15 : 10)}" x2="${x}" y2="${geometry.centerY + (tick.major ? 15 : 10)}"></line>
+      <text class="timeline-date ${tick.major ? "is-major" : ""} is-${tick.side}" x="${x}" y="${labelY}" text-anchor="middle">${tick.label}</text>
+    `;
+  });
   const lines = geometry.connectors.map((item, index) => {
-    const midY = item.y < item.centerY ? item.y + 22 : item.y - 22;
-    return `<path class="timeline-branch" stroke="${item.color}" d="M ${item.x} ${item.centerY} V ${midY} H ${item.nodeX} V ${item.y}"></path>`;
+    const side = item.y < item.centerY ? -1 : 1;
+    const elbowY = item.centerY + side * 22;
+    const endY = item.y - side * 16;
+    return `
+      <circle class="timeline-bead" cx="${item.x}" cy="${item.centerY}" r="4.5" fill="${item.color}"></circle>
+      <path class="timeline-branch" stroke="${item.color}" d="M ${item.x} ${item.centerY + side * 5} V ${elbowY} H ${item.nodeX} V ${endY}"></path>
+    `;
   }).join("");
   layer.innerHTML = `
     <path class="timeline-spine" d="M ${geometry.left} ${geometry.centerY} H ${geometry.right}"></path>
@@ -1364,7 +1471,7 @@ function atlasAnnotationLayer(name) {
 
 function drawPaperNode(model, radius, color, hasLiteral, labelSide = "right") {
   const inst = institutionFor(model);
-  const logo = institutionLogoUrl(inst.domain);
+  const logo = inst.logoUrl || institutionLogoUrl(inst.domain);
   const labelX = labelSide === "left" ? -(radius + 9) : labelSide === "bottom" ? 0 : radius + 9;
   const labelY = labelSide === "bottom" ? radius + 13 : 4;
   const labelAnchor = labelSide === "left" ? "end" : labelSide === "bottom" ? "middle" : "start";
@@ -1372,8 +1479,7 @@ function drawPaperNode(model, radius, color, hasLiteral, labelSide = "right") {
     <circle class="node-halo" r="${radius + 5}" fill="${color}" opacity=".16"></circle>
     <circle class="node-ring" r="${radius}" fill="${color}"></circle>
     <circle class="node-logo-bg" r="9.5" fill="#fff"></circle>
-    <text class="logo-initials" x="0" y="3" text-anchor="middle">${escapeHtml(inst.initials)}</text>
-    <image class="node-logo-image" href="${escapeHtml(logo)}" x="-8" y="-8" width="16" height="16"></image>
+    <image class="node-logo-image" href="${escapeHtml(logo)}" x="-8" y="-8" width="16" height="16" preserveAspectRatio="xMidYMid meet"></image>
     ${hasLiteral ? `<circle class="node-literal-dot" cx="${radius - 2}" cy="${-radius + 2}" r="3.3"></circle>` : ""}
     <text class="node-name" x="${labelX}" y="${labelY}" text-anchor="${labelAnchor}">${escapeHtml(shortPaperName(model.name))}</text>
     <title>${escapeHtml(`${model.name} - ${inst.label}`)}</title>
@@ -1381,16 +1487,21 @@ function drawPaperNode(model, radius, color, hasLiteral, labelSide = "right") {
 }
 
 function institutionFor(model) {
-  const [label, domain] = institutionMeta[model.id] || ["Institution", "arxiv.org"];
+  const [label, domain, options = {}] = institutionMeta[model.id] || ["Institution", "arxiv.org"];
   const words = label.replace(/\([^)]*\)/g, "").split(/\s+/).filter(Boolean);
   const initials = words.length === 1
     ? words[0].slice(0, 2)
     : words.slice(0, 2).map((word) => word[0]).join("");
-  return { label, domain, initials: initials.toUpperCase() };
+  return { label, domain, initials: initials.toUpperCase(), ...options };
 }
 
 function shortPaperName(name) {
+  if (state.mode === "timeline") return shortText(name, 15);
   return shortText(name, state.mode === "problem" ? 12 : 24);
+}
+
+function modelDateLabel(model) {
+  return `${model.year}-${String(model.month || "06").padStart(2, "0")}-${String(model.day || "15").padStart(2, "0")}`;
 }
 
 function institutionLogoUrl(domain) {
@@ -1466,7 +1577,7 @@ function renderAtlas() {
 
     const radius = state.mode === "taxonomy" ? (hasLiteral ? 7.5 : 6) : hasLiteral ? 12 : 9;
     const color = state.mode === "taxonomy" ? problemColorForModel(model) : familyColors[model.family] || "#61717a";
-    const labelSide = state.mode === "taxonomy" ? "bottom" : target.x > width - 180 ? "left" : "right";
+    const labelSide = state.mode === "taxonomy" || state.mode === "timeline" ? "bottom" : target.x > width - 180 ? "left" : "right";
     let paperRadius = radius;
     let taxonomyStyle = "";
     if (state.mode === "taxonomy") {
@@ -1475,7 +1586,12 @@ function renderAtlas() {
       const logoRadius = layout?.paperLogoRadius || 5.8;
       taxonomyStyle = `--taxonomy-label-size:${layout?.paperLabelSize || 7.2}px;--taxonomy-logo-radius:${logoRadius}px;--taxonomy-logo-size:${logoRadius * 1.65}px;`;
     }
-    node.innerHTML = `<g class="node-body ${state.mode === "taxonomy" ? "taxonomy-node-body" : ""}" style="${taxonomyStyle}">${drawPaperNode(model, paperRadius, color, hasLiteral, labelSide)}</g>`;
+    const bodyClass = [
+      "node-body",
+      state.mode === "taxonomy" ? "taxonomy-node-body" : "",
+      state.mode === "timeline" ? "timeline-node-body" : ""
+    ].filter(Boolean).join(" ");
+    node.innerHTML = `<g class="${bodyClass}" style="${taxonomyStyle}">${drawPaperNode(model, paperRadius, color, hasLiteral, labelSide)}</g>`;
     node.addEventListener("mouseenter", (event) => showPreview(model.id, event));
     node.addEventListener("mousemove", positionPreview);
     node.addEventListener("mouseleave", hidePreview);
@@ -1712,6 +1828,9 @@ function bindZoom(svg, group) {
   svg.onpointerup = () => {
     state.dragging = null;
   };
+  svg.onpointercancel = () => {
+    state.dragging = null;
+  };
 }
 
 function showPreview(id, event) {
@@ -1805,6 +1924,15 @@ function defaultZoomForMode(mode) {
       top: 102,
       bottom: 18
     });
+  }
+  if (mode === "timeline") {
+    const k = width < 760 ? 0.62 : 0.76;
+    const timelineWidth = Math.max(width * 1.72, 1680);
+    return {
+      k,
+      x: width - timelineWidth * k - 34,
+      y: (height * (1 - k)) / 2
+    };
   }
   const k = width < 760 ? 0.72 : 0.8;
   return { k, x: (width * (1 - k)) / 2, y: (height * (1 - k)) / 2 };
@@ -1920,7 +2048,7 @@ function renderSources() {
     .sort((a, b) => slugDate(a) - slugDate(b) || a.name.localeCompare(b.name))
     .map((model) => `
       <tr>
-        <td>${escapeHtml(model.year)}</td>
+        <td>${escapeHtml(modelDateLabel(model))}</td>
         <td><a href="${escapeHtml(model.paperUrl)}" target="_blank" rel="noreferrer">${escapeHtml(model.name)}</a></td>
         <td>${escapeHtml(model.category)}</td>
         <td>${escapeHtml(model.localText || "downloaded/extraction pending or survey-only")}</td>
@@ -1929,7 +2057,7 @@ function renderSources() {
     `).join("");
   $("#paperTable").innerHTML = `
     <table>
-      <thead><tr><th>Year</th><th>Paper</th><th>Category</th><th>Local Text</th><th>Diagram Status</th></tr></thead>
+      <thead><tr><th>Released</th><th>Paper</th><th>Category</th><th>Local Text</th><th>Diagram Status</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
   `;
