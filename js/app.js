@@ -17,8 +17,8 @@ import {
   scoreLabel,
   wrapText,
   shortText
-} from './shared.js?v=wam-atlas-28';
-import { renderDiagram, architectureDiagramMarkup, getArchitectureSpec } from './diagrams.js?v=wam-atlas-28';
+} from './shared.js?v=wam-atlas-29';
+import { renderDiagram, architectureDiagramMarkup, getArchitectureSpec } from './diagrams.js?v=wam-atlas-29';
 
 function hasMetricsTargetBenchmark(model) {
   return Boolean(model.metrics?.comparative?.metricsEligible);
@@ -158,7 +158,7 @@ function drawAtlasBackdrop(group, defs, bounds, geometry = null) {
     return;
   }
   if (state.mode === "taxonomy") {
-    drawTaxonomyBackdrop(group, bounds);
+    drawTaxonomyBackdrop(group, bounds, defs);
   }
 }
 
@@ -1420,7 +1420,35 @@ function benchmarkLabel(key) {
   return labels[key] || key;
 }
 
-function drawTaxonomyBackdrop(group, bounds) {
+const taxonomyTreeBranches = [
+  {
+    id: "architecture",
+    label: "Architecture",
+    color: "#8fc5d4",
+    children: [
+      { id: "future-bridge", label: "Future-to-action bridge", families: ["pixel_idm", "latent_idm", "implicit_future"] },
+      { id: "shared-core", label: "Shared temporal core", families: ["unified", "joint_latent", "multi_stream"] },
+      { id: "runtime-policy", label: "Fast runtime policy", families: ["encoder_only"] },
+      { id: "physical-grounding", label: "Physical state grounding", families: ["multimodal"] }
+    ]
+  },
+  {
+    id: "enhancement",
+    label: "Enhancement",
+    color: "#ddb06d",
+    children: [
+      { id: "action-abstraction", label: "Action abstraction", families: ["latent_action"] },
+      { id: "representation-alignment", label: "Representation alignment", families: ["alignment"] },
+      { id: "deployment-adaptation", label: "Deployment adaptation", families: ["online_adaptation", "speedup"] }
+    ]
+  }
+];
+
+function drawTaxonomyBackdrop(group, bounds, defs) {
+  if (state.taxonomyTree) {
+    drawTaxonomyTreeBackdrop(group, bounds, defs);
+    return;
+  }
   if (state.taxonomyGallery) {
     drawTaxonomyGalleryBackdrop(group, bounds);
     return;
@@ -1450,6 +1478,217 @@ function drawTaxonomyBackdrop(group, bounds) {
     `);
   });
   group.appendChild(layer);
+}
+
+function drawTaxonomyTreeBackdrop(group, bounds, defs) {
+  const layer = atlasAnnotationLayer("taxonomy-tree-map");
+  const geometry = taxonomyTreeGeometry(bounds);
+  geometry.edges.forEach((edge, index) => {
+    drawFadingConnector(layer, defs, `taxonomy-tree-${index}-${edge.from.id}-${edge.to.id}`, edge.from, edge.to, edge.color, true);
+  });
+  const drawNode = (node) => {
+    const color = node.color || "#9aa6aa";
+    const lines = wrapText(node.label, taxonomyTreeTextChars(node)).slice(0, 3);
+    const firstDy = -(lines.length - 1) * node.lineHeight / 2 + 4;
+    return `
+      <g class="taxonomy-tree-node taxonomy-tree-${node.level}${node.family ? " taxonomy-family" : ""}" data-family="${escapeHtml(node.family || "")}" data-x="${node.x}" data-y="${node.y}" transform="translate(${node.x} ${node.y})" style="--tax-color:${color}">
+        <rect x="${-node.w / 2}" y="${-node.h / 2}" width="${node.w}" height="${node.h}"></rect>
+        <text text-anchor="middle" y="${firstDy}">
+          ${lines.map((line, index) => `<tspan x="0" dy="${index ? node.lineHeight : 0}">${escapeHtml(line)}</tspan>`).join("")}
+        </text>
+      </g>
+    `;
+  };
+  layer.innerHTML += geometry.nodes.map(drawNode).join("");
+  geometry.paperContainers.forEach((container) => {
+    layer.insertAdjacentHTML("beforeend", `
+      <g class="taxonomy-tree-paper-container" style="--tax-color:${container.color}">
+        <rect x="${container.x}" y="${container.y}" width="${container.w}" height="${container.h}"></rect>
+      </g>
+    `);
+  });
+  group.appendChild(layer);
+}
+
+function taxonomyTreeTextChars(node) {
+  if (node.level === "root") return 18;
+  if (node.level === "major") return 13;
+  if (node.level === "category") return 15;
+  return 14;
+}
+
+function taxonomyTreeGeometry(bounds) {
+  const top = 68;
+  const familyGap = 12;
+  const categoryGap = 18;
+  const x = {
+    root: 58,
+    major: 238,
+    category: 446,
+    family: 656,
+    paper: 1068
+  };
+  const nodes = [];
+  const paperContainers = [];
+  const edges = [];
+  const positions = new Map();
+  const blocks = [];
+  const nodeById = new Map();
+
+  const makeNode = (node) => {
+    const full = {
+      lineHeight: 21,
+      w: 176,
+      h: 66,
+      color: "#9aa6aa",
+      ...node
+    };
+    nodeById.set(full.id, full);
+    return full;
+  };
+  const modelSort = (a, b) => slugDate(a) - slugDate(b) || a.name.localeCompare(b.name);
+
+  taxonomyTreeBranches.forEach((major) => {
+    const majorBlock = { major, categories: [], h: 0 };
+    major.children.forEach((category) => {
+      const categoryBlock = { category, families: [], h: 0 };
+      category.families.filter((family) => familyOrder().includes(family)).forEach((family) => {
+        const models = state.models.filter((model) => model.family === family).sort(modelSort);
+        const paperCols = Math.min(4, Math.max(1, models.length));
+        const paperRows = Math.ceil(models.length / paperCols);
+        const h = Math.max(82, paperRows * 42 + 26);
+        categoryBlock.families.push({ family, models, h, paperCols, paperRows });
+      });
+      categoryBlock.h = Math.max(74, categoryBlock.families.reduce((sum, item) => sum + item.h, 0) + Math.max(0, categoryBlock.families.length - 1) * familyGap);
+      majorBlock.categories.push(categoryBlock);
+    });
+    majorBlock.h = Math.max(120, majorBlock.categories.reduce((sum, item) => sum + item.h, 0) + Math.max(0, majorBlock.categories.length - 1) * categoryGap);
+    blocks.push(majorBlock);
+  });
+
+  let cursor = top;
+  blocks.forEach((majorBlock, majorIndex) => {
+    majorBlock.y0 = cursor;
+    majorBlock.y1 = cursor + majorBlock.h;
+    cursor = majorBlock.y1 + 26 + majorIndex * 6;
+  });
+  const root = makeNode({
+    id: "taxonomy-root",
+    label: "World action model taxonomy",
+    level: "root",
+    x: x.root,
+    y: (blocks[0].y0 + blocks[blocks.length - 1].y1) / 2,
+    w: 210,
+    h: 82,
+    lineHeight: 23,
+    color: "#172024"
+  });
+  nodes.push(root);
+
+  blocks.forEach((majorBlock) => {
+    const majorNode = makeNode({
+      id: `taxonomy-${majorBlock.major.id}`,
+      label: majorBlock.major.label,
+      level: "major",
+      x: x.major,
+      y: (majorBlock.y0 + majorBlock.y1) / 2,
+      w: 184,
+      h: 68,
+      lineHeight: 23,
+      color: majorBlock.major.color
+    });
+    nodes.push(majorNode);
+    edges.push({ from: root, to: majorNode, color: majorBlock.major.color });
+
+    let categoryY = majorBlock.y0;
+    majorBlock.categories.forEach((categoryBlock) => {
+      const categoryNode = makeNode({
+        id: `taxonomy-${categoryBlock.category.id}`,
+        label: categoryBlock.category.label,
+        level: "category",
+        x: x.category,
+        y: categoryY + categoryBlock.h / 2,
+        w: 190,
+        h: 64,
+        lineHeight: 20,
+        color: majorBlock.major.color
+      });
+      nodes.push(categoryNode);
+      edges.push({ from: majorNode, to: categoryNode, color: majorBlock.major.color });
+
+      let familyY = categoryY;
+      categoryBlock.families.forEach((familyBlock) => {
+        const familyColor = problemColorForFamily(familyBlock.family);
+        const familyNode = makeNode({
+          id: `taxonomy-family-${familyBlock.family}`,
+          label: familyLabels[familyBlock.family] || familyBlock.family,
+          level: "family",
+          family: familyBlock.family,
+          x: x.family,
+          y: familyY + familyBlock.h / 2,
+          w: 194,
+          h: 62,
+          lineHeight: 19,
+          color: familyColor
+        });
+        nodes.push(familyNode);
+        edges.push({ from: categoryNode, to: familyNode, color: familyColor });
+
+        const paperColGap = 108;
+        const paperRowGap = 38;
+        const paperCenterY = familyY + familyBlock.h / 2;
+        familyBlock.models.forEach((model, paperIndex) => {
+          const col = paperIndex % familyBlock.paperCols;
+          const row = Math.floor(paperIndex / familyBlock.paperCols);
+          const rowCount = Math.min(familyBlock.paperCols, familyBlock.models.length - row * familyBlock.paperCols);
+          const offsetX = (col - (rowCount - 1) / 2) * paperColGap;
+          const offsetY = (row - (familyBlock.paperRows - 1) / 2) * paperRowGap + 3;
+          const point = { id: model.id, x: x.paper + offsetX, y: paperCenterY + offsetY, w: 104, h: 44 };
+          positions.set(model.id, point);
+        });
+        const containerW = Math.max(176, (familyBlock.paperCols - 1) * paperColGap + 154);
+        const containerH = Math.max(54, (familyBlock.paperRows - 1) * paperRowGap + 50);
+        paperContainers.push({
+          id: `taxonomy-papers-${familyBlock.family}`,
+          family: familyBlock.family,
+          color: familyColor,
+          x: x.paper - containerW / 2,
+          y: paperCenterY - containerH / 2,
+          w: containerW,
+          h: containerH
+        });
+        familyY += familyBlock.h + familyGap;
+      });
+      categoryY += categoryBlock.h + categoryGap;
+    });
+  });
+
+  const fit = taxonomyTreeContentBounds(nodes, paperContainers, positions);
+  return { sceneWidth: fit.w, sceneHeight: fit.h, root, nodes, paperContainers, edges, positions, fit };
+}
+
+function taxonomyTreeContentBounds(nodes, paperContainers, positions) {
+  const items = [
+    ...nodes.map((node) => ({ ref: node, w: node.w, h: node.h })),
+    ...paperContainers.map((container) => ({
+      ref: { x: container.x + container.w / 2, y: container.y + container.h / 2 },
+      w: container.w,
+      h: container.h
+    })),
+    ...Array.from(positions.values()).map((point) => ({ ref: point, w: 136, h: 56 }))
+  ];
+  const bounds = groupBounds(items);
+  const pad = 16;
+  return {
+    x: bounds.x,
+    y: bounds.y,
+    w: bounds.w + pad * 2,
+    h: bounds.h + pad * 2,
+    left: bounds.left - pad,
+    right: bounds.right + pad,
+    top: bounds.top - pad,
+    bottom: bounds.bottom + pad
+  };
 }
 
 function drawTaxonomyGalleryBackdrop(group, bounds) {
@@ -1633,6 +1872,9 @@ function taxonomyFamilyLayouts(bounds) {
 }
 
 function taxonomyPaperPosition(model, bounds) {
+  if (state.taxonomyTree) {
+    return taxonomyTreeGeometry(bounds).positions.get(model.id) || null;
+  }
   const layout = taxonomyFamilyLayouts(bounds).get(model.family);
   if (!layout) return null;
   const familyModels = state.models.filter((item) => item.family === model.family);
@@ -2125,7 +2367,8 @@ function drawFadingConnector(layer, defs, id, from, to, color, curved = true) {
 }
 
 function connectorStyle(from, to) {
-  if (from.id === "root") return { stroke: 14, arrow: 27 };
+  if (from.id === "root" || from.id === "taxonomy-root") return { stroke: 14, arrow: 27 };
+  if (String(from.id || "").startsWith("taxonomy-")) return { stroke: 6, arrow: 16 };
   if (to.family) return { stroke: 7, arrow: 18 };
   return { stroke: 10, arrow: 21 };
 }
@@ -2152,6 +2395,9 @@ function connectorEndpoints(from, to, gap = 12, arrowLength = 0) {
 }
 
 function connectorBox(node) {
+  if (Number.isFinite(node.w) && Number.isFinite(node.h)) {
+    return { w: node.w, h: node.h };
+  }
   if (node.id === "root") {
     const layout = questionTextLayout(rootProblemQuestion, problemQuestionWidth("root"), "root");
     return visualTextBox(layout, 18);
@@ -2212,7 +2458,7 @@ function institutionFor(model) {
 
 function shortPaperName(name) {
   if (state.mode === "timeline") return shortText(name, 15);
-  if (state.mode === "taxonomy") return shortText(name, 12);
+  if (state.mode === "taxonomy") return shortText(name, state.taxonomyTree ? 15 : 12);
   return shortText(name, state.mode === "problem" ? 12 : 24);
 }
 
@@ -2302,10 +2548,15 @@ function renderAtlas() {
     let paperRadius = radius;
     let taxonomyStyle = "";
     if (state.mode === "taxonomy") {
-      const layout = taxonomyFamilyLayouts(bounds).get(model.family);
-      paperRadius = hasLiteral ? layout?.paperLiteralRadius || 7.5 : layout?.paperRadius || 6;
-      const logoRadius = layout?.paperLogoRadius || 5.8;
-      taxonomyStyle = `--taxonomy-label-size:${layout?.paperLabelSize || 7.2}px;--taxonomy-logo-radius:${logoRadius}px;--taxonomy-logo-size:${logoRadius * 1.65}px;`;
+      if (state.taxonomyTree) {
+        paperRadius = hasLiteral ? 13 : 10.8;
+        taxonomyStyle = "--taxonomy-label-size:15.5px;--taxonomy-logo-radius:9.8px;--taxonomy-logo-size:16px;";
+      } else {
+        const layout = taxonomyFamilyLayouts(bounds).get(model.family);
+        paperRadius = hasLiteral ? layout?.paperLiteralRadius || 7.5 : layout?.paperRadius || 6;
+        const logoRadius = layout?.paperLogoRadius || 5.8;
+        taxonomyStyle = `--taxonomy-label-size:${layout?.paperLabelSize || 7.2}px;--taxonomy-logo-radius:${logoRadius}px;--taxonomy-logo-size:${logoRadius * 1.65}px;`;
+      }
     }
     const bodyClass = [
       "node-body",
@@ -2328,7 +2579,9 @@ function renderAtlas() {
 
   if (state.mode === "taxonomy" && !state.taxonomyGallery) bindTaxonomyFamilyHover(group);
 
-  $("#modeDescription").textContent = modeDescriptions[state.mode];
+  $("#modeDescription").textContent = state.mode === "taxonomy" && state.taxonomyTree
+    ? "Literature-survey taxonomy tree: broad categories branch into families, then paper leaves."
+    : modeDescriptions[state.mode];
   bindZoom(svg, group);
   requestAnimationFrame(() => {
     group.querySelectorAll(".atlas-annotation.is-entering").forEach((item) => item.classList.remove("is-entering"));
@@ -2766,6 +3019,12 @@ function syncModeButtons() {
     taxonomyGalleryToggle.classList.toggle("is-active", Boolean(state.taxonomyGallery));
     taxonomyGalleryToggle.setAttribute("aria-pressed", state.taxonomyGallery ? "true" : "false");
   }
+  const taxonomyTreeToggle = $("#taxonomyTreeToggle");
+  if (taxonomyTreeToggle) {
+    taxonomyTreeToggle.hidden = state.mode !== "taxonomy";
+    taxonomyTreeToggle.classList.toggle("is-active", Boolean(state.taxonomyTree));
+    taxonomyTreeToggle.setAttribute("aria-pressed", state.taxonomyTree ? "true" : "false");
+  }
   const accuracyBenchmark = $("#accuracyBenchmark");
   if (accuracyBenchmark) {
     accuracyBenchmark.hidden = state.mode !== "metrics" || state.metricView !== "accuracy";
@@ -2829,6 +3088,26 @@ function defaultZoomForMode(mode) {
     const k = width < 760 ? 0.82 : 0.94;
     return { k, x: (width * (1 - k)) / 2, y: (height * (1 - k)) / 2 + 10 };
   }
+  if (mode === "taxonomy" && state.taxonomyTree) {
+    const box = taxonomyTreeSceneBounds({ width, height });
+    const padding = {
+      left: width < 900 ? 8 : 12,
+      right: width < 900 ? 8 : 12,
+      top: 54,
+      bottom: 10
+    };
+    const zoom = zoomToFitBox(box, { width, height }, padding);
+    const k = clamp(zoom.k, width < 900 ? 0.45 : 0.62, width < 900 ? 1.05 : 1.22);
+    const targetCenter = {
+      x: padding.left + Math.max(1, width - padding.left - padding.right) / 2,
+      y: padding.top + Math.max(1, height - padding.top - padding.bottom) / 2
+    };
+    return {
+      k,
+      x: targetCenter.x - box.x * k,
+      y: targetCenter.y - box.y * k
+    };
+  }
   if (mode === "taxonomy" && state.taxonomyGallery) {
     const box = taxonomyGallerySceneBounds({ width, height });
     const k = clamp((width - 56) / Math.max(1, box.w), width < 900 ? 0.38 : 0.58, width < 900 ? 0.72 : 0.86);
@@ -2840,6 +3119,16 @@ function defaultZoomForMode(mode) {
   }
   const k = width < 760 ? 0.72 : 0.8;
   return { k, x: (width * (1 - k)) / 2, y: (height * (1 - k)) / 2 - (mode === "taxonomy" ? 24 : 0) };
+}
+
+function taxonomyTreeSceneBounds(bounds) {
+  const geometry = taxonomyTreeGeometry(bounds);
+  return geometry.fit || {
+    x: geometry.sceneWidth / 2,
+    y: geometry.sceneHeight / 2,
+    w: geometry.sceneWidth,
+    h: geometry.sceneHeight
+  };
 }
 
 function taxonomyGallerySceneBounds(bounds) {
@@ -2890,6 +3179,7 @@ function routeFromHash() {
   if (hash.startsWith("atlas/")) {
     showPage("atlas");
     state.taxonomyGallery = parts[1] === "taxonomy" && parts[2] === "gallery";
+    state.taxonomyTree = parts[1] === "taxonomy" && parts[2] === "tree";
     setAtlasMode(parts[1] || "problem");
     return;
   }
@@ -3301,6 +3591,15 @@ function bindEvents() {
   });
   $("#taxonomyGalleryToggle").addEventListener("click", () => {
     state.taxonomyGallery = !state.taxonomyGallery;
+    if (state.taxonomyGallery) state.taxonomyTree = false;
+    setDefaultZoomForMode(state.mode);
+    syncModeButtons();
+    renderAtlas();
+  });
+  $("#taxonomyTreeToggle").addEventListener("click", () => {
+    state.taxonomyTree = !state.taxonomyTree;
+    if (state.taxonomyTree) state.taxonomyGallery = false;
+    setDefaultZoomForMode(state.mode);
     syncModeButtons();
     renderAtlas();
   });

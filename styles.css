@@ -482,6 +482,80 @@ p {
   font-size: 18px;
 }
 
+.taxonomy-tree-map .problem-link {
+  opacity: 0.72;
+}
+
+.taxonomy-tree-node rect {
+  fill: color-mix(in srgb, var(--tax-color) 13%, rgba(255, 255, 255, 0.94));
+  stroke: color-mix(in srgb, var(--tax-color) 66%, rgba(23, 32, 36, 0.18));
+  stroke-width: 1.25;
+  rx: 8px;
+  ry: 8px;
+  vector-effect: non-scaling-stroke;
+}
+
+.taxonomy-tree-node text {
+  fill: #172024;
+  font-size: 17px;
+  font-weight: 880;
+  letter-spacing: 0;
+  pointer-events: none;
+}
+
+.taxonomy-tree-root rect {
+  fill: #172024;
+  stroke: rgba(23, 32, 36, 0.18);
+}
+
+.taxonomy-tree-root text {
+  fill: #ffffff;
+  font-size: 18px;
+  font-weight: 930;
+}
+
+.taxonomy-tree-major rect {
+  fill: color-mix(in srgb, var(--tax-color) 24%, #ffffff);
+}
+
+.taxonomy-tree-major text {
+  fill: color-mix(in srgb, var(--tax-color) 74%, #172024);
+  font-size: 18px;
+  font-weight: 930;
+}
+
+.taxonomy-tree-category text {
+  font-size: 16px;
+}
+
+.taxonomy-tree-family text {
+  font-size: 15px;
+}
+
+.taxonomy-tree-category rect {
+  fill: color-mix(in srgb, var(--tax-color) 16%, #ffffff);
+  stroke-dasharray: 5 4;
+}
+
+.taxonomy-tree-family {
+  cursor: default;
+}
+
+.taxonomy-tree-family rect {
+  fill: color-mix(in srgb, var(--tax-color) 18%, #ffffff);
+  stroke: color-mix(in srgb, var(--tax-color) 78%, rgba(23, 32, 36, 0.12));
+}
+
+.taxonomy-tree-paper-container rect {
+  fill: color-mix(in srgb, var(--tax-color) 6%, rgba(255, 255, 255, 0.72));
+  stroke: color-mix(in srgb, var(--tax-color) 68%, rgba(23, 32, 36, 0.18));
+  stroke-width: 1.35;
+  stroke-dasharray: 6 5;
+  rx: 10px;
+  ry: 10px;
+  vector-effect: non-scaling-stroke;
+}
+
 .family-hover-card {
   position: fixed;
   z-index: 32;
@@ -1381,7 +1455,8 @@ p {
 
 .page-atlas .mode-group,
 .page-atlas .mode-meta,
-.page-atlas .taxonomy-gallery-toggle {
+.page-atlas .taxonomy-gallery-toggle,
+.page-atlas .taxonomy-tree-toggle {
   pointer-events: auto;
 }
 

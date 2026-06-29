@@ -10,6 +10,7 @@ export const state = {
   metricAccuracyFilterEnabled: false,
   metricAccuracyThreshold: 70,
   taxonomyGallery: false,
+  taxonomyTree: false,
   query: "",
   selectedId: null,
   hoveredId: null,
