@@ -1,14 +1,14 @@
 # Metrics Extraction Report
 
-Generated: 2026-05-26T10:58:26.030Z
+Generated: 2026-07-14T19:50:47.836Z
 
 This report validates the automated extraction pass on a representative sample of model families. It records raw detected quantities, normalized estimates, and warnings that identify values needing manual review.
 
 ## Quality Counts
 
-- weak-auto: 5
-- needs-review: 30
-- usable-auto: 17
+- weak-auto: 10
+- needs-review: 37
+- usable-auto: 20
 
 ## Sample Audit
 

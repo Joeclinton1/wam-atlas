@@ -17,8 +17,8 @@ import {
   scoreLabel,
   wrapText,
   shortText
-} from './shared.js?v=wam-atlas-29';
-import { renderDiagram, architectureDiagramMarkup, getArchitectureSpec } from './diagrams.js?v=wam-atlas-29';
+} from './shared.js?v=wam-atlas-30';
+import { renderDiagram, architectureDiagramMarkup, getArchitectureSpec } from './diagrams.js?v=wam-atlas-30';
 
 function hasMetricsTargetBenchmark(model) {
   return Boolean(model.metrics?.comparative?.metricsEligible);

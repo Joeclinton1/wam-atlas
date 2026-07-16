@@ -1,4 +1,4 @@
-import { state, familyColors, typeColors, escapeHtml, wrapText, shortText } from './shared.js?v=wam-atlas-29';
+import { state, familyColors, typeColors, escapeHtml, wrapText, shortText } from './shared.js?v=wam-atlas-30';
 
 export function renderDiagram(container, model, options = {}) {
   container.innerHTML = architectureDiagramMarkup(model, options);

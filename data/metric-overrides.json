@@ -1644,6 +1644,718 @@
           }
         ]
       }
+    },
+    "being-h07": {
+      "confidence": "medium-high",
+      "quality": "agent-audited",
+      "accuracy": {
+        "benchmarks": {
+          "liberoPlus": {
+            "value": 84.8,
+            "context": "LIBERO-Plus fine-tuned",
+            "evidence": [
+              {
+                "source": "methods/being-h07.md",
+                "line": 7,
+                "excerpt": "LIBERO-Plus reaches 82.1% zero-shot and 84.8% fine-tuned, showing strong out-of-distribution robustness."
+              }
+            ]
+          },
+          "robocasa": {
+            "value": 62.1,
+            "context": "RoboCasa-50",
+            "evidence": [
+              {
+                "source": "methods/being-h07.md",
+                "line": 6,
+                "excerpt": "On LIBERO the average success rate is 99.2% and on RoboCasa-50 the success rate is 62.1%."
+              }
+            ]
+          },
+          "robotwinAllData": {
+            "value": 90.2,
+            "context": "RoboTwin 2.0 easy multi-task",
+            "evidence": [
+              {
+                "source": "methods/being-h07.md",
+                "line": 8,
+                "excerpt": "On RoboTwin 2.0 Being-H0.7 reports 90.2% under the easy setting and 89.6% under the hard setting."
+              }
+            ]
+          },
+          "robotwinTaskSpecific": {
+            "value": 89.6,
+            "context": "RoboTwin 2.0 hard",
+            "evidence": [
+              {
+                "source": "methods/being-h07.md",
+                "line": 8,
+                "excerpt": "On RoboTwin 2.0 Being-H0.7 reports 90.2% under the easy setting and 89.6% under the hard setting."
+              }
+            ]
+          }
+        }
+      },
+      "inferenceCost": {
+        "fps4090": 22,
+        "reported": "~3-4 ms/step async chunking",
+        "assumptions": {
+          "note": "latent prior branch, no rollout; discounted to RTX 4090"
+        },
+        "evidence": [
+          {
+            "source": "methods/being-h07.md",
+            "line": 4,
+            "excerpt": "At inference Being-H0.7 discards the posterior branch and performs no visual rollout, using latency-aware Universal Async Chunking at roughly 3-4 ms/step."
+          }
+        ]
+      },
+      "generalization": {
+        "improvementPct": 21,
+        "unseenTask": true,
+        "note": "Strong LIBERO-Plus OOD and 12 real-world tasks across five ability suites (unseen tasks).",
+        "evidence": [
+          {
+            "source": "methods/being-h07.md",
+            "line": 7,
+            "excerpt": "LIBERO-Plus reaches 82.1% zero-shot and 84.8% fine-tuned, showing strong out-of-distribution robustness."
+          },
+          {
+            "source": "methods/being-h07.md",
+            "line": 9,
+            "excerpt": "On CALVIN ABCD->D it completes 4.67 tasks and on ABC->D 4.48 tasks, and it is evaluated on 12 real-world tasks across five ability suites."
+          }
+        ]
+      },
+      "warnings": [
+        "training-data hours and GPU-hours not reported; compute uses scale/parameter estimate"
+      ]
+    },
+    "vera": {
+      "confidence": "medium",
+      "quality": "agent-audited",
+      "inferenceCost": {
+        "fps4090": 1.3,
+        "reported": "closed-loop video rollout (14B)",
+        "assumptions": {
+          "parameterB": [
+            1.3,
+            14
+          ],
+          "note": "full video rollout planner discounted to RTX 4090"
+        },
+        "evidence": [
+          {
+            "source": "methods/vera.md",
+            "line": 3,
+            "excerpt": "The video backbone is the Wan family of open-weight video diffusion transformers, used at 1.3B and 14B parameters, and is not finetuned per embodiment."
+          },
+          {
+            "source": "methods/vera.md",
+            "line": 9,
+            "excerpt": "The pipeline is a closed-loop video-to-action policy combining world-model video predictions with Jacobian IDM translation."
+          }
+        ]
+      },
+      "generalization": {
+        "improvementPct": 24,
+        "unseenTask": true,
+        "note": "Zero-shot cross-embodiment real Panda + Allegro hand without finetuning the video model.",
+        "evidence": [
+          {
+            "source": "methods/vera.md",
+            "line": 8,
+            "excerpt": "VERA performs zero-shot language-conditioned manipulation on a real Panda arm and real Allegro hand across embodiments without retraining the video model."
+          }
+        ]
+      },
+      "warnings": [
+        "no LIBERO/RoboTwin/SimplerEnv/RoboCasa target benchmark; accuracy excluded from Metrics",
+        "GPU-hours not reported"
+      ]
+    },
+    "harmowam": {
+      "confidence": "medium",
+      "quality": "agent-audited",
+      "inferenceCost": {
+        "fps4090": 30,
+        "reported": "48 Hz on H20 (chunk 12)",
+        "assumptions": {
+          "denoisingSteps": [
+            5
+          ],
+          "note": "reported 48 Hz on H20 discounted to RTX 4090"
+        },
+        "evidence": [
+          {
+            "source": "methods/harmowam.md",
+            "line": 7,
+            "excerpt": "HarmoWAM achieves an action generation speed of 48 Hz with an action chunk size of 12 and 5 world-model denoising steps."
+          }
+        ]
+      },
+      "generalization": {
+        "improvementPct": 31,
+        "unseenTask": true,
+        "note": "+33% over VLAs and +29% over prior WAMs zero-shot across three unseen environments.",
+        "evidence": [
+          {
+            "source": "methods/harmowam.md",
+            "line": 8,
+            "excerpt": "Across six real-world tasks the in-domain average success rate is 89%, with out-of-domain background 81%, position 80%, and objects 85%."
+          },
+          {
+            "source": "methods/harmowam.md",
+            "line": 9,
+            "excerpt": "HarmoWAM improves zero-shot generalization by 33% over VLA models and 29% over prior WAMs across three training-unseen test environments."
+          }
+        ]
+      },
+      "warnings": [
+        "no standard simulation target benchmark; accuracy excluded from Metrics",
+        "GPU-hours not reported"
+      ]
+    },
+    "pelican-unify": {
+      "confidence": "medium",
+      "quality": "agent-audited",
+      "accuracy": {
+        "benchmarks": {
+          "robotwinAllData": {
+            "value": 93.5,
+            "context": "RoboTwin 50-task dual-arm simulator",
+            "evidence": [
+              {
+                "source": "methods/pelican-unify.md",
+                "line": 7,
+                "excerpt": "On the RoboTwin 50-task dual-arm simulator Pelican-Unify 1.0 reaches a 93.5% success rate."
+              }
+            ]
+          }
+        }
+      },
+      "generalization": {
+        "improvementPct": 22,
+        "unseenTask": true,
+        "note": "Zero-shot unseen humanoid tasks; top-ranked human imagination/action evaluation.",
+        "evidence": [
+          {
+            "source": "methods/pelican-unify.md",
+            "line": 9,
+            "excerpt": "On a real Tienkung humanoid across five seen and three unseen tasks it averages 1.76 out of 2.0 on human evaluation, ranking first."
+          }
+        ]
+      },
+      "warnings": [
+        "total parameter count and GPU-hours not reported"
+      ]
+    },
+    "wall-wm": {
+      "confidence": "medium-low",
+      "quality": "agent-audited",
+      "generalization": {
+        "improvementPct": 16,
+        "unseenTask": true,
+        "note": "Reported gains on real-robot generalization and reasoning manipulation; numeric table not retrievable.",
+        "evidence": [
+          {
+            "source": "methods/wall-wm.md",
+            "line": 9,
+            "excerpt": "WALL-WM shows clear advantages across real-robot manipulation, reasoning manipulation, dexterous manipulation, generalization, and embodied video-generation metrics."
+          }
+        ]
+      },
+      "warnings": [
+        "experiments table not retrievable; success rates qualitative, accuracy excluded from Metrics",
+        "parameter count and GPU-hours not reported"
+      ]
+    },
+    "next-forcing": {
+      "confidence": "medium",
+      "quality": "agent-audited",
+      "accuracy": {
+        "benchmarks": {
+          "robotwinAllData": {
+            "value": 93.5,
+            "context": "RoboTwin Random multi-task",
+            "evidence": [
+              {
+                "source": "methods/next-forcing.md",
+                "line": 7,
+                "excerpt": "On RoboTwin Clean Next Forcing reaches 94.1% and on RoboTwin Random 93.5%, versus LingBot-VA at 92.9% and 91.5%."
+              }
+            ]
+          },
+          "robotwinTaskSpecific": {
+            "value": 94.1,
+            "context": "RoboTwin Clean",
+            "evidence": [
+              {
+                "source": "methods/next-forcing.md",
+                "line": 7,
+                "excerpt": "On RoboTwin Clean Next Forcing reaches 94.1% and on RoboTwin Random 93.5%, versus LingBot-VA at 92.9% and 91.5%."
+              }
+            ]
+          }
+        }
+      },
+      "inferenceCost": {
+        "fps4090": 2.4,
+        "reported": "2x speedup via parallel chunks",
+        "assumptions": {
+          "note": "full autoregressive video WAM; 2x parallel generation"
+        },
+        "evidence": [
+          {
+            "source": "methods/next-forcing.md",
+            "line": 9,
+            "excerpt": "Parallel chunk generation gives a 2x inference speedup while maintaining comparable accuracy across 12, 25, and 50 fps."
+          }
+        ]
+      },
+      "generalization": {
+        "improvementPct": 12,
+        "unseenTask": false,
+        "note": "Improved out-of-training FVD and abnormal ratio on PhyWorld; mainly simulation.",
+        "evidence": [
+          {
+            "source": "methods/next-forcing.md",
+            "line": 8,
+            "excerpt": "On PhyWorld the out-of-training FVD improves to 4.7 from 5.3 and the abnormal ratio drops to 8% from 12%."
+          }
+        ]
+      },
+      "warnings": [
+        "parameter count not reported"
+      ]
+    },
+    "feedback-wm": {
+      "confidence": "medium",
+      "quality": "agent-audited",
+      "accuracy": {
+        "benchmarks": {
+          "liberoPlus": {
+            "value": 52,
+            "context": "LIBERO-Plus OOD average",
+            "evidence": [
+              {
+                "source": "methods/feedback-wm.md",
+                "line": 7,
+                "excerpt": "On LIBERO-Plus under OOD the average success is 52% across four tasks."
+              }
+            ]
+          }
+        }
+      },
+      "inferenceCost": {
+        "fps4090": 8,
+        "reported": "guided denoising adds latency",
+        "assumptions": {
+          "note": "lightweight latent WM; final-step guidance overhead"
+        },
+        "evidence": [
+          {
+            "source": "methods/feedback-wm.md",
+            "line": 4,
+            "excerpt": "Guidance is applied only in the final tau_g low-noise denoising steps of the diffusion policy, with action-aware weighting from counterfactual variance."
+          }
+        ]
+      },
+      "generalization": {
+        "improvementPct": 30,
+        "unseenTask": true,
+        "note": "30% relative success improvement and up to 76.4% prediction-error reduction under OOD.",
+        "evidence": [
+          {
+            "source": "methods/feedback-wm.md",
+            "line": 9,
+            "excerpt": "Online feedback reduces prediction error by up to 76.4% on real-world tasks and yields a 30% relative improvement in success rate."
+          }
+        ]
+      },
+      "warnings": [
+        "parameter count and GPU-hours not reported"
+      ]
+    },
+    "omnihumanoid": {
+      "confidence": "low",
+      "quality": "agent-audited",
+      "generalization": {
+        "improvementPct": 14,
+        "unseenTask": true,
+        "note": "Paired-free adaptation to unseen embodiments; quantitative transfer not disclosed.",
+        "evidence": [
+          {
+            "source": "methods/omnihumanoid.md",
+            "line": 3,
+            "excerpt": "Lightweight embodiment-specific adapters extend the model to new embodiments without paired data for each target."
+          }
+        ]
+      },
+      "warnings": [
+        "abstract-level only; no policy success benchmark, accuracy excluded from Metrics",
+        "parameters, compute, and metrics not reported"
+      ]
+    },
+    "mola": {
+      "confidence": "medium-high",
+      "quality": "agent-audited",
+      "accuracy": {
+        "benchmarks": {
+          "liberoPlus": {
+            "value": 92.7,
+            "context": "LIBERO-Plus overall",
+            "evidence": [
+              {
+                "source": "methods/mola.md",
+                "line": 8,
+                "excerpt": "On LIBERO-Plus the overall success rate is 92.7% (Spatial 97.5%, Object 96.3%, Goal 85.1%, Long 91.8%)."
+              }
+            ]
+          }
+        }
+      },
+      "inferenceCost": {
+        "fps4090": 6,
+        "reported": "single-step video imagination",
+        "assumptions": {
+          "denoisingSteps": [
+            1
+          ],
+          "note": "single denoising step for imagination"
+        },
+        "evidence": [
+          {
+            "source": "methods/mola.md",
+            "line": 5,
+            "excerpt": "Video generation uses a single denoising step, and training data includes RT-X, Bridge Data, DROID, and task-specific datasets."
+          }
+        ]
+      },
+      "generalization": {
+        "improvementPct": 24,
+        "unseenTask": true,
+        "note": "Real-world robustness to distractors (60%) and lighting changes (64%) on UR5e.",
+        "evidence": [
+          {
+            "source": "methods/mola.md",
+            "line": 9,
+            "excerpt": "On a real UR5e the average success is 73.0%, including 60.0% with distracting objects and 64.0% under lighting changes."
+          }
+        ]
+      },
+      "warnings": [
+        "parameter count and GPU-hours not reported"
+      ]
+    },
+    "maskwam": {
+      "confidence": "medium-high",
+      "quality": "agent-audited",
+      "accuracy": {
+        "benchmarks": {
+          "robotwinAllData": {
+            "value": 92.2,
+            "context": "RoboTwin 2.0 average",
+            "evidence": [
+              {
+                "source": "methods/maskwam.md",
+                "line": 7,
+                "excerpt": "On LIBERO the average success rate is 98.4% and on RoboTwin 2.0 the average success rate is 92.2%."
+              }
+            ]
+          }
+        }
+      },
+      "inferenceCost": {
+        "fps4090": 9,
+        "reported": "single partial-denoising step + KV cache",
+        "assumptions": {
+          "note": "single partial-denoising step; KV-cached action stream"
+        },
+        "evidence": [
+          {
+            "source": "methods/maskwam.md",
+            "line": 6,
+            "excerpt": "At deployment MaskWAM performs a single partial-denoising step on the joint RGB-mask stream with KV-caching for efficient action generation."
+          }
+        ]
+      },
+      "generalization": {
+        "improvementPct": 33,
+        "unseenTask": true,
+        "note": "+33.2% over strongest baseline on language-ambiguous real-world tasks.",
+        "evidence": [
+          {
+            "source": "methods/maskwam.md",
+            "line": 8,
+            "excerpt": "On real-world language-clear tasks success is 84.3% and on language-ambiguous tasks 84.9%, outperforming the strongest baseline by 33.2%."
+          }
+        ]
+      },
+      "warnings": [
+        "parameter count and GPU-hours not reported"
+      ]
+    },
+    "abot-m05": {
+      "confidence": "medium-high",
+      "quality": "agent-audited",
+      "accuracy": {
+        "benchmarks": {
+          "robotwinAllData": {
+            "value": 94.1,
+            "context": "RoboTwin 2.0 average",
+            "evidence": [
+              {
+                "source": "methods/abot-m05.md",
+                "line": 8,
+                "excerpt": "On RoboTwin 2.0 the average success is 94.1% and on LIBERO the average is 99.4%."
+              }
+            ]
+          },
+          "robocasa": {
+            "value": 40.4,
+            "context": "RoboCasa365 average",
+            "evidence": [
+              {
+                "source": "methods/abot-m05.md",
+                "line": 7,
+                "excerpt": "On RoboCasa365 the average success is 40.4% and 54.2% on the target-100% split, using few-step denoising at inference."
+              }
+            ]
+          }
+        }
+      },
+      "generalization": {
+        "improvementPct": 20,
+        "unseenTask": true,
+        "note": "State-of-the-art among WAMs on LIBERO-Plus zero-shot perturbations.",
+        "evidence": [
+          {
+            "source": "methods/abot-m05.md",
+            "line": 9,
+            "excerpt": "On LIBERO-Plus zero-shot ABot-M0.5 is state-of-the-art among world-action models."
+          }
+        ]
+      },
+      "warnings": [
+        "GPU-hours not reported; compute uses scale/parameter estimate"
+      ]
+    },
+    "lawam": {
+      "confidence": "medium-high",
+      "quality": "agent-audited",
+      "accuracy": {
+        "benchmarks": {
+          "robotwinAllData": {
+            "value": 89.8,
+            "context": "RoboTwin randomized multi-task",
+            "evidence": [
+              {
+                "source": "methods/lawam.md",
+                "line": 9,
+                "excerpt": "On LIBERO the average success rate is 98.6%, on RoboTwin 92.64% clean and 89.80% randomized, and real-world tasks average 90.0%."
+              }
+            ]
+          }
+        }
+      },
+      "computeCost": {
+        "pretrainingGpuHours": 1280,
+        "finetuningGpuHours5h": 96,
+        "pretrainingFormula": "64 H100 GPUs * ~20 h RoboTwin policy integration",
+        "assumptions": {
+          "gpus": 64,
+          "gpuType": "H100",
+          "hours": 20
+        },
+        "evidence": [
+          {
+            "source": "methods/lawam.md",
+            "line": 7,
+            "excerpt": "Policy integration runs on 64 H100 GPUs with roughly 20 hours of training on RoboTwin."
+          }
+        ]
+      },
+      "inferenceCost": {
+        "fps4090": 5.3,
+        "reported": "187 ms/chunk, 10 steps",
+        "assumptions": {
+          "denoisingSteps": [
+            10
+          ],
+          "note": "187 ms/action-chunk -> ~5.3 Hz"
+        },
+        "evidence": [
+          {
+            "source": "methods/lawam.md",
+            "line": 8,
+            "excerpt": "At inference LaWAM takes 187 ms per action-chunk prediction with 10 denoising steps, up to 24x lower latency than pixel-space WAMs."
+          }
+        ]
+      },
+      "generalization": {
+        "improvementPct": 15,
+        "unseenTask": true,
+        "note": "Real-world 90% average across pick-and-place, drawer, and towel folding.",
+        "evidence": [
+          {
+            "source": "methods/lawam.md",
+            "line": 9,
+            "excerpt": "On LIBERO the average success rate is 98.6%, on RoboTwin 92.64% clean and 89.80% randomized, and real-world tasks average 90.0%."
+          }
+        ]
+      }
+    },
+    "aha-wam": {
+      "confidence": "medium-high",
+      "quality": "agent-audited",
+      "accuracy": {
+        "benchmarks": {
+          "robotwinAllData": {
+            "value": 92.2,
+            "context": "RoboTwin 2.0 randomized",
+            "evidence": [
+              {
+                "source": "methods/aha-wam.md",
+                "line": 9,
+                "excerpt": "On RoboTwin 2.0 the average success is 92.80% (93.40% clean, 92.20% randomized) and real-world tasks average 78.3%."
+              }
+            ]
+          },
+          "robotwinTaskSpecific": {
+            "value": 93.4,
+            "context": "RoboTwin 2.0 clean",
+            "evidence": [
+              {
+                "source": "methods/aha-wam.md",
+                "line": 9,
+                "excerpt": "On RoboTwin 2.0 the average success is 92.80% (93.40% clean, 92.20% randomized) and real-world tasks average 78.3%."
+              }
+            ]
+          }
+        }
+      },
+      "inferenceCost": {
+        "fps4090": 18,
+        "reported": "24.17 Hz (RTX 5090D); Flash 56.95 Hz",
+        "assumptions": {
+          "denoisingSteps": [
+            10,
+            2
+          ],
+          "note": "24.17 Hz on RTX 5090D discounted to RTX 4090"
+        },
+        "evidence": [
+          {
+            "source": "methods/aha-wam.md",
+            "line": 7,
+            "excerpt": "At inference the video DiT is removed from the critical path and the action DiT runs closed-loop at 24.17 Hz (41.37 ms), with AHA-WAM-Flash at 56.95 Hz (17.56 ms) using ODE distillation from 10 to 2 steps."
+          }
+        ]
+      },
+      "generalization": {
+        "improvementPct": 12,
+        "unseenTask": true,
+        "note": "RoboTwin randomized multi-task and real-world tasks (78.3%).",
+        "evidence": [
+          {
+            "source": "methods/aha-wam.md",
+            "line": 9,
+            "excerpt": "On RoboTwin 2.0 the average success is 92.80% (93.40% clean, 92.20% randomized) and real-world tasks average 78.3%."
+          }
+        ]
+      },
+      "warnings": [
+        "no LIBERO/RoboCasa evaluation"
+      ]
+    },
+    "tau0-wm": {
+      "confidence": "medium",
+      "quality": "agent-audited",
+      "inferenceCost": {
+        "fps4090": 4,
+        "reported": "~220 ms/query (RTX 5090)",
+        "assumptions": {
+          "note": "220 ms/query -> ~4.5 Hz, discounted for fallback rollout"
+        },
+        "evidence": [
+          {
+            "source": "methods/tau0-wm.md",
+            "line": 7,
+            "excerpt": "Action generation latency is about 220 ms per query, 180 ms with caching and 140 ms with torch.compile, on a single RTX 5090."
+          }
+        ]
+      },
+      "generalization": {
+        "improvementPct": 26,
+        "unseenTask": true,
+        "note": "Zero-shot pen-to-holder 0.55 with heterogeneous pretraining vs 0.14 robot-only.",
+        "evidence": [
+          {
+            "source": "methods/tau0-wm.md",
+            "line": 8,
+            "excerpt": "On zero-shot pen-to-holder the average success is 0.55 with heterogeneous pre-training versus 0.14 robot-only, and fine-tuned object-wipe-place reaches 0.83."
+          }
+        ]
+      },
+      "warnings": [
+        "custom real-world tasks, no standard sim target benchmark; accuracy excluded from Metrics",
+        "training GPU-hours not reported"
+      ]
+    },
+    "rla-wm": {
+      "confidence": "medium-low",
+      "quality": "agent-audited",
+      "computeCost": {
+        "pretrainingGpuHours": 288,
+        "finetuningGpuHours5h": 40,
+        "pretrainingFormula": "4 A6000 GPUs * ~72 h (3 days) per component",
+        "assumptions": {
+          "gpus": 4,
+          "gpuType": "A6000",
+          "hours": 72
+        },
+        "evidence": [
+          {
+            "source": "methods/rla-wm.md",
+            "line": 6,
+            "excerpt": "Each component is trained for 100k steps over about 3 days on 4 A6000 GPUs (48GB) with 256GB RAM."
+          }
+        ]
+      },
+      "inferenceCost": {
+        "fps4090": 7,
+        "reported": "30 flow-matching steps, ~3.5 TFLOPs",
+        "assumptions": {
+          "denoisingSteps": [
+            30
+          ],
+          "note": "compact feature-space prediction, no pixel decode"
+        },
+        "evidence": [
+          {
+            "source": "methods/rla-wm.md",
+            "line": 7,
+            "excerpt": "At inference the flow-matching model uses 30 Euler ODE steps and about 3.5 TFLOPs per prediction, with no pixel decoding."
+          }
+        ]
+      },
+      "generalization": {
+        "improvementPct": 8,
+        "unseenTask": false,
+        "note": "Latent-action success 35.6% vs 27.2% BC-ResNet; +6.1% RL over BC on ManiSkill.",
+        "evidence": [
+          {
+            "source": "methods/rla-wm.md",
+            "line": 9,
+            "excerpt": "Latent action learning achieves 35.6% average success versus 27.2% for BC-ResNet, and world-model RL improves success by 6.1% over behavior cloning."
+          }
+        ]
+      },
+      "warnings": [
+        "ManiSkill/IWS are not atlas target benchmarks; accuracy excluded from Metrics",
+        "total parameter count not reported"
+      ]
     }
   }
 }

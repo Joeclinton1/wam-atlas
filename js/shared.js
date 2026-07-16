@@ -282,7 +282,22 @@ export const institutionMeta = {
   "lingbot-va": ["Robbyant", "technology.robbyant.com", { logoUrl: "https://mdn.alipayobjects.com/huamei_u94ywh/afts/img/xEyrTpmj4LUAAAAAQEAAAAgADkxfAQFr/original" }],
   dreamzero: ["NVIDIA", "nvidia.com"],
   "rhoda-dva": ["Rhoda AI", "rhoda.ai", { logoUrl: "https://www.rhoda.ai/assets/images/logo/rhoda-logo-light.svg" }],
-  dit4dit: ["Mondo Robotics", "mondorobotics.com"]
+  dit4dit: ["Mondo Robotics", "mondorobotics.com"],
+  "being-h07": ["BeingBeyond", "beingbeyond.com"],
+  vera: ["MIT CSAIL", "csail.mit.edu"],
+  harmowam: ["Peking University", "pku.edu.cn"],
+  "pelican-unify": ["University of Manchester", "manchester.ac.uk"],
+  "wall-wm": ["X Square Robot", "x2robot.com"],
+  "next-forcing": ["Robbyant", "technology.robbyant.com", { logoUrl: "https://mdn.alipayobjects.com/huamei_u94ywh/afts/img/xEyrTpmj4LUAAAAAQEAAAAgADkxfAQFr/original" }],
+  "feedback-wm": ["Nanyang Technological University", "ntu.edu.sg"],
+  omnihumanoid: ["National University of Singapore", "nus.edu.sg"],
+  mola: ["Fudan University", "fudan.edu.cn"],
+  maskwam: ["Fudan University", "fudan.edu.cn"],
+  "abot-m05": ["Amap, Alibaba Group", "amap.com"],
+  lawam: ["Tsinghua University", "tsinghua.edu.cn", { logoUrl: "https://www.tsinghua.edu.cn/favicon.ico" }],
+  "aha-wam": ["Shanghai Jiao Tong", "sjtu.edu.cn", { logoUrl: "https://en.sjtu.edu.cn/favicon.ico" }],
+  "tau0-wm": ["Fudan University", "fudan.edu.cn"],
+  "rla-wm": ["Purdue University", "purdue.edu"]
 };
 
 export const typeColors = {
