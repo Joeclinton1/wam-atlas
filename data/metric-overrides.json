@@ -1983,7 +1983,7 @@
       "generalization": {
         "improvementPct": 14,
         "unseenTask": true,
-        "note": "Paired-free adaptation to unseen embodiments; quantitative transfer not disclosed.",
+        "note": "Paired-free adaptation to unseen embodiments; quantitative transfer is outside the available source coverage.",
         "evidence": [
           {
             "source": "methods/omnihumanoid.md",

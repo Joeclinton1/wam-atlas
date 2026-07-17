@@ -8,28 +8,25 @@ Static GitHub Pages site for an interactive survey of video action models / worl
    `scripts/download-missing-papers.ps1`
 2. Extract method, architecture, training, dataset, and implementation sections:
    `node scripts/extract-method-sections.mjs`
-3. Curate literal architecture specs from `methods/*.md` into:
-   `data/architecture-specs.json`
-4. Render the static site from:
+3. Curate each paper's inputs, tokenizers, backbone, branches, heads, objectives, and runtime path in `data/wam-models.json`.
+4. Generate and validate the renderer-compatible paper profiles:
+   `node scripts/generate-diagram-profiles.mjs`
+   `node scripts/validate-diagram-profiles.mjs`
+5. Render the static site from:
    `index.html`, `styles.css`, `js/app.js`
 
-The important distinction is that `data/wam-models.json` contains survey-level model cards, while `data/architecture-specs.json` contains source-backed literal architecture diagrams. Only models listed in `curationStatus.completeEnoughForRendering` should be treated as having literal architecture diagrams.
+`data/diagram-profiles.json` contains a paper-specific profile for every atlas entry. The profiles preserve the original visual renderer while supplying each paper's own core, encoders, streams, heads, training signals, runtime path, source extract, and source-coverage level. `data/architecture-specs.json` remains the stricter node-and-edge representation for the subset whose graph topology has been separately curated.
 
-## Source-Backed Diagram Batch
+## Diagram Coverage
 
-The first curated batch covers:
+All 67 atlas papers have paper-specific diagram profiles. The validator checks that every profile:
 
-- `gr-2`
-- `vpp`
-- `uwm`
-- `flare`
-- `univla`
-- `dust`
-- `fast-wam`
-- `gigaworld-policy`
-- `x-wam`
+- points to a local method extract;
+- declares its paper-specific architectural core;
+- includes inputs, outputs, training signals, and runtime behavior;
+- renders successfully in full-card, hover-preview, and gallery modes.
 
-The rest of the atlas currently renders survey-level scaffolds and is explicitly marked as pending method-section curation.
+Abstract-level sources show their coverage level rather than having missing internals filled from a family template.
 
 ## Run Locally
 

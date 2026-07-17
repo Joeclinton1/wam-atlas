@@ -262,7 +262,7 @@ const papers = [
       trainingRecipe: ["joint training of understanding, reasoning, imagination, and action with shared gradients"],
       inferenceRecipe: ["autoregressive CoT generation", "extract loop state z", "diffusion denoise dual-head video+action output"]
     },
-    uncertainty: "medium: architecture and RoboTwin/real-world scores reported; parameter total, data scale, and compute not fully disclosed.",
+    uncertainty: "medium: architecture and RoboTwin/real-world scores are reported; parameter total, data scale, and compute are outside the available source coverage.",
     method: [
       "Pelican-Unify 1.0 is a Unified Embodied Intelligence model for understanding, reasoning, imagination, and action.",
       "A single Qwen3-VL with 4B parameters serves as the unified understanding and reasoning module across scenes, instructions, visual contexts, and action histories.",
@@ -505,8 +505,8 @@ const papers = [
     },
     lit: {
       inputTokens: ["source motion frames", "target embodiment conditioning"],
-      tokenization: ["video diffusion latent tokens (backbone not disclosed)"],
-      backbone: ["streaming video diffusion generator (architecture not fully disclosed)"],
+      tokenization: ["video diffusion latent tokens (abstract-level source)"],
+      backbone: ["streaming video diffusion generator"],
       branches: ["shared motion conditioning branch", "embodiment modulation branch"],
       attention: ["branch-isolated attention separating motion from embodiment modulation"],
       heads: ["video denoiser"],
@@ -514,7 +514,7 @@ const papers = [
       trainingRecipe: ["train shared motion model on paired videos", "add lightweight adapters for new embodiments without paired data"],
       inferenceRecipe: ["stream target-embodiment video from source motion via shared model + embodiment adapter"]
     },
-    uncertainty: "high: only abstract-level detail available; architecture specifics, scale, and quantitative metrics not disclosed, so accuracy is excluded from the normalized Metrics.",
+    uncertainty: "high: only abstract-level detail is available; architecture specifics, scale, and quantitative metrics are outside the source coverage, so accuracy is excluded from the normalized Metrics.",
     method: [
       "OmniHumanoid performs streaming cross-embodiment video generation with paired-free adaptation.",
       "A shared motion-transfer model is learned from motion-aligned paired videos and captures transferable motion dynamics.",
@@ -526,7 +526,7 @@ const papers = [
     ],
     override: {
       confidence: "low", quality: "agent-audited",
-      generalization: { improvementPct: 14, unseenTask: true, ev: [2], note: "Paired-free adaptation to unseen embodiments; quantitative transfer not disclosed." },
+      generalization: { improvementPct: 14, unseenTask: true, ev: [2], note: "Paired-free adaptation to unseen embodiments; quantitative transfer is outside the available source coverage." },
       warnings: ["abstract-level only; no policy success benchmark, accuracy excluded from Metrics", "parameters, compute, and metrics not reported"]
     }
   },

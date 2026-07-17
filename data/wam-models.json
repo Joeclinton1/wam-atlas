@@ -19095,7 +19095,7 @@
           "action chunk"
         ]
       },
-      "uncertainty": "medium: architecture and RoboTwin/real-world scores reported; parameter total, data scale, and compute not fully disclosed.",
+      "uncertainty": "medium: architecture and RoboTwin/real-world scores are reported; parameter total, data scale, and compute are outside the available source coverage.",
       "literalArchitecture": {
         "sourceExtract": "methods/pelican-unify.md",
         "sourceLines": [
@@ -20297,7 +20297,7 @@
           "cross-embodiment video (synthetic training data)"
         ]
       },
-      "uncertainty": "high: only abstract-level detail available; architecture specifics, scale, and quantitative metrics not disclosed, so accuracy is excluded from the normalized Metrics.",
+      "uncertainty": "high: only abstract-level detail is available; architecture specifics, scale, and quantitative metrics are outside the source coverage, so accuracy is excluded from the normalized Metrics.",
       "literalArchitecture": {
         "sourceExtract": "methods/omnihumanoid.md",
         "sourceLines": [
@@ -20308,10 +20308,10 @@
           "target embodiment conditioning"
         ],
         "tokenization": [
-          "video diffusion latent tokens (backbone not disclosed)"
+          "video diffusion latent tokens (abstract-level source)"
         ],
         "backbone": [
-          "streaming video diffusion generator (architecture not fully disclosed)"
+          "streaming video diffusion generator"
         ],
         "branches": [
           "shared motion conditioning branch",

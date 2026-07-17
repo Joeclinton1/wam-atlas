@@ -1,5 +1,5 @@
 {
-  "version": "0.1.0",
+  "version": "0.2.0",
   "purpose": "Source-backed literal architecture specs for generated WAM diagrams. Each spec should be grounded in method-section extracts, not only survey-level taxonomy.",
   "curationStatus": {
     "completeEnoughForRendering": [
@@ -20,12 +20,12 @@
       "ud-vla",
       "vla-jepa",
       "dreamzero",
-      "genie",
+      "genie-envisioner",
       "mimic-video",
       "vtam",
       "aim"
     ],
-    "note": "High-level cards exist for the full atlas. Literal architecture diagrams should be trusted first for models listed in completeEnoughForRendering until the rest are curated from methods."
+    "note": "Only models in completeEnoughForRendering may render connected architecture graphs. All other cards show evidence notes without inferred topology until their paper is reviewed at node-and-edge level."
   },
   "models": {
     "fast-wam": {
@@ -175,7 +175,7 @@
         { "id": "unilat", "lane": "backbone", "label": "Unilateral Attention", "type": "attention", "details": "depth reads main; main unchanged", "source": "X-WAM.txt:332-340" },
         { "id": "ans", "lane": "heads", "label": "ANS Sampler", "type": "runtime", "details": "Ta action steps, TO video steps", "source": "X-WAM.txt:355-407" },
         { "id": "rgbout", "lane": "outputs", "label": "RGB-D Future", "type": "output", "details": "4D reconstruction/generation", "source": "X-WAM.txt:318-351" },
-        { "id": "actout", "lane": "outputs", "label": "Actions", "type": "output", "details": "dispatch after Ta", "source": "X-WAM.txt:361-371" }
+        { "id": "actout", "lane": "outputs", "label": "Actions + Future State", "type": "output", "details": "dispatch actions after Ta; predict s1:H", "source": "X-WAM.txt:361-371" }
       ],
       "diagramEdges": [
         { "from": "rgb", "to": "vae", "label": "encode" },
@@ -185,6 +185,7 @@
         { "from": "viewrope", "to": "dit", "label": "unified sequence" },
         { "from": "mlps", "to": "dit", "label": "state latents" },
         { "from": "mlpa", "to": "dit", "label": "action latents" },
+        { "from": "lang", "to": "dit", "label": "cross-attn" },
         { "from": "dit", "to": "depth", "label": "shared first N-M blocks" },
         { "from": "dit", "to": "unilat", "label": "main branch" },
         { "from": "unilat", "to": "depth", "label": "cross-attn" },
@@ -247,28 +248,32 @@
         "action decoder converts latent action embedding plus visual context into low-level action chunk"
       ],
       "diagramModules": [
-        { "id": "frames", "lane": "inputs", "label": "Frame Pair", "type": "input", "details": "o_t, o_t+k", "source": "UniVLA.txt:308-316" },
+        { "id": "frames", "lane": "inputs", "label": "Unlabeled Frame Pair", "type": "input", "phase": "training", "details": "o_t, o_t+k for latent-action discovery", "source": "UniVLA.txt:308-316" },
         { "id": "instr", "lane": "inputs", "label": "Instruction", "type": "input", "details": "T5 embedding", "source": "UniVLA.txt:350-366" },
-        { "id": "dino", "lane": "tokenization", "label": "DINOv2 Features", "type": "tokenizer", "details": "patch targets and inputs", "source": "UniVLA.txt:333-345" },
-        { "id": "idm", "lane": "backbone", "label": "IDM Encoder", "type": "backbone", "details": "spatial-temporal transformer", "source": "UniVLA.txt:316-322" },
-        { "id": "vqti", "lane": "backbone", "label": "VQ TI Codebook", "type": "branch", "details": "task-irrelevant code", "source": "UniVLA.txt:367-389" },
-        { "id": "vqtc", "lane": "backbone", "label": "VQ TC Codebook", "type": "branch", "details": "task-centric code", "source": "UniVLA.txt:391-418" },
-        { "id": "fdm", "lane": "heads", "label": "FDM Decoder", "type": "head", "details": "future DINO feature prediction", "source": "UniVLA.txt:316-345" },
+        { "id": "policyobs", "lane": "inputs", "label": "Policy RGB", "type": "input", "details": "deployment observation and visual context", "source": "UniVLA.txt:425-442" },
+        { "id": "dino", "lane": "tokenization", "label": "DINOv2 Features", "type": "tokenizer", "phase": "training", "details": "patch targets and inputs", "source": "UniVLA.txt:333-345" },
+        { "id": "idm", "lane": "backbone", "label": "IDM Encoder", "type": "backbone", "phase": "training", "details": "spatial-temporal transformer", "source": "UniVLA.txt:316-322" },
+        { "id": "vqti", "lane": "backbone", "label": "VQ TI Codebook", "type": "branch", "phase": "training", "details": "stage 1 task-irrelevant code", "source": "UniVLA.txt:367-389" },
+        { "id": "vqtc", "lane": "backbone", "label": "VQ TC Codebook", "type": "branch", "phase": "training", "details": "stage 2 task-centric code", "source": "UniVLA.txt:391-418" },
+        { "id": "fdm", "lane": "heads", "label": "FDM Decoder", "type": "head", "phase": "training", "details": "future DINO feature reconstruction", "source": "UniVLA.txt:316-345" },
         { "id": "vlm", "lane": "backbone", "label": "Prismatic-7B VLM", "type": "backbone", "details": "SigLIP+DINOv2 -> LLaMA-2", "source": "UniVLA.txt:425-442" },
-        { "id": "acttok", "lane": "heads", "label": "ACT Tokens", "type": "head", "details": "ACT_1..ACT_C vocabulary", "source": "UniVLA.txt:442-455" },
+        { "id": "acttok", "lane": "heads", "label": "Predicted ACT Tokens", "type": "head", "details": "N=4 autoregressive latent actions", "source": "UniVLA.txt:442-455" },
         { "id": "decoder", "lane": "heads", "label": "Action Decoder", "type": "head", "details": "attention pooling + linear projection", "source": "UniVLA.txt:492-520" },
+        { "id": "labels", "lane": "training", "label": "Latent-action Labels", "type": "objective", "details": "ACT targets for generalist policy pretraining", "source": "UniVLA.txt:442-455" },
         { "id": "out", "lane": "outputs", "label": "Robot Actions", "type": "output", "details": "embodiment-specific chunk", "source": "UniVLA.txt:515-527" }
       ],
       "diagramEdges": [
-        { "from": "frames", "to": "dino", "label": "features" },
-        { "from": "instr", "to": "idm", "label": "condition" },
-        { "from": "dino", "to": "idm", "label": "transition" },
-        { "from": "idm", "to": "vqti", "label": "stage 1" },
-        { "from": "vqti", "to": "vqtc", "label": "freeze + specialize" },
-        { "from": "vqtc", "to": "fdm", "label": "decode future" },
-        { "from": "vqtc", "to": "acttok", "label": "label videos", "kind": "training" },
-        { "from": "acttok", "to": "vlm", "label": "AR targets" },
-        { "from": "vlm", "to": "decoder", "label": "latent embeddings" },
+        { "from": "frames", "to": "dino", "label": "features", "kind": "training" },
+        { "from": "instr", "to": "idm", "label": "stage condition", "kind": "training" },
+        { "from": "dino", "to": "idm", "label": "transition", "kind": "training" },
+        { "from": "idm", "to": "vqti", "label": "stage 1", "kind": "training" },
+        { "from": "vqti", "to": "vqtc", "label": "freeze + specialize", "kind": "training" },
+        { "from": "vqtc", "to": "fdm", "label": "reconstruct future", "kind": "training" },
+        { "from": "vqtc", "to": "labels", "label": "label videos", "kind": "training" },
+        { "from": "policyobs", "to": "vlm", "label": "visual tokens" },
+        { "from": "instr", "to": "vlm", "label": "language tokens" },
+        { "from": "vlm", "to": "acttok", "label": "AR predict" },
+        { "from": "acttok", "to": "decoder", "label": "latent embeddings" },
         { "from": "decoder", "to": "out", "label": "decode" }
       ]
     },
@@ -630,9 +635,12 @@
         { "id": "state", "lane": "inputs", "label": "Robot State", "type": "input", "details": "state sequence", "source": "gr2.txt:529-536" },
         { "id": "vqgan", "lane": "tokenization", "label": "Frozen VQGAN", "type": "tokenizer", "details": "images -> discrete tokens", "source": "gr2.txt:530-533" },
         { "id": "gpt", "lane": "backbone", "label": "GPT-style Transformer", "type": "backbone", "details": "video-language-action policy", "source": "gr2.txt:524-540" },
-        { "id": "future", "lane": "heads", "label": "Future Image Tokens", "type": "head", "details": "per-view future images", "source": "gr2.txt:537-572" },
+        { "id": "future", "lane": "heads", "label": "Future Image Tokens", "type": "head", "details": "per-view discrete predictions", "source": "gr2.txt:537-572" },
+        { "id": "vqdec", "lane": "heads", "label": "Frozen VQGAN Decoder", "type": "head", "details": "tokens -> multi-view future frames", "source": "gr2.txt:537-572" },
         { "id": "cvae", "lane": "heads", "label": "cVAE Action Decoder", "type": "head", "details": "Cartesian action trajectory", "source": "gr2.txt:571-584" },
-        { "id": "wbc", "lane": "outputs", "label": "WBC", "type": "output", "details": "Cartesian -> low-level joints", "source": "gr2.txt:580-584" }
+        { "id": "wbc", "lane": "heads", "label": "Whole-body Controller", "type": "runtime", "details": "Cartesian -> low-level joints", "source": "gr2.txt:580-584" },
+        { "id": "futureout", "lane": "outputs", "label": "Future Multi-view Frames", "type": "output", "details": "decoded image predictions", "source": "gr2.txt:537-572" },
+        { "id": "actionout", "lane": "outputs", "label": "Joint Commands", "type": "output", "details": "200 Hz low-level execution", "source": "gr2.txt:580-584" }
       ],
       "diagramEdges": [
         { "from": "lang", "to": "gpt", "label": "text tokens" },
@@ -641,7 +649,10 @@
         { "from": "state", "to": "gpt", "label": "state sequence" },
         { "from": "gpt", "to": "future", "label": "predict" },
         { "from": "gpt", "to": "cvae", "label": "condition" },
-        { "from": "cvae", "to": "wbc", "label": "trajectory" }
+        { "from": "future", "to": "vqdec", "label": "decode" },
+        { "from": "vqdec", "to": "futureout", "label": "frames" },
+        { "from": "cvae", "to": "wbc", "label": "trajectory" },
+        { "from": "wbc", "to": "actionout", "label": "track at 200 Hz" }
       ]
     },
     "vpp": {
