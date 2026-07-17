@@ -1583,6 +1583,22 @@ p {
   color: #ffffff;
 }
 
+.original-diagram-toggle {
+  position: fixed;
+  top: 74px;
+  left: 18px;
+  z-index: 21;
+}
+
+.wam-diagram-original .diagram-bg {
+  fill: #ffffff;
+}
+
+.diagram-original-caption-text {
+  font-size: 13px;
+  fill: #6b7680;
+}
+
 .metric-chart-button.is-disabled,
 .metric-chart-button:disabled {
   opacity: 0.34;

@@ -2,6 +2,9 @@ export const state = {
   models: [],
   schema: null,
   arch: {},
+  diagramProfiles: {},
+  originalDiagrams: {},
+  showOriginalDiagrams: false,
   mode: "problem",
   metricView: "accuracy",
   metricChart: "bar",
@@ -358,5 +361,4 @@ export function shortText(value, maxChars) {
   if (text.length <= maxChars) return text;
   return `${text.slice(0, Math.max(0, maxChars - 3)).trim()}...`;
 }
-
 

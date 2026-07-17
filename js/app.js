@@ -17,8 +17,8 @@ import {
   scoreLabel,
   wrapText,
   shortText
-} from './shared.js?v=wam-atlas-30';
-import { renderDiagram, architectureDiagramMarkup, getArchitectureSpec } from './diagrams.js?v=wam-atlas-30';
+} from './shared.js?v=wam-atlas-33';
+import { renderDiagram, architectureDiagramMarkup, getArchitectureSpec } from './diagrams.js?v=wam-atlas-33';
 
 function hasMetricsTargetBenchmark(model) {
   return Boolean(model.metrics?.comparative?.metricsEligible);
@@ -59,17 +59,24 @@ function filteredModels() {
 }
 
 async function loadData() {
-  const [modelsRes, schemaRes, archRes] = await Promise.all([
+  const [modelsRes, schemaRes, archRes, profilesRes, originalRes] = await Promise.all([
     fetch("data/wam-models.json"),
     fetch("data/schema.json"),
-    fetch("data/architecture-specs.json")
+    fetch("data/architecture-specs.json"),
+    fetch("data/diagram-profiles.json?v=wam-atlas-33"),
+    fetch("data/original-diagrams.json?v=wam-atlas-33")
   ]);
   const modelsData = await modelsRes.json();
   state.schema = await schemaRes.json();
   const archData = await archRes.json();
+  const profileData = await profilesRes.json();
+  const originalData = originalRes.ok ? await originalRes.json() : { models: {} };
   state.models = modelsData.models;
   state.methodology = modelsData.methodology;
   state.arch = archData.models || {};
+  state.diagramProfiles = profileData.models || {};
+  state.originalDiagrams = originalData.models || {};
+  state.showOriginalDiagrams = localStorage.getItem("wam-original-diagrams") === "1";
 
   animateStatCount($("#modelCount"), state.models.length);
   animateStatCount($("#familyCount"), new Set(state.models.map((m) => m.family)).size);
@@ -2814,13 +2821,16 @@ function showPreview(id, event) {
   const model = state.models.find((item) => item.id === id);
   if (!model) return;
   const spec = getArchitectureSpec(model);
+  const profile = state.diagramProfiles?.[model.id];
   state.hoveredId = id;
   $("#previewPanel").hidden = false;
   $("#previewPanel").classList.toggle("is-metric", state.mode === "metrics");
   $("#previewPanel").style.setProperty("--preview-outline", problemColorForModel(model));
   $("#previewEmpty").hidden = true;
   $("#previewContent").hidden = false;
-  $("#previewFamily").textContent = `${model.category}${spec ? " / source-backed diagram" : " / survey-level diagram"}`;
+  $("#previewFamily").textContent = profile
+    ? `${profile.core.label} / paper-specific diagram`
+    : `${model.category}${spec ? " / source-backed diagram" : " / survey-level diagram"}`;
   $("#previewTitle").textContent = model.name;
   $("#previewInsight").textContent = model.insights?.novelty || model.oneLine;
   $("#previewOpen").onclick = () => openModel(id);
@@ -3013,6 +3023,11 @@ function syncModeButtons() {
   });
   const metricsControls = $("#metricsControls");
   if (metricsControls) metricsControls.hidden = state.mode !== "metrics";
+  const originalDiagramToggle = $("#originalDiagramToggle");
+  if (originalDiagramToggle) {
+    originalDiagramToggle.classList.toggle("is-active", Boolean(state.showOriginalDiagrams));
+    originalDiagramToggle.setAttribute("aria-pressed", state.showOriginalDiagrams ? "true" : "false");
+  }
   const taxonomyGalleryToggle = $("#taxonomyGalleryToggle");
   if (taxonomyGalleryToggle) {
     taxonomyGalleryToggle.hidden = state.mode !== "taxonomy";
@@ -3191,8 +3206,11 @@ function routeFromHash() {
 function renderModelCard(id) {
   const model = state.models.find((item) => item.id === id) || state.models[0];
   const spec = getArchitectureSpec(model);
+  const profile = state.diagramProfiles?.[model.id];
   state.selectedId = model.id;
-  $("#modelFamily").textContent = `${model.category}${spec ? " / source-backed literal architecture" : " / survey-level placeholder"}`;
+  $("#modelFamily").textContent = profile
+    ? `${profile.core.label} / reviewed paper-specific architecture`
+    : `${model.category}${spec ? " / source-backed literal architecture" : " / survey-level placeholder"}`;
   $("#modelFamily").style.setProperty("--family-color", problemColorForModel(model));
   $("#modelName").textContent = model.title;
   $("#modelDiagramTitle").textContent = `${model.name} architecture`;
@@ -3217,16 +3235,20 @@ function renderModelCard(id) {
     </div>
   `).join("");
 
-  const stages = model.diagram?.trainingStages || [];
+  const stages = profile?.training?.length
+    ? profile.training
+    : (model.diagram?.trainingStages || []).map((stage) => ({ label: stage.name, detail: `${stage.objective}${stage.data ? ` Data: ${stage.data}.` : ""}` }));
   $("#trainingStages").innerHTML = stages.map((stage) => `
-    <li><strong>${escapeHtml(stage.name)}</strong><span>${escapeHtml(stage.objective)} ${stage.data ? `Data: ${stage.data}.` : ""}</span></li>
+    <li><strong>${escapeHtml(stage.label || stage.name)}</strong><span>${escapeHtml(stage.detail || stage.objective || "")}</span></li>
   `).join("");
 
-  const runtime = spec?.inferenceRecipe || model.diagram?.runtimePath || [];
+  const runtime = profile?.runtime || spec?.inferenceRecipe || model.diagram?.runtimePath || [];
   $("#runtimePath").textContent = Array.isArray(runtime) ? `Runtime path: ${runtime.join(" -> ")}` : String(runtime);
   const data = model.diagram?.data || [];
   $("#dataSources").innerHTML = data.map((item) => `<span class="chip">${escapeHtml(item)}</span>`).join("");
-  $("#modelUncertainty").textContent = spec
+  $("#modelUncertainty").textContent = profile
+    ? `${profile.review.uncertainty || model.uncertainty} Source coverage: ${profile.review.sourceCoverage || "method-level"}. Source: ${profile.review.sourceExtract}; lines ${(profile.review.sourceLines || []).join(", ")}.`
+    : spec
     ? `${model.uncertainty} Literal diagram source: ${spec.sourceExtract}; lines ${(spec.sourceLines || []).join(", ")}.`
     : `${model.uncertainty} Literal architecture curation is pending; current diagram is a survey-level scaffold.`;
   updateActiveNodes();
@@ -3589,6 +3611,17 @@ function bindEvents() {
       setAtlasMode(button.dataset.mode);
     });
   });
+  $("#originalDiagramToggle").addEventListener("click", () => {
+    state.showOriginalDiagrams = !state.showOriginalDiagrams;
+    localStorage.setItem("wam-original-diagrams", state.showOriginalDiagrams ? "1" : "0");
+    syncModeButtons();
+    const route = location.hash.replace(/^#/, "");
+    if (route.startsWith("model/")) {
+      renderModelCard(route.split("/")[1]);
+    } else {
+      renderAtlas();
+    }
+  });
   $("#taxonomyGalleryToggle").addEventListener("click", () => {
     state.taxonomyGallery = !state.taxonomyGallery;
     if (state.taxonomyGallery) state.taxonomyTree = false;
@@ -3655,4 +3688,3 @@ loadData().catch((error) => {
   console.error(error);
   document.body.insertAdjacentHTML("afterbegin", `<pre style="padding:16px;color:#a00">${escapeHtml(error.stack || error.message)}</pre>`);
 });
-

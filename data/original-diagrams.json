@@ -1,0 +1,273 @@
+{
+  "version": "1.0.0",
+  "models": {
+    "gr-1": {
+      "file": "assets/original-diagrams/gr-1.png",
+      "caption": "GR-1 — as published in the original paper"
+    },
+    "gr-2": {
+      "file": "assets/original-diagrams/gr-2.png",
+      "caption": "GR-2 — as published in the original paper"
+    },
+    "lapa": {
+      "file": "assets/original-diagrams/lapa.png",
+      "caption": "LAPA — as published in the original paper"
+    },
+    "vpp": {
+      "file": "assets/original-diagrams/vpp.png",
+      "caption": "VPP — as published in the original paper"
+    },
+    "uva": {
+      "file": "assets/original-diagrams/uva.png",
+      "caption": "UVA — as published in the original paper"
+    },
+    "uwm": {
+      "file": "assets/original-diagrams/uwm.png",
+      "caption": "UWM — as published in the original paper"
+    },
+    "dreamgen": {
+      "file": "assets/original-diagrams/dreamgen.png",
+      "caption": "DreamGen — as published in the original paper"
+    },
+    "flare": {
+      "file": "assets/original-diagrams/flare.png",
+      "caption": "FLARE — as published in the original paper"
+    },
+    "clam": {
+      "file": "assets/original-diagrams/clam.png",
+      "caption": "CLAM — as published in the original paper"
+    },
+    "videorepa": {
+      "file": "assets/original-diagrams/videorepa.png",
+      "caption": "VideoREPA — as published in the original paper"
+    },
+    "univla": {
+      "file": "assets/original-diagrams/univla.png",
+      "caption": "UniVLA — as published in the original paper"
+    },
+    "geometry-forcing": {
+      "file": "assets/original-diagrams/geometry-forcing.png",
+      "caption": "Geometry Forcing — as published in the original paper"
+    },
+    "trivla": {
+      "file": "assets/original-diagrams/trivla.png",
+      "caption": "TriVLA — as published in the original paper"
+    },
+    "video-generators-robot-policies": {
+      "file": "assets/original-diagrams/video-generators-robot-policies.png",
+      "caption": "VideoPolicy — as published in the original paper"
+    },
+    "villa-x": {
+      "file": "assets/original-diagrams/villa-x.png",
+      "caption": "villa-X — as published in the original paper"
+    },
+    "mowm": {
+      "file": "assets/original-diagrams/mowm.png",
+      "caption": "MoWM — as published in the original paper"
+    },
+    "dust": {
+      "file": "assets/original-diagrams/dust.png",
+      "caption": "DUST — as published in the original paper"
+    },
+    "ud-vla": {
+      "file": "assets/original-diagrams/ud-vla.png",
+      "caption": "UD-VLA — as published in the original paper"
+    },
+    "rynnvla-002": {
+      "file": "assets/original-diagrams/rynnvla-002.png",
+      "caption": "RynnVLA-002 — as published in the original paper"
+    },
+    "motus": {
+      "file": "assets/original-diagrams/motus.png",
+      "caption": "Motus — as published in the original paper"
+    },
+    "videovla": {
+      "file": "assets/original-diagrams/videovla.png",
+      "caption": "VideoVLA — as published in the original paper"
+    },
+    "act2goal": {
+      "file": "assets/original-diagrams/act2goal.png",
+      "caption": "Act2Goal — as published in the original paper"
+    },
+    "mimic-video": {
+      "file": "assets/original-diagrams/mimic-video.png",
+      "caption": "mimic-video — as published in the original paper"
+    },
+    "clap": {
+      "file": "assets/original-diagrams/clap.png",
+      "caption": "CLAP — as published in the original paper"
+    },
+    "cosmos-policy": {
+      "file": "assets/original-diagrams/cosmos-policy.png",
+      "caption": "Cosmos Policy — as published in the original paper"
+    },
+    "wog": {
+      "file": "assets/original-diagrams/wog.png",
+      "caption": "WoG — as published in the original paper"
+    },
+    "vla-jepa": {
+      "file": "assets/original-diagrams/vla-jepa.png",
+      "caption": "VLA-JEPA — as published in the original paper"
+    },
+    "frappe": {
+      "file": "assets/original-diagrams/frappe.png",
+      "caption": "FRAPPE — as published in the original paper"
+    },
+    "ldamodel": {
+      "file": "assets/original-diagrams/ldamodel.png",
+      "caption": "LDA-1B — as published in the original paper"
+    },
+    "adaworldpolicy": {
+      "file": "assets/original-diagrams/adaworldpolicy.png",
+      "caption": "AdaWorldPolicy — as published in the original paper"
+    },
+    "say-dream-act": {
+      "file": "assets/original-diagrams/say-dream-act.png",
+      "caption": "Say-Dream-Act — as published in the original paper"
+    },
+    "cowvla": {
+      "file": "assets/original-diagrams/cowvla.png",
+      "caption": "CoWVLA — as published in the original paper"
+    },
+    "fast-wam": {
+      "file": "assets/original-diagrams/fast-wam.png",
+      "caption": "Fast-WAM — as published in the original paper"
+    },
+    "svam": {
+      "file": "assets/original-diagrams/svam.png",
+      "caption": "S-VAM — as published in the original paper"
+    },
+    "sim-distill": {
+      "file": "assets/original-diagrams/sim-distill.png",
+      "caption": "SimDist — as published in the original paper"
+    },
+    "vampo": {
+      "file": "assets/original-diagrams/vampo.png",
+      "caption": "VAMPO — as published in the original paper"
+    },
+    "eva": {
+      "file": "assets/original-diagrams/eva.png",
+      "caption": "EVA — as published in the original paper"
+    },
+    "vtam": {
+      "file": "assets/original-diagrams/vtam.png",
+      "caption": "VTAM — as published in the original paper"
+    },
+    "gigaworld-policy": {
+      "file": "assets/original-diagrams/gigaworld-policy.png",
+      "caption": "GigaWorld-Policy — as published in the original paper"
+    },
+    "aim": {
+      "file": "assets/original-diagrams/aim.png",
+      "caption": "AIM — as published in the original paper"
+    },
+    "wav": {
+      "file": "assets/original-diagrams/wav.png",
+      "caption": "WAV — as published in the original paper"
+    },
+    "dexworldmodel": {
+      "file": "assets/original-diagrams/dexworldmodel.png",
+      "caption": "DexWorldModel — as published in the original paper"
+    },
+    "x-wam": {
+      "file": "assets/original-diagrams/x-wam.png",
+      "caption": "X-WAM — as published in the original paper"
+    },
+    "motubrain": {
+      "file": "assets/original-diagrams/motubrain.png",
+      "caption": "MotuBrain — as published in the original paper"
+    },
+    "vidar": {
+      "file": "assets/original-diagrams/vidar.png",
+      "caption": "Vidar — as published in the original paper"
+    },
+    "genie-envisioner": {
+      "file": "assets/original-diagrams/genie-envisioner.png",
+      "caption": "Genie Envisioner — as published in the original paper"
+    },
+    "xr-1": {
+      "file": "assets/original-diagrams/xr-1.png",
+      "caption": "XR-1 — as published in the original paper"
+    },
+    "vipra": {
+      "file": "assets/original-diagrams/vipra.png",
+      "caption": "ViPRA — as published in the original paper"
+    },
+    "lingbot-va": {
+      "file": "assets/original-diagrams/lingbot-va.png",
+      "caption": "LingBot-VA — as published in the original paper"
+    },
+    "dreamzero": {
+      "file": "assets/original-diagrams/dreamzero.png",
+      "caption": "DreamZero — as published in the original paper"
+    },
+    "rhoda-dva": {
+      "file": "assets/original-diagrams/rhoda-dva.png",
+      "caption": "Rhoda DVA — as published in the original paper"
+    },
+    "dit4dit": {
+      "file": "assets/original-diagrams/dit4dit.png",
+      "caption": "DiT4DiT — as published in the original paper"
+    },
+    "being-h07": {
+      "file": "assets/original-diagrams/being-h07.png",
+      "caption": "Being-H0.7 — as published in the original paper"
+    },
+    "vera": {
+      "file": "assets/original-diagrams/vera.png",
+      "caption": "VERA — as published in the original paper"
+    },
+    "harmowam": {
+      "file": "assets/original-diagrams/harmowam.png",
+      "caption": "HarmoWAM — as published in the original paper"
+    },
+    "pelican-unify": {
+      "file": "assets/original-diagrams/pelican-unify.png",
+      "caption": "Pelican-Unify 1.0 — as published in the original paper"
+    },
+    "wall-wm": {
+      "file": "assets/original-diagrams/wall-wm.png",
+      "caption": "WALL-WM — as published in the original paper"
+    },
+    "next-forcing": {
+      "file": "assets/original-diagrams/next-forcing.png",
+      "caption": "Next Forcing — as published in the original paper"
+    },
+    "feedback-wm": {
+      "file": "assets/original-diagrams/feedback-wm.png",
+      "caption": "Feedback World Model — as published in the original paper"
+    },
+    "omnihumanoid": {
+      "file": "assets/original-diagrams/omnihumanoid.png",
+      "caption": "OmniHumanoid — as published in the original paper"
+    },
+    "mola": {
+      "file": "assets/original-diagrams/mola.png",
+      "caption": "MoLA — as published in the original paper"
+    },
+    "maskwam": {
+      "file": "assets/original-diagrams/maskwam.png",
+      "caption": "MaskWAM — as published in the original paper"
+    },
+    "abot-m05": {
+      "file": "assets/original-diagrams/abot-m05.png",
+      "caption": "ABot-M0.5 — as published in the original paper"
+    },
+    "lawam": {
+      "file": "assets/original-diagrams/lawam.png",
+      "caption": "LaWAM — as published in the original paper"
+    },
+    "aha-wam": {
+      "file": "assets/original-diagrams/aha-wam.png",
+      "caption": "AHA-WAM — as published in the original paper"
+    },
+    "tau0-wm": {
+      "file": "assets/original-diagrams/tau0-wm.png",
+      "caption": "tau0-WM — as published in the original paper"
+    },
+    "rla-wm": {
+      "file": "assets/original-diagrams/rla-wm.png",
+      "caption": "RLA-WM — as published in the original paper"
+    }
+  }
+}

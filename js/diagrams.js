@@ -1,12 +1,16 @@
-import { state, familyColors, typeColors, escapeHtml, wrapText, shortText } from './shared.js?v=wam-atlas-30';
+import { state, familyColors, typeColors, escapeHtml, wrapText, shortText } from './shared.js?v=wam-atlas-33';
 
 export function renderDiagram(container, model, options = {}) {
   container.innerHTML = architectureDiagramMarkup(model, options);
 }
 
 export function architectureDiagramMarkup(model, options = {}) {
-  const spec = getArchitectureSpec(model);
   const view = { w: 1160, h: options.gallery ? 326 : options.mini ? 452 : 720 };
+  if (state.showOriginalDiagrams) {
+    const original = state.originalDiagrams?.[model.id];
+    if (original) return originalDiagramMarkup(model, original, view);
+  }
+  const spec = getArchitectureSpec(model);
   const diagram = buildArchitectureDiagram(model, spec, options);
   const ids = diagramIds(model, options);
   const header = "";
@@ -18,6 +22,19 @@ export function architectureDiagramMarkup(model, options = {}) {
       ${header}
       ${drawArchitectureDiagram(diagram, view, options, ids)}
       ${drawGlobalUnifiedTokenLegend(diagram, view, options)}
+    </svg>
+  `;
+}
+
+function originalDiagramMarkup(model, original, view) {
+  const src = escapeHtml(original.file);
+  const caption = escapeHtml(original.caption || `${model.name} — as published`);
+  const captionMarkup = `<text class="diagram-original-caption-text" x="${view.w / 2}" y="${view.h - 10}" text-anchor="middle">${caption}</text>`;
+  return `
+    <svg class="wam-diagram wam-diagram-original" viewBox="0 0 ${view.w} ${view.h}" preserveAspectRatio="xMidYMin meet" role="img" aria-label="${escapeHtml(model.name)} original paper diagram">
+      <rect class="diagram-bg" x="0" y="0" width="${view.w}" height="${view.h}"></rect>
+      <image href="${src}" x="0" y="0" width="${view.w}" height="${view.h}" preserveAspectRatio="xMidYMid meet"></image>
+      ${captionMarkup}
     </svg>
   `;
 }
@@ -38,6 +55,8 @@ function diagramIds(model, options = {}) {
 }
 
 function buildArchitectureDiagram(model, spec, options = {}) {
+  const reviewed = state.diagramProfiles?.[model.id];
+  if (reviewed) return buildReviewedArchitectureDiagram(model, reviewed, options);
   const arch = model.literalArchitecture || spec || {};
   const allText = [
     model.family,
@@ -74,7 +93,31 @@ function buildArchitectureDiagram(model, spec, options = {}) {
   };
 }
 
+function buildReviewedArchitectureDiagram(model, profile, options = {}) {
+  const mini = Boolean(options.mini);
+  const take = (items, miniCount, fullCount) => (items || []).slice(0, mini ? miniCount : fullCount);
+  return {
+    pattern: profile.pattern || model.diagram?.pattern || model.family,
+    variant: profile.variant || null,
+    family: model.family,
+    thesis: profile.thesis || model.oneLine || model.category,
+    inputs: take(profile.inputs, 3, 5),
+    encoders: take(profile.encoders, 3, 6),
+    core: profile.core,
+    streams: take(profile.streams, 4, 6),
+    attention: take(profile.attention, 4, 7),
+    heads: take(profile.heads, 3, 6),
+    outputs: take(profile.outputs, 3, 5),
+    components: take(profile.components, 6, 10),
+    data: take(profile.data || model.diagram?.data, 2, 4),
+    training: take(profile.training, 4, 7),
+    runtime: take(profile.runtime, 2, 4),
+    motifs: profile.motifs || { diffusion: false, multiStream: false, trainingOnly: false, online: false }
+  };
+}
+
 function drawArchitectureDiagram(diagram, view, options = {}, ids) {
+  if (diagram.variant === "dreamzero_joint_flow") return drawDreamZeroArchitecture(diagram, view, options, ids);
   const pattern = diagram.pattern || diagram.family;
   if ([
     "unified",
@@ -110,6 +153,147 @@ function drawArchitectureDiagram(diagram, view, options = {}, ids) {
     showTraining ? drawTrainingBand(diagram, trainBox, coreBox, headBox, mini, ids) : "",
     mini || !showTraining ? "" : drawRuntimeStrip(diagram.runtime, coreBox, outputBox, trainBox)
   ].join("");
+}
+
+function drawDreamZeroArchitecture(diagram, view, options = {}, ids) {
+  const mini = Boolean(options.mini);
+  const gallery = Boolean(options.gallery);
+  const y0 = gallery ? 18 : mini ? 22 : 34;
+  const panelH = gallery ? 286 : mini ? 270 : 330;
+  const left = { x: 34, y: y0, w: 536, h: panelH };
+  const right = { x: 590, y: y0, w: 536, h: panelH };
+  const trainingBox = { x: 34, y: y0 + panelH + 26, w: 1092, h: mini ? 100 : 132 };
+  return [
+    drawDreamZeroTrainingPanel(left, diagram, mini, ids),
+    drawDreamZeroInferencePanel(right, diagram, mini, ids),
+    gallery ? "" : drawTrainingBand(diagram, trainingBox, left, right, mini, ids),
+    gallery || mini ? "" : drawRuntimeStrip(diagram.runtime, right, right, trainingBox)
+  ].join("");
+}
+
+function drawDreamZeroTrainingPanel(box, diagram, mini, ids) {
+  const compact = mini;
+  const videoY = box.y + (compact ? 66 : 80);
+  const actionY = box.y + (compact ? 137 : 164);
+  const stateY = box.y + (compact ? 208 : 248);
+  const core = { x: box.x + 282, y: box.y + (compact ? 52 : 62), w: 174, h: compact ? 186 : 226 };
+  const encoderX = box.x + 90;
+  const noiseX = box.x + 194;
+  const outputX = box.x + 474;
+  return `
+    <g class="dreamzero-panel dreamzero-training">
+      <rect class="sequence-panel" x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}"></rect>
+      <text class="panel-title" x="${box.x + 16}" y="${box.y + 24}">training · joint video-action flow matching</text>
+      <text class="core-detail" x="${box.x + 16}" y="${box.y + 42}">separate video/action noise · shared causal DiT · teacher forcing</text>
+
+      ${drawFrameStackGlyph("video frames", box.x + 18, videoY - 22, 54, 42, true)}
+      ${drawDreamZeroModule(encoderX, videoY - 25, 82, 50, "VAE Encoder", "visual")}
+      ${drawDreamZeroNoise(noiseX, videoY - 23, "video + noise", "future")}
+      ${drawConnector(box.x + 72, videoY, encoderX, videoY, "", false, ids)}
+      ${drawConnector(encoderX + 82, videoY, noiseX, videoY, "", false, ids)}
+      ${drawConnector(noiseX + 70, videoY, core.x, videoY, "", false, ids)}
+
+      ${drawActionGlyph(box.x + 18, actionY - 20, 54, 40)}
+      ${drawDreamZeroModule(encoderX, actionY - 25, 82, 50, "Action Encoder", "action")}
+      ${drawDreamZeroNoise(noiseX, actionY - 23, "action + noise", "action")}
+      ${drawConnector(box.x + 72, actionY, encoderX, actionY, "", false, ids)}
+      ${drawConnector(encoderX + 82, actionY, noiseX, actionY, "", false, ids)}
+      ${drawConnector(noiseX + 70, actionY, core.x, actionY, "", false, ids)}
+
+      ${drawDreamZeroModule(box.x + 18, stateY - 25, 154, 50, "State + Text Encoder", "state")}
+      ${drawConnector(box.x + 172, stateY, core.x + 36, core.y + core.h, "proprio + language", false, ids)}
+
+      <g filter="url(#${ids.softShadow})">
+        <rect class="core-panel" x="${core.x}" y="${core.y}" width="${core.w}" height="${core.h}" fill="url(#${ids.coreGrad})"></rect>
+        <title>${escapeHtml(diagram.core.label)}</title>
+        ${drawWrappedText("Joint Video-Action Causal DiT", core.x + 16, core.y + 26, 22, 2, "core-title", 13)}
+        ${drawCoreVisual("dit", core.x + 42, core.y + 70, core.w - 84, compact ? 70 : 92, { autoregressive: true, diffusion: true })}
+        <text class="core-note" x="${core.x + 22}" y="${core.y + core.h - 24}">clean previous chunks condition the current chunk</text>
+      </g>
+      ${drawDreamZeroNoise(outputX, videoY - 23, "video velocity", "future")}
+      ${drawDreamZeroNoise(outputX, actionY - 23, "action velocity", "action")}
+      ${drawConnector(core.x + core.w, videoY, outputX, videoY, "", false, ids)}
+      ${drawConnector(core.x + core.w, actionY, outputX, actionY, "", false, ids)}
+      <text class="core-note" x="${outputX - 2}" y="${stateY + 5}">joint loss</text>
+    </g>
+  `;
+}
+
+function drawDreamZeroInferencePanel(box, diagram, mini, ids) {
+  const compact = mini;
+  const videoY = box.y + (compact ? 78 : 92);
+  const actionY = box.y + (compact ? 170 : 194);
+  const conditionY = box.y + (compact ? 228 : 270);
+  const core = { x: box.x + 210, y: box.y + (compact ? 50 : 60), w: 174, h: compact ? 190 : 224 };
+  const encoderX = box.x + 104;
+  const decoderX = box.x + 398;
+  const outputX = box.x + 482;
+  const feedbackY = box.y + box.h - 16;
+  return `
+    <g class="dreamzero-panel dreamzero-inference">
+      <rect class="sequence-panel" x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}"></rect>
+      <text class="panel-title" x="${box.x + 16}" y="${box.y + 24}">inference · closed-loop real-world execution</text>
+      <text class="core-detail" x="${box.x + 16}" y="${box.y + 42}">autoregressive flow sampling · KV cache · asynchronous action execution</text>
+
+      ${drawFrameStackGlyph("past real frames", box.x + 18, videoY - 22, 56, 42, true)}
+      ${drawDreamZeroModule(encoderX, videoY - 25, 84, 50, "VAE Encoder", "visual")}
+      ${drawConnector(box.x + 74, videoY, encoderX, videoY, "", false, ids)}
+      ${drawConnector(encoderX + 84, videoY, core.x, videoY, "", false, ids)}
+
+      ${drawDreamZeroModule(box.x + 18, conditionY - 25, 154, 50, "State + Text Encoder", "state")}
+      ${drawConnector(box.x + 172, conditionY, core.x + 44, core.y + core.h, "condition", false, ids)}
+
+      <g filter="url(#${ids.softShadow})">
+        <rect class="core-panel" x="${core.x}" y="${core.y}" width="${core.w}" height="${core.h}" fill="url(#${ids.coreGrad})"></rect>
+        <title>${escapeHtml(diagram.core.label)}</title>
+        ${drawWrappedText("Joint Video-Action Causal DiT", core.x + 16, core.y + 26, 22, 2, "core-title", 13)}
+        ${drawCoreVisual("dit", core.x + 42, core.y + 66, core.w - 84, compact ? 66 : 82, { autoregressive: true, diffusion: true })}
+        <rect class="attention-badge" x="${core.x + 36}" y="${core.y + core.h - 52}" width="${core.w - 72}" height="28"></rect>
+        <text class="attention-text" x="${core.x + core.w / 2}" y="${core.y + core.h - 34}" text-anchor="middle">KV cache</text>
+      </g>
+
+      ${drawDreamZeroModule(decoderX, videoY - 25, 76, 50, "VAE Decoder", "future")}
+      ${drawFrameStackGlyph("future frames", outputX, videoY - 21, 42, 40, true)}
+      ${drawConnector(core.x + core.w, videoY, decoderX, videoY, "", false, ids)}
+      ${drawConnector(decoderX + 76, videoY, outputX, videoY, "", false, ids)}
+
+      ${drawDreamZeroModule(decoderX, actionY - 25, 76, 50, "Action Decoder", "action")}
+      ${drawActionGlyph(outputX, actionY - 19, 42, 38)}
+      ${drawConnector(core.x + core.w, actionY, decoderX, actionY, "", false, ids)}
+      ${drawConnector(decoderX + 76, actionY, outputX, actionY, "", false, ids)}
+      <text class="core-note" x="${decoderX + 2}" y="${actionY + 39}">async execution</text>
+
+      <path class="dashed-flow" d="M ${outputX + 22} ${actionY + 25} L ${outputX + 22} ${feedbackY} L ${box.x + 12} ${feedbackY} L ${box.x + 12} ${videoY}" marker-end="url(#${ids.arrow})"></path>
+      <text class="edge-label" x="${box.x + box.w / 2}" y="${feedbackY - 5}" text-anchor="middle">update the KV cache with the next real observation</text>
+    </g>
+  `;
+}
+
+function drawDreamZeroModule(x, y, w, h, label, kind) {
+  const palette = {
+    visual: ["#edf5fb", "#78a7d3"],
+    future: ["#e9f6f7", "#4f9ca5"],
+    action: ["#fff5e7", "#d49a3d"],
+    state: ["#eef7ed", "#72a36e"]
+  }[kind] || ["#f3f5f6", "#8b979d"];
+  return `
+    <g>
+      <title>${escapeHtml(label)}</title>
+      <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="8" fill="${palette[0]}" stroke="${palette[1]}" stroke-width="1.4"></rect>
+      ${drawWrappedText(label, x + 8, y + 20, Math.max(10, Math.floor(w / 7)), 2, "block-title", 11)}
+    </g>
+  `;
+}
+
+function drawDreamZeroNoise(x, y, label, kind) {
+  const color = kind === "action" ? "#d49a3d" : "#4f9ca5";
+  return `
+    <g>
+      <rect class="noise-step" x="${x}" y="${y}" width="70" height="46" rx="7"></rect>
+      <path d="M ${x + 10} ${y + 31} C ${x + 22} ${y + 8}, ${x + 36} ${y + 40}, ${x + 58} ${y + 15}" fill="none" stroke="${color}" stroke-width="1.5"></path>
+      <text class="core-note" x="${x + 35}" y="${y + 42}" text-anchor="middle">${escapeHtml(shortText(label, 15))}</text>
+    </g>
+  `;
 }
 
 function drawStandardArchitecture(diagram, view, options = {}, ids) {
@@ -575,7 +759,8 @@ function drawLatentManifold(box, diagram, mini, ids) {
   return `
     <g filter="url(#${ids.softShadow})">
       <ellipse class="latent-space" cx="${box.x + box.w / 2}" cy="${box.y + box.h / 2}" rx="${box.w / 2}" ry="${box.h / 2}"></ellipse>
-      <text class="core-title" x="${box.x + box.w / 2}" y="${box.y + 30}" text-anchor="middle">shared action-observation latent space</text>
+      <title>${escapeHtml(diagram.core.label)}</title>
+      <text class="core-title" x="${box.x + box.w / 2}" y="${box.y + 30}" text-anchor="middle">${escapeHtml(shortText(diagram.core.label, 38))}</text>
       ${drawWrappedText(diagram.core.details.join(" / "), box.x + 40, box.y + 52, 32, 2, "core-detail", 11)}
       ${nodes.map(([label, x, y, color], index) => `
         <g>
@@ -620,7 +805,8 @@ function drawLatentActionCodebook(box, diagram, mini) {
   return `
     <g>
       <rect class="codebook-panel" x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}"></rect>
-      <text class="core-title" x="${box.x + 22}" y="${box.y + 30}">latent action interface</text>
+      <title>${escapeHtml(diagram.core.label)}</title>
+      <text class="core-title" x="${box.x + 22}" y="${box.y + 30}">${escapeHtml(shortText(diagram.core.label, 30))}</text>
       ${drawWrappedText(diagram.core.details.join(" / "), box.x + 22, box.y + 52, 28, 2, "core-detail", 11)}
       ${cells}
       <text class="core-note" x="${box.x + 32}" y="${box.y + box.h - 24}">discrete / continuous action code</text>
@@ -758,7 +944,8 @@ function drawImplicitFutureRepresentation(box, diagram, mini, ids) {
   return `
     <g filter="url(#${ids.softShadow})">
       <rect class="implicit-panel" x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}"></rect>
-      <text class="core-title" x="${box.x + 22}" y="${box.y + 30}">implicit future representation</text>
+      <title>${escapeHtml(diagram.core.label)}</title>
+      <text class="core-title" x="${box.x + 22}" y="${box.y + 30}">${escapeHtml(shortText(diagram.core.label, 32))}</text>
       ${drawWrappedText(diagram.core.details.join(" / "), box.x + 22, box.y + 52, 31, 1, "core-detail", 11)}
       <g class="implicit-stage implicit-observation">
         ${drawFrameStackGlyph("current observation", obsX, topY - 24, 58, 42, false)}
@@ -981,11 +1168,12 @@ function drawFuturePredictor(box, diagram, mini, ids) {
   const rendered = diagram.pattern === "pixel_idm";
   const latent = diagram.pattern === "latent_idm";
   const stages = futurePredictorStages(diagram, mini);
-  const title = rendered ? "future video model" : "latent future model";
+  const title = diagram.core.label || (rendered ? "future video model" : "latent future model");
   return `
     <g filter="url(#${ids.softShadow})">
       <rect class="core-panel future-core" x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" fill="url(#${ids.coreGrad})"></rect>
-      <text class="core-title" x="${box.x + 20}" y="${box.y + 29}">${title}</text>
+      <title>${escapeHtml(title)}</title>
+      <text class="core-title" x="${box.x + 20}" y="${box.y + 29}">${escapeHtml(shortText(title, 34))}</text>
       ${drawFuturePipelineDiagram(box, diagram, rendered, latent, mini)}
       ${drawFutureStageChips(stages, box, mini)}
     </g>
@@ -1904,6 +2092,7 @@ function drawDenseEncoderRows(rows, mini) {
     const detail = encoderDetailBadgeText(encoder.detail);
     return `
       <g class="encoder-node encoder-${escapeHtml(kind)} encoder-shape-${shape}">
+        <title>${escapeHtml(`${encoder.label}${encoder.detail ? ` — ${encoder.detail}` : ""}`)}</title>
         ${shapeSvg}
         <text class="block-title" x="${row.x + row.w / 2}" y="${y + 14}" text-anchor="middle">${escapeHtml(shortText(encoder.label, 22))}</text>
         ${glyph}
@@ -1953,6 +2142,7 @@ function drawDenseHeadRows(rows, mini) {
     const detail = hideDetail ? "" : blockDetailBadgeText(head.detail);
     return `
       <g class="head-node head-${escapeHtml(kind)} head-shape-${shape}">
+        <title>${escapeHtml(`${head.label}${head.detail ? ` — ${head.detail}` : ""}`)}</title>
         ${shapeSvg}
         <text class="block-title" x="${row.x + row.w / 2}" y="${y + 14}" text-anchor="middle">${escapeHtml(shortText(head.label, 22))}</text>
         ${glyphKind ? drawHeadGlyph(glyphKind, glyphX, glyphY, glyphW, glyphH, kind) : shape === "reverse-funnel" ? drawReverseFunnelGlyph(row.x + row.w / 2, y + row.h * 0.62, kind) : ""}
@@ -3369,7 +3559,7 @@ function preciseEncoders(encoders) {
   ];
   return pruneGenericEncoders(list.map((encoder) => ({
     ...encoder,
-    label: preciseEncoderLabel(encoder.label, encoder.detail),
+    label: encoder.exact ? encoder.label : preciseEncoderLabel(encoder.label, encoder.detail),
     detail: compactDetail(encoder.detail || encoder.label),
     kind: encoder.kind || kindFromText(`${encoder.label} ${encoder.detail}`)
   })));
@@ -3379,7 +3569,7 @@ function preciseHeads(heads) {
   const list = heads.length ? heads : [{ label: "Action Head", detail: "runtime policy decoder" }];
   return pruneGenericHeads(list.map((head) => ({
     ...head,
-    label: preciseHeadLabel(head.label, head.detail),
+    label: head.exact ? head.label : preciseHeadLabel(head.label, head.detail),
     detail: compactDetail(head.detail || head.label)
   })));
 }
@@ -3800,5 +3990,3 @@ function drawEdge(edge, moduleMap) {
     ${edge.label ? `<text class="stage-label" x="${midX}" y="${midY}" text-anchor="middle">${escapeHtml(edge.label)}</text>` : ""}
   `;
 }
-
-
