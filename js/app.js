@@ -17,8 +17,8 @@ import {
   scoreLabel,
   wrapText,
   shortText
-} from './shared.js?v=wam-atlas-33';
-import { renderDiagram, architectureDiagramMarkup, getArchitectureSpec } from './diagrams.js?v=wam-atlas-33';
+} from './shared.js?v=wam-atlas-41';
+import { renderDiagram, architectureDiagramMarkup, getArchitectureSpec } from './diagrams.js?v=wam-atlas-41';
 
 function hasMetricsTargetBenchmark(model) {
   return Boolean(model.metrics?.comparative?.metricsEligible);
@@ -63,8 +63,8 @@ async function loadData() {
     fetch("data/wam-models.json"),
     fetch("data/schema.json"),
     fetch("data/architecture-specs.json"),
-    fetch("data/diagram-profiles.json?v=wam-atlas-33"),
-    fetch("data/original-diagrams.json?v=wam-atlas-33")
+    fetch("data/diagram-profiles.json?v=wam-atlas-41"),
+    fetch("data/original-diagrams.json?v=wam-atlas-41")
   ]);
   const modelsData = await modelsRes.json();
   state.schema = await schemaRes.json();
@@ -3009,6 +3009,9 @@ function showPage(name) {
     const route = tab.dataset.route;
     tab.classList.toggle("is-active", route === name || (name === "model" && route === "atlas"));
   });
+  const originalDiagramToggle = $("#originalDiagramToggle");
+  if (originalDiagramToggle) originalDiagramToggle.hidden = name === "model";
+  if (name === "model") hideOriginalDiagramHint();
 }
 
 function syncModeButtons() {
@@ -3226,6 +3229,13 @@ function renderModelCard(id) {
   $("#modelParams").innerHTML = renderParameterSummary(model, state.arch[model.id]);
   $("#modelEvidence").textContent = model.metrics?.comparative?.confidence || scoreLabel(model.metrics?.evidence);
   renderDiagram($("#modelDiagram"), model, { mini: false });
+  const modelDiagramToggle = $("#modelDiagramToggle");
+  if (modelDiagramToggle) {
+    modelDiagramToggle.classList.toggle("is-active", Boolean(state.showOriginalDiagrams));
+    modelDiagramToggle.setAttribute("aria-pressed", state.showOriginalDiagrams ? "true" : "false");
+    modelDiagramToggle.title = state.showOriginalDiagrams ? "Show generated diagram" : "Show original paper diagram";
+    modelDiagramToggle.setAttribute("aria-label", modelDiagramToggle.title);
+  }
 
   const insightLabels = ["problem", "method", "novelty", "limitation", "related"];
   $("#modelInsights").innerHTML = insightLabels.map((key) => `
@@ -3612,15 +3622,10 @@ function bindEvents() {
     });
   });
   $("#originalDiagramToggle").addEventListener("click", () => {
-    state.showOriginalDiagrams = !state.showOriginalDiagrams;
-    localStorage.setItem("wam-original-diagrams", state.showOriginalDiagrams ? "1" : "0");
-    syncModeButtons();
-    const route = location.hash.replace(/^#/, "");
-    if (route.startsWith("model/")) {
-      renderModelCard(route.split("/")[1]);
-    } else {
-      renderAtlas();
-    }
+    toggleOriginalDiagrams();
+  });
+  $("#modelDiagramToggle").addEventListener("click", () => {
+    toggleOriginalDiagrams();
   });
   $("#taxonomyGalleryToggle").addEventListener("click", () => {
     state.taxonomyGallery = !state.taxonomyGallery;
@@ -3683,7 +3688,60 @@ function bindEvents() {
   window.addEventListener("resize", () => renderAtlas());
 }
 
+function toggleOriginalDiagrams() {
+  state.showOriginalDiagrams = !state.showOriginalDiagrams;
+  localStorage.setItem("wam-original-diagrams", state.showOriginalDiagrams ? "1" : "0");
+  sessionStorage.setItem("wam-original-diagrams-interacted-v2", "1");
+  syncModeButtons();
+  hideOriginalDiagramHint();
+  const route = location.hash.replace(/^#/, "");
+  if (route.startsWith("model/")) {
+    renderModelCard(route.split("/")[1]);
+  } else {
+    renderAtlas();
+  }
+}
+
+function hasInteractedWithOriginalDiagramToggle() {
+  return sessionStorage.getItem("wam-original-diagrams-interacted-v2") === "1";
+}
+
+function showOriginalDiagramHint() {
+  if (hasInteractedWithOriginalDiagramToggle()) return;
+  const toggle = $("#originalDiagramToggle");
+  const hint = $("#originalDiagramHint");
+  if (!toggle || !hint || toggle.hidden) return;
+  const bubble = hint.querySelector(".original-diagram-hint-bubble");
+  if (bubble) bubble.textContent = state.showOriginalDiagrams ? "Switch to generated diagrams" : "Switch to original diagrams";
+  toggle.classList.remove("is-pulsing");
+  void toggle.offsetWidth;
+  toggle.classList.add("is-pulsing");
+  hint.classList.add("is-visible");
+  hint.setAttribute("aria-hidden", "false");
+  window.clearTimeout(showOriginalDiagramHint.timer);
+  showOriginalDiagramHint.timer = window.setTimeout(hideOriginalDiagramHint, 4000);
+}
+
+function hideOriginalDiagramHint() {
+  const toggle = $("#originalDiagramToggle");
+  const hint = $("#originalDiagramHint");
+  if (toggle) toggle.classList.remove("is-pulsing");
+  if (hint) {
+    hint.classList.remove("is-visible");
+    hint.setAttribute("aria-hidden", "true");
+  }
+}
+
+function startOriginalDiagramHintLoop() {
+  if (hasInteractedWithOriginalDiagramToggle()) return;
+  window.setInterval(() => {
+    if (hasInteractedWithOriginalDiagramToggle()) return;
+    showOriginalDiagramHint();
+  }, 8000);
+}
+
 bindEvents();
+startOriginalDiagramHintLoop();
 loadData().catch((error) => {
   console.error(error);
   document.body.insertAdjacentHTML("afterbegin", `<pre style="padding:16px;color:#a00">${escapeHtml(error.stack || error.message)}</pre>`);

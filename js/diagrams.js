@@ -1,4 +1,4 @@
-import { state, familyColors, typeColors, escapeHtml, wrapText, shortText } from './shared.js?v=wam-atlas-33';
+import { state, familyColors, typeColors, escapeHtml, wrapText, shortText } from './shared.js?v=wam-atlas-41';
 
 export function renderDiagram(container, model, options = {}) {
   container.innerHTML = architectureDiagramMarkup(model, options);
@@ -27,7 +27,7 @@ export function architectureDiagramMarkup(model, options = {}) {
 }
 
 function originalDiagramMarkup(model, original, view) {
-  const src = escapeHtml(original.file);
+  const src = escapeHtml(`${original.file}?v=wam-atlas-41`);
   const caption = escapeHtml(original.caption || `${model.name} — as published`);
   const captionMarkup = `<text class="diagram-original-caption-text" x="${view.w / 2}" y="${view.h - 10}" text-anchor="middle">${caption}</text>`;
   return `

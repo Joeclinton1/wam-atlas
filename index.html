@@ -6,7 +6,7 @@
     <title>World Action Model Atlas</title>
     <meta name="description" content="Interactive atlas and generated architecture diagrams for world action models.">
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=wam-atlas-33">
+  <link rel="stylesheet" href="styles.css?v=wam-atlas-41">
   </head>
   <body>
     <header class="topbar">
@@ -41,6 +41,13 @@
         <path d="M4.2 15.3 9 11l3.4 3 3-2.6 4.4 3.9"></path>
       </svg>
     </button>
+    <div id="originalDiagramHint" class="original-diagram-hint" aria-hidden="true">
+      <svg class="original-diagram-hint-arrow" viewBox="0 0 50 40" aria-hidden="true">
+        <path d="M46 6 C 30 2, 14 10, 8 28" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"></path>
+        <path d="M2 22 L8 28 L15 23" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>
+      </svg>
+      <span class="original-diagram-hint-bubble">Switch to original diagrams</span>
+    </div>
 
     <main id="app">
       <section id="atlasPage" class="page page-atlas">
@@ -157,7 +164,17 @@
             <div class="model-diagram-head">
               <h2 id="modelDiagramTitle"></h2>
             </div>
-            <div id="modelDiagram" class="diagram large"></div>
+            <div class="model-diagram-wrap">
+              <div id="modelDiagram" class="diagram large"></div>
+              <button id="modelDiagramToggle" class="icon-toggle model-diagram-toggle" type="button" title="Show original paper diagram" aria-label="Show original paper diagram" aria-pressed="false">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="3.5" y="4.5" width="17" height="13" rx="1.6"></rect>
+                  <circle cx="8.4" cy="9.6" r="1.7"></circle>
+                  <path d="M4.2 15.3 9 11l3.4 3 3-2.6 4.4 3.9"></path>
+                </svg>
+                <span class="model-diagram-toggle-label">Toggle diagram</span>
+              </button>
+            </div>
           </section>
 
           <section class="model-section split-section">
@@ -218,6 +235,6 @@
       </section>
     </main>
 
-  <script type="module" src="js/app.js?v=wam-atlas-33"></script>
+  <script type="module" src="js/app.js?v=wam-atlas-41"></script>
   </body>
 </html>
