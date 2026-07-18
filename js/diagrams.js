@@ -1,4 +1,4 @@
-import { state, familyColors, typeColors, escapeHtml, wrapText, shortText } from './shared.js?v=wam-atlas-41';
+import { state, familyColors, typeColors, escapeHtml, wrapText, shortText } from './shared.js?v=wam-atlas-42';
 
 export function renderDiagram(container, model, options = {}) {
   container.innerHTML = architectureDiagramMarkup(model, options);
@@ -8,7 +8,7 @@ export function architectureDiagramMarkup(model, options = {}) {
   const view = { w: 1160, h: options.gallery ? 326 : options.mini ? 452 : 720 };
   if (state.showOriginalDiagrams) {
     const original = state.originalDiagrams?.[model.id];
-    if (original) return originalDiagramMarkup(model, original, view);
+    if (original) return originalDiagramMarkup(model, original, view, options);
   }
   const spec = getArchitectureSpec(model);
   const diagram = buildArchitectureDiagram(model, spec, options);
@@ -26,17 +26,29 @@ export function architectureDiagramMarkup(model, options = {}) {
   `;
 }
 
-function originalDiagramMarkup(model, original, view) {
-  const src = escapeHtml(`${original.file}?v=wam-atlas-41`);
+function originalDiagramMarkup(model, original, view, options = {}) {
+  // Gallery cards and hover previews only need a small image; the full-res
+  // original is reserved for the model (paper) page. Gallery images are also
+  // lazy-loaded (see observeLazyDiagrams in app.js) so a grid of 60+ papers
+  // doesn't fetch every PNG up front.
+  const useThumb = Boolean(options.gallery || options.mini);
+  const lazy = Boolean(options.gallery);
+  const file = useThumb ? thumbPath(original.file) : original.file;
+  const src = escapeHtml(`${file}?v=wam-atlas-42`);
   const caption = escapeHtml(original.caption || `${model.name} — as published`);
   const captionMarkup = `<text class="diagram-original-caption-text" x="${view.w / 2}" y="${view.h - 10}" text-anchor="middle">${caption}</text>`;
+  const imageAttr = lazy ? `data-diagram-lazy="${src}"` : `href="${src}"`;
   return `
     <svg class="wam-diagram wam-diagram-original" viewBox="0 0 ${view.w} ${view.h}" preserveAspectRatio="xMidYMin meet" role="img" aria-label="${escapeHtml(model.name)} original paper diagram">
       <rect class="diagram-bg" x="0" y="0" width="${view.w}" height="${view.h}"></rect>
-      <image href="${src}" x="0" y="0" width="${view.w}" height="${view.h}" preserveAspectRatio="xMidYMid meet"></image>
+      <image ${imageAttr} x="0" y="0" width="${view.w}" height="${view.h}" preserveAspectRatio="xMidYMid meet"></image>
       ${captionMarkup}
     </svg>
   `;
+}
+
+function thumbPath(file) {
+  return file.replace("assets/original-diagrams/", "assets/original-diagrams/thumb/");
 }
 
 function diagramIds(model, options = {}) {

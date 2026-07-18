@@ -17,8 +17,8 @@ import {
   scoreLabel,
   wrapText,
   shortText
-} from './shared.js?v=wam-atlas-41';
-import { renderDiagram, architectureDiagramMarkup, getArchitectureSpec } from './diagrams.js?v=wam-atlas-41';
+} from './shared.js?v=wam-atlas-42';
+import { renderDiagram, architectureDiagramMarkup, getArchitectureSpec } from './diagrams.js?v=wam-atlas-42';
 
 function hasMetricsTargetBenchmark(model) {
   return Boolean(model.metrics?.comparative?.metricsEligible);
@@ -63,8 +63,8 @@ async function loadData() {
     fetch("data/wam-models.json"),
     fetch("data/schema.json"),
     fetch("data/architecture-specs.json"),
-    fetch("data/diagram-profiles.json?v=wam-atlas-41"),
-    fetch("data/original-diagrams.json?v=wam-atlas-41")
+    fetch("data/diagram-profiles.json?v=wam-atlas-42"),
+    fetch("data/original-diagrams.json?v=wam-atlas-42")
   ]);
   const modelsData = await modelsRes.json();
   state.schema = await schemaRes.json();
@@ -1826,6 +1826,38 @@ function bindTaxonomyGalleryCards(layer) {
     card.addEventListener("mouseleave", hidePreview);
     card.addEventListener("click", () => openModel(card.dataset.id));
   });
+  observeLazyDiagrams(layer);
+}
+
+let diagramLazyObserver = null;
+
+// Original-diagram images in the gallery are emitted with a data-diagram-lazy
+// attribute instead of href; we only fetch each PNG once its card nears the
+// viewport, so switching the whole grid to original diagrams stays snappy.
+function observeLazyDiagrams(root) {
+  const images = root.querySelectorAll("image[data-diagram-lazy]");
+  if (!images.length) return;
+  if (!("IntersectionObserver" in window)) {
+    images.forEach(loadLazyDiagram);
+    return;
+  }
+  if (!diagramLazyObserver) {
+    diagramLazyObserver = new IntersectionObserver((entries, obs) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        loadLazyDiagram(entry.target);
+        obs.unobserve(entry.target);
+      });
+    }, { rootMargin: "300px" });
+  }
+  images.forEach((image) => diagramLazyObserver.observe(image));
+}
+
+function loadLazyDiagram(image) {
+  const src = image.getAttribute("data-diagram-lazy");
+  if (!src) return;
+  image.setAttribute("href", src);
+  image.removeAttribute("data-diagram-lazy");
 }
 
 function taxonomyFamilyCenters(bounds) {
