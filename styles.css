@@ -55,7 +55,7 @@ a {
   grid-template-columns: minmax(220px, 1fr) auto minmax(220px, 320px);
   align-items: center;
   gap: 16px;
-  min-height: 62px;
+  min-height: 58px;
   padding: 8px 22px;
   border-bottom: 1px solid rgba(23, 32, 36, 0.12);
   background: rgba(246, 247, 243, 0.92);
@@ -63,6 +63,8 @@ a {
 }
 
 .brand {
+  --brand-mark-size: 36px;
+  --brand-mark-art-size: 30px;
   display: inline-flex;
   align-items: center;
   gap: 12px;
@@ -73,16 +75,16 @@ a {
 .brand-mark {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: var(--brand-mark-size);
+  height: var(--brand-mark-size);
   border-radius: var(--radius);
   background: #ffffff;
   box-shadow: inset 0 0 0 1px rgba(23, 32, 36, 0.16), 0 4px 12px rgba(23, 32, 36, 0.08);
 }
 
 .brand-mark svg {
-  width: 30px;
-  height: 30px;
+  width: var(--brand-mark-art-size);
+  height: var(--brand-mark-art-size);
 }
 
 .brand-mark path {
@@ -106,19 +108,11 @@ a {
   stroke-width: 2.1;
 }
 
-.brand strong,
-.brand small {
+.brand-logo {
   display: block;
-}
-
-.brand strong {
-  font-size: 0.94rem;
-}
-
-.brand small {
-  margin-top: 2px;
-  color: var(--muted);
-  font-size: 0.74rem;
+  width: auto;
+  height: calc(var(--brand-mark-art-size) * 0.8);
+  max-width: calc(100% - 48px);
 }
 
 .nav-tabs,
