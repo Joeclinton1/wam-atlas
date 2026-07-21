@@ -3038,14 +3038,52 @@ function problemBranchAngle(groupId) {
 }
 
 function bindZoom(svg, group) {
+  const activePointers = new Map();
+  let pinch = null;
+  state.dragging = null;
+
+  const zoomRange = () => {
+    const base = state.zoomBase || state.zoom.k || 1;
+    return { min: base * 0.42, max: base * 4.2 };
+  };
+  const beginDrag = (pointerId, point) => {
+    state.dragging = {
+      pointerId,
+      x: point.x,
+      y: point.y,
+      ox: state.zoom.x,
+      oy: state.zoom.y,
+      moved: false
+    };
+  };
+  const beginPinch = () => {
+    if (activePointers.size !== 2) return;
+    const [first, second] = [...activePointers.entries()];
+    const rect = svg.getBoundingClientRect();
+    const center = {
+      x: (first[1].x + second[1].x) / 2 - rect.left,
+      y: (first[1].y + second[1].y) / 2 - rect.top
+    };
+    pinch = {
+      pointerIds: [first[0], second[0]],
+      startDistance: Math.max(1, Math.hypot(second[1].x - first[1].x, second[1].y - first[1].y)),
+      startCenter: center,
+      startK: state.zoom.k,
+      worldX: (center.x - state.zoom.x) / state.zoom.k,
+      worldY: (center.y - state.zoom.y) / state.zoom.k,
+      moved: false
+    };
+    state.dragging = null;
+  };
+
   svg.onwheel = (event) => {
     event.preventDefault();
     const rect = svg.getBoundingClientRect();
     const mx = event.clientX - rect.left;
     const my = event.clientY - rect.top;
     const scale = event.deltaY < 0 ? 1.1 : 0.9;
-    const base = state.zoomBase || state.zoom.k || 1;
-    const nextK = Math.max(base * 0.42, Math.min(base * 4.2, state.zoom.k * scale));
+    const range = zoomRange();
+    const nextK = clamp(state.zoom.k * scale, range.min, range.max);
     state.zoom.x = mx - ((mx - state.zoom.x) / state.zoom.k) * nextK;
     state.zoom.y = my - ((my - state.zoom.y) / state.zoom.k) * nextK;
     state.zoom.k = nextK;
@@ -3054,17 +3092,41 @@ function bindZoom(svg, group) {
 
   svg.onpointerdown = (event) => {
     if (event.button !== undefined && event.button !== 0) return;
-    state.dragging = {
-      pointerId: event.pointerId,
-      x: event.clientX,
-      y: event.clientY,
-      ox: state.zoom.x,
-      oy: state.zoom.y,
-      moved: false
-    };
+    if (activePointers.size >= 2) return;
+    activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
     svg.setPointerCapture(event.pointerId);
+    if (activePointers.size === 2) {
+      event.preventDefault();
+      beginPinch();
+    } else {
+      beginDrag(event.pointerId, activePointers.get(event.pointerId));
+    }
   };
   svg.onpointermove = (event) => {
+    if (!activePointers.has(event.pointerId)) return;
+    activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (pinch && pinch.pointerIds.includes(event.pointerId)) {
+      const first = activePointers.get(pinch.pointerIds[0]);
+      const second = activePointers.get(pinch.pointerIds[1]);
+      if (!first || !second) return;
+      const rect = svg.getBoundingClientRect();
+      const center = {
+        x: (first.x + second.x) / 2 - rect.left,
+        y: (first.y + second.y) / 2 - rect.top
+      };
+      const distance = Math.max(1, Math.hypot(second.x - first.x, second.y - first.y));
+      const range = zoomRange();
+      const nextK = clamp(pinch.startK * (distance / pinch.startDistance), range.min, range.max);
+      if (Math.abs(distance - pinch.startDistance) > 2 || Math.hypot(center.x - pinch.startCenter.x, center.y - pinch.startCenter.y) > 3) {
+        pinch.moved = true;
+      }
+      event.preventDefault();
+      state.zoom.x = center.x - pinch.worldX * nextK;
+      state.zoom.y = center.y - pinch.worldY * nextK;
+      state.zoom.k = nextK;
+      setAtlasTransform(group);
+      return;
+    }
     if (!state.dragging || state.dragging.pointerId !== event.pointerId) return;
     const dx = event.clientX - state.dragging.x;
     const dy = event.clientY - state.dragging.y;
@@ -3075,18 +3137,29 @@ function bindZoom(svg, group) {
     state.zoom.y = state.dragging.oy + dy;
     setAtlasTransform(group);
   };
-  const finishDrag = (event) => {
-    if (!state.dragging || state.dragging.pointerId !== event.pointerId) return;
-    const moved = state.dragging.moved;
+  const finishPointer = (event) => {
+    if (!activePointers.has(event.pointerId)) return;
+    const endedPinch = Boolean(pinch?.pointerIds.includes(event.pointerId));
+    const moved = endedPinch ? pinch.moved : Boolean(state.dragging?.pointerId === event.pointerId && state.dragging.moved);
+    activePointers.delete(event.pointerId);
     if (svg.hasPointerCapture?.(event.pointerId)) svg.releasePointerCapture(event.pointerId);
-    state.dragging = null;
+    if (endedPinch) {
+      pinch = null;
+      const remaining = [...activePointers.entries()][0];
+      if (remaining) beginDrag(remaining[0], remaining[1]);
+    } else if (state.dragging?.pointerId === event.pointerId) {
+      state.dragging = null;
+    }
     if (moved) {
       state.suppressAtlasClickUntil = performance.now() + 450;
     }
   };
-  svg.onpointerup = finishDrag;
-  svg.onpointercancel = finishDrag;
+  svg.onpointerup = finishPointer;
+  svg.onpointercancel = finishPointer;
   svg.onlostpointercapture = (event) => {
+    if (!activePointers.has(event.pointerId)) return;
+    activePointers.delete(event.pointerId);
+    if (pinch?.pointerIds.includes(event.pointerId)) pinch = null;
     if (state.dragging?.pointerId === event.pointerId) state.dragging = null;
   };
 }
