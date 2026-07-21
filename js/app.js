@@ -258,8 +258,9 @@ function problemGeometry(models, bounds) {
       });
       if (!items.length) return;
       const box = groupBounds(items);
+      const portraitYScale = branch.id === "futures" || branch.id === "coupling" ? 1.55 : 1.05;
       const targetX = root.x + (box.x - root.x) * 0.42;
-      const targetY = root.y + (box.y - root.y) * 1.55;
+      const targetY = root.y + (box.y - root.y) * portraitYScale;
       const dx = targetX - box.x;
       const dy = targetY - box.y;
       new Set(items.map((item) => item.ref)).forEach((point) => {
@@ -3355,11 +3356,10 @@ function defaultZoomForMode(mode) {
     const zoom = zoomToFitBox(box, { width, height }, padding);
     if (geometry.portrait) {
       const k = Math.max(zoom.k, 0.27);
-      const availableHeight = height - padding.top - padding.bottom;
       return {
         k,
         x: width / 2 - box.x * k,
-        y: padding.top + availableHeight / 2 - box.y * k
+        y: height * 0.52 - geometry.root.y * k
       };
     }
     return zoom;
