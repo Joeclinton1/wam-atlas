@@ -918,7 +918,7 @@ function timelineGeometry(models, bounds) {
 }
 
 function portraitTimelineGeometry(models, bounds) {
-  const sorted = models.slice().sort((a, b) => slugDate(a) - slugDate(b) || a.name.localeCompare(b.name));
+  const sorted = models.slice().sort((a, b) => slugDate(b) - slugDate(a) || a.name.localeCompare(b.name));
   const dates = sorted.map(slugDate);
   const fallbackDate = 2026;
   const minDate = dates.length ? Math.min(...dates) : fallbackDate - 0.08;
@@ -949,7 +949,7 @@ function portraitTimelineGeometry(models, bounds) {
   };
 
   sorted.forEach((model, index) => {
-    const dateY = top + ((slugDate(model) - domainMin) / span) * (bottom - top);
+    const dateY = top + ((domainMax - slugDate(model)) / span) * (bottom - top);
     const preferred = pickTimelineSide(model, index) === "top" ? "left" : "right";
     const alternate = preferred === "left" ? "right" : "left";
     const preferredCandidate = candidateFor(preferred, dateY);
@@ -972,6 +972,7 @@ function portraitTimelineGeometry(models, bounds) {
 
   return {
     orientation: "vertical",
+    newestFirst: true,
     sceneHeight,
     domainMin,
     domainMax,
@@ -1117,7 +1118,10 @@ function drawTimelineBackdrop(group, geometry) {
   if (geometry.orientation === "vertical") {
     layer.classList.add("is-vertical");
     const ticks = geometry.monthTicks.map((tick) => {
-      const y = geometry.top + ((tick.value - geometry.domainMin) / Math.max(0.1, geometry.domainMax - geometry.domainMin)) * (geometry.bottom - geometry.top);
+      const progress = geometry.newestFirst
+        ? (geometry.domainMax - tick.value) / Math.max(0.1, geometry.domainMax - geometry.domainMin)
+        : (tick.value - geometry.domainMin) / Math.max(0.1, geometry.domainMax - geometry.domainMin);
+      const y = geometry.top + progress * (geometry.bottom - geometry.top);
       const side = tick.side === "top" ? -1 : 1;
       const cls = tick.major ? "timeline-tick is-major" : "timeline-tick";
       return `
@@ -3049,21 +3053,41 @@ function bindZoom(svg, group) {
   };
 
   svg.onpointerdown = (event) => {
-    if (event.target.closest?.(".node")) return;
-    state.dragging = { x: event.clientX, y: event.clientY, ox: state.zoom.x, oy: state.zoom.y };
+    if (event.button !== undefined && event.button !== 0) return;
+    state.dragging = {
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      ox: state.zoom.x,
+      oy: state.zoom.y,
+      moved: false
+    };
     svg.setPointerCapture(event.pointerId);
   };
   svg.onpointermove = (event) => {
-    if (!state.dragging) return;
-    state.zoom.x = state.dragging.ox + event.clientX - state.dragging.x;
-    state.zoom.y = state.dragging.oy + event.clientY - state.dragging.y;
+    if (!state.dragging || state.dragging.pointerId !== event.pointerId) return;
+    const dx = event.clientX - state.dragging.x;
+    const dy = event.clientY - state.dragging.y;
+    if (Math.hypot(dx, dy) > 4) state.dragging.moved = true;
+    if (!state.dragging.moved) return;
+    event.preventDefault();
+    state.zoom.x = state.dragging.ox + dx;
+    state.zoom.y = state.dragging.oy + dy;
     setAtlasTransform(group);
   };
-  svg.onpointerup = () => {
+  const finishDrag = (event) => {
+    if (!state.dragging || state.dragging.pointerId !== event.pointerId) return;
+    const moved = state.dragging.moved;
+    if (svg.hasPointerCapture?.(event.pointerId)) svg.releasePointerCapture(event.pointerId);
     state.dragging = null;
+    if (moved) {
+      state.suppressAtlasClickUntil = performance.now() + 450;
+    }
   };
-  svg.onpointercancel = () => {
-    state.dragging = null;
+  svg.onpointerup = finishDrag;
+  svg.onpointercancel = finishDrag;
+  svg.onlostpointercapture = (event) => {
+    if (state.dragging?.pointerId === event.pointerId) state.dragging = null;
   };
 }
 
@@ -3904,6 +3928,11 @@ function renderSources() {
 }
 
 function bindEvents() {
+  $("#atlasSvg").addEventListener("click", (event) => {
+    if (performance.now() >= Number(state.suppressAtlasClickUntil || 0)) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }, true);
   $("#mobileMenuToggle").addEventListener("click", (event) => {
     event.stopPropagation();
     const panel = $("#topbarMenuPanel");
