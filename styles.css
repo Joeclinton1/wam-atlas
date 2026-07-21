@@ -3469,6 +3469,10 @@ p {
   margin-top: 10px;
 }
 
+.paper-link-mobile {
+  display: none;
+}
+
 .model-card-head .preview-kicker {
   display: inline-flex;
   align-items: center;
@@ -3932,6 +3936,14 @@ p {
   .model-card-head {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .paper-link-default {
+    display: none;
+  }
+
+  .paper-link-mobile {
+    display: inline;
   }
 
   .atlas-layout,
