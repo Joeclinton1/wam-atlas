@@ -6,7 +6,7 @@
     <title>World Action Model Atlas</title>
     <meta name="description" content="Interactive atlas and generated architecture diagrams for world action models.">
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=wam-atlas-53">
+  <link rel="stylesheet" href="styles.css?v=wam-atlas-54">
   </head>
   <body>
     <header class="topbar">
@@ -185,9 +185,16 @@
           </section>
 
           <section class="model-section split-section">
-            <div>
-              <h2>Five Insights</h2>
-              <dl id="modelInsights" class="insight-list"></dl>
+            <div class="insight-carousel">
+              <div class="insight-carousel-head">
+                <h2>Five Insights</h2>
+                <div class="insight-carousel-controls" aria-label="Insight carousel controls">
+                  <button id="insightPrevious" type="button" aria-label="Previous insight">&#8592;</button>
+                  <span id="insightPosition" aria-live="polite">1 / 5</span>
+                  <button id="insightNext" type="button" aria-label="Next insight">&#8594;</button>
+                </div>
+              </div>
+              <dl id="modelInsights" class="insight-list" aria-label="Paper insights"></dl>
             </div>
             <div>
               <h2>Training And Runtime</h2>
@@ -242,6 +249,6 @@
       </section>
     </main>
 
-  <script type="module" src="js/app.js?v=wam-atlas-56"></script>
+  <script type="module" src="js/app.js?v=wam-atlas-57"></script>
   </body>
 </html>

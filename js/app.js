@@ -3556,12 +3556,13 @@ function renderModelCard(id) {
   }
 
   const insightLabels = ["problem", "method", "novelty", "limitation", "related"];
-  $("#modelInsights").innerHTML = insightLabels.map((key) => `
-    <div>
+  $("#modelInsights").innerHTML = insightLabels.map((key, index) => `
+    <div role="group" aria-roledescription="slide" aria-label="${index + 1} of ${insightLabels.length}">
       <dt>${key}</dt>
       <dd>${renderInsightValue(model, key)}</dd>
     </div>
   `).join("");
+  setupInsightCarousel();
 
   const stages = profile?.training?.length
     ? profile.training
@@ -3713,6 +3714,57 @@ function renderInsightValue(model, key) {
   const value = model.insights?.[key] || "";
   if (key !== "related") return escapeHtml(value);
   return renderRelatedLinks(value, model.id);
+}
+
+function setupInsightCarousel() {
+  const list = $("#modelInsights");
+  const previous = $("#insightPrevious");
+  const next = $("#insightNext");
+  const position = $("#insightPosition");
+  const slides = list ? [...list.children] : [];
+  if (!list || !previous || !next || !position || !slides.length) return;
+
+  let current = 0;
+  let scrollFrame = 0;
+  const slideLeft = (slide) => (
+    slide.getBoundingClientRect().left - list.getBoundingClientRect().left + list.scrollLeft
+  );
+  const updateControls = () => {
+    position.textContent = `${current + 1} / ${slides.length}`;
+    previous.disabled = current === 0;
+    next.disabled = current === slides.length - 1;
+    slides.forEach((slide, index) => {
+      slide.setAttribute("aria-current", index === current ? "true" : "false");
+    });
+  };
+  const goTo = (index) => {
+    current = Math.max(0, Math.min(index, slides.length - 1));
+    updateControls();
+    list.scrollTo({ left: slideLeft(slides[current]), behavior: "smooth" });
+  };
+  const syncPosition = () => {
+    current = slides.reduce((nearest, slide, index) => (
+      Math.abs(slideLeft(slide) - list.scrollLeft) < Math.abs(slideLeft(slides[nearest]) - list.scrollLeft)
+        ? index
+        : nearest
+    ), 0);
+    updateControls();
+  };
+
+  list.tabIndex = 0;
+  list.scrollLeft = 0;
+  previous.onclick = () => goTo(current - 1);
+  next.onclick = () => goTo(current + 1);
+  list.onkeydown = (event) => {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    event.preventDefault();
+    goTo(current + (event.key === "ArrowRight" ? 1 : -1));
+  };
+  list.onscroll = () => {
+    cancelAnimationFrame(scrollFrame);
+    scrollFrame = requestAnimationFrame(syncPosition);
+  };
+  updateControls();
 }
 
 function renderRelatedLinks(value, currentId) {

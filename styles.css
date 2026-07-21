@@ -3520,6 +3520,17 @@ p {
   margin: 0;
 }
 
+.insight-carousel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.insight-carousel-controls {
+  display: none;
+}
+
 .insight-list div {
   display: grid;
   grid-template-columns: 112px 1fr;
@@ -4068,12 +4079,110 @@ p {
   }
 
   .model-meta-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .model-meta-grid div {
+    min-width: 0;
+    padding: 8px 4px;
+    text-align: center;
+  }
+
+  .model-meta-grid span {
+    font-size: 0.58rem;
+    letter-spacing: -0.01em;
+  }
+
+  .model-meta-grid strong {
+    overflow-wrap: anywhere;
+    font-size: 0.7rem;
+    line-height: 1.15;
+  }
+
+  .model-meta-grid .param-total {
+    display: block;
+    font-size: 0.58rem;
+    white-space: normal;
+  }
+
+  .insight-carousel {
+    min-width: 0;
+  }
+
+  .insight-carousel-head {
+    margin-bottom: 10px;
+  }
+
+  .insight-carousel-head h2 {
+    margin: 0;
+  }
+
+  .insight-carousel-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .insight-carousel-controls button {
+    display: grid;
+    width: 30px;
+    height: 30px;
+    place-items: center;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: #ffffff;
+    color: var(--ink);
+    cursor: pointer;
+  }
+
+  .insight-carousel-controls button:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+
+  .insight-carousel-controls span {
+    min-width: 38px;
+    color: var(--muted);
+    font-size: 0.7rem;
+    font-weight: 850;
+    text-align: center;
+  }
+
+  .insight-list {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 1px;
+    scroll-behavior: smooth;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x;
+  }
+
+  .insight-list::-webkit-scrollbar {
+    display: none;
   }
 
   .insight-list div {
-    grid-template-columns: 1fr;
-    gap: 4px;
+    display: block;
+    flex: 0 0 calc(100% - 2px);
+    min-height: 168px;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: color-mix(in srgb, var(--teal) 5%, #ffffff);
+    scroll-snap-align: start;
+  }
+
+  .insight-list dt {
+    margin-bottom: 9px;
+  }
+
+  .insight-list dd {
+    font-size: 0.92rem;
+    line-height: 1.55;
   }
 
   .diagram.large {
