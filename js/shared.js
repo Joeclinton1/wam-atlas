@@ -107,7 +107,7 @@ export const taxonomyGroups = [
   {
     id: "architecture",
     label: "Architecture",
-    families: ["pixel_idm", "latent_idm", "implicit_future", "unified", "joint_latent", "multi_stream", "encoder_only", "multimodal"]
+    families: ["encoder_only", "pixel_idm", "latent_idm", "joint_latent", "unified", "multi_stream", "multimodal", "implicit_future"]
   },
   {
     id: "enhancement",
