@@ -110,6 +110,10 @@ function isCompactViewport() {
   return window.matchMedia("(max-width: 620px)").matches;
 }
 
+function isPortraitAtlas(bounds) {
+  return bounds.height > bounds.width && bounds.width <= 900;
+}
+
 function problemBranchForFamily(family) {
   return problemBranches.find((branch) => branch.families.includes(family));
 }
@@ -174,6 +178,7 @@ function drawAtlasBackdrop(group, defs, bounds, geometry = null) {
 }
 
 function problemGeometry(models, bounds) {
+  const portrait = isPortraitAtlas(bounds);
   const root = { id: "root", x: bounds.width / 2, y: bounds.height * 0.46 + 36, fixed: true };
   const branchRx = clamp(bounds.width * 0.255, 330, 470);
   const branchRy = clamp(bounds.height * 0.255, 210, 315);
@@ -240,7 +245,51 @@ function problemGeometry(models, bounds) {
   separateLeafQuestionsFromBranches({ branchNodes, familyNodes }, bounds);
   layoutProblemPapers(positions, models, leafByModelId, { root, branchNodes, familyNodes });
   separateProblemGroups({ root, branchNodes, familyNodes }, positions, models, leafByModelId, bounds);
-  return { root, branchNodes, familyNodes, edges, positions, leafAssignments: leafByModelId };
+  if (portrait) {
+    problemBranches.forEach((branch) => {
+      const items = [
+        ...branchNodes.filter((node) => node.groupId === branch.id).map((node) => ({ ref: node, ...problemNodeBox(node, "branch") })),
+        ...familyNodes.filter((node) => node.groupId === branch.id).map((node) => ({ ref: node, ...problemNodeBox(node, "leaf") }))
+      ];
+      models.forEach((model) => {
+        const leaf = leafByModelId.get(model.id);
+        const point = positions.get(model.id);
+        if (leaf?.groupId === branch.id && point) items.push({ ref: point, ...problemPaperBox(model, point) });
+      });
+      if (!items.length) return;
+      const box = groupBounds(items);
+      const targetX = root.x + (box.x - root.x) * 0.42;
+      const targetY = root.y + (box.y - root.y) * 1.55;
+      const dx = targetX - box.x;
+      const dy = targetY - box.y;
+      new Set(items.map((item) => item.ref)).forEach((point) => {
+        point.x += dx;
+        point.y += dy;
+        if (Number.isFinite(point.startX)) point.startX += dx;
+        if (Number.isFinite(point.startY)) point.startY += dy;
+        if (Number.isFinite(point.baseX)) point.baseX += dx;
+        if (Number.isFinite(point.baseY)) point.baseY += dy;
+        point.portrait = true;
+      });
+    });
+    const branchOffsets = {
+      futures: { x: -120, y: -80 },
+      coupling: { x: 120, y: -150 },
+      speed: { x: 110, y: 0 },
+      grounding: { x: 0, y: 45 },
+      physics: { x: -130, y: 0 }
+    };
+    branchNodes.forEach((node) => {
+      const offset = branchOffsets[node.groupId];
+      if (!offset) return;
+      node.x += offset.x;
+      node.y += offset.y;
+      node.startX = node.x;
+      node.startY = node.y;
+    });
+    root.portrait = true;
+  }
+  return { portrait, root, branchNodes, familyNodes, edges, positions, leafAssignments: leafByModelId };
 }
 
 function splitProblemLeafGroups(family, papers) {
@@ -793,6 +842,7 @@ function translateProblemGroup(group, dx, dy) {
 }
 
 function timelineGeometry(models, bounds) {
+  if (isPortraitAtlas(bounds)) return portraitTimelineGeometry(models, bounds);
   const sorted = models.slice().sort((a, b) => slugDate(a) - slugDate(b) || a.name.localeCompare(b.name));
   if (!sorted.length) {
     const timelineWidth = Math.max(bounds.width * 1.72, 1680);
@@ -860,6 +910,73 @@ function timelineGeometry(models, bounds) {
     left,
     right,
     centerY,
+    positions,
+    connectors,
+    monthTicks
+  };
+}
+
+function portraitTimelineGeometry(models, bounds) {
+  const sorted = models.slice().sort((a, b) => slugDate(a) - slugDate(b) || a.name.localeCompare(b.name));
+  const dates = sorted.map(slugDate);
+  const fallbackDate = 2026;
+  const minDate = dates.length ? Math.min(...dates) : fallbackDate - 0.08;
+  const maxDate = dates.length ? Math.max(...dates) : fallbackDate + 0.08;
+  const domainMin = minDate - 0.055;
+  const domainMax = maxDate + 0.07;
+  const span = Math.max(0.1, domainMax - domainMin);
+  const sceneHeight = Math.max(bounds.height * 2.35, 2200);
+  const top = 88;
+  const bottom = sceneHeight - 88;
+  const centerX = bounds.width / 2;
+  const positions = new Map();
+  const connectors = [];
+  const monthTicks = timelineMonthTicks(domainMin, domainMax);
+  const laneLast = { left: [-Infinity, -Infinity], right: [-Infinity, -Infinity] };
+  const laneGap = Math.min(64, bounds.width * 0.14);
+  const baseGap = Math.min(70, bounds.width * 0.17);
+  const minNodeGap = 43;
+
+  const candidateFor = (side, dateY) => {
+    let best = null;
+    laneLast[side].forEach((lastY, lane) => {
+      const nodeY = Math.max(dateY, lastY + minNodeGap);
+      const candidate = { side, lane, nodeY, shift: nodeY - dateY };
+      if (!best || candidate.shift < best.shift) best = candidate;
+    });
+    return best;
+  };
+
+  sorted.forEach((model, index) => {
+    const dateY = top + ((slugDate(model) - domainMin) / span) * (bottom - top);
+    const preferred = pickTimelineSide(model, index) === "top" ? "left" : "right";
+    const alternate = preferred === "left" ? "right" : "left";
+    const preferredCandidate = candidateFor(preferred, dateY);
+    const alternateCandidate = candidateFor(alternate, dateY);
+    const chosen = alternateCandidate.shift + 10 < preferredCandidate.shift ? alternateCandidate : preferredCandidate;
+    laneLast[chosen.side][chosen.lane] = chosen.nodeY;
+    const direction = chosen.side === "left" ? -1 : 1;
+    const nodeX = centerX + direction * (baseGap + chosen.lane * laneGap);
+    positions.set(model.id, { x: nodeX, y: chosen.nodeY, labelSide: "bottom" });
+    connectors.push({
+      id: model.id,
+      y: dateY,
+      nodeY: chosen.nodeY,
+      nodeX,
+      centerX,
+      side: chosen.side,
+      color: problemColorForModel(model)
+    });
+  });
+
+  return {
+    orientation: "vertical",
+    sceneHeight,
+    domainMin,
+    domainMax,
+    top,
+    bottom,
+    centerX,
     positions,
     connectors,
     monthTicks
@@ -945,6 +1062,7 @@ function timelineMonthTicks(domainMin, domainMax) {
 
 function drawProblemBackdrop(group, defs, geometry) {
   const layer = atlasAnnotationLayer("problem-tree");
+  if (geometry.portrait) layer.classList.add("is-portrait");
   geometry.edges.forEach((edge, index) => {
     drawFadingConnector(layer, defs, `problem-${index}-${edge.id}`, edge.from, edge.to, edge.color, true);
   });
@@ -953,12 +1071,12 @@ function drawProblemBackdrop(group, defs, geometry) {
     if (!leaf) return;
     drawPaperTether(layer, leaf, point, modelId);
   });
-  layer.insertAdjacentHTML("beforeend", drawQuestionNode(geometry.root, rootProblemQuestion, "problem-root", "#172024", problemQuestionWidth("root"), "root"));
+  layer.insertAdjacentHTML("beforeend", drawQuestionNode(geometry.root, rootProblemQuestion, "problem-root", "#172024", problemQuestionWidth("root", geometry.portrait), "root"));
   geometry.branchNodes.forEach((branch) => {
-    layer.insertAdjacentHTML("beforeend", drawQuestionNode(branch, branch.question, "problem-branch", branch.color, problemQuestionWidth("branch"), "branch"));
+    layer.insertAdjacentHTML("beforeend", drawQuestionNode(branch, branch.question, "problem-branch", branch.color, problemQuestionWidth("branch", geometry.portrait), "branch"));
   });
   geometry.familyNodes.forEach((family) => {
-    layer.insertAdjacentHTML("beforeend", drawQuestionNode(family, family.question, "problem-leaf-question", family.color, problemQuestionWidth("leaf"), "leaf"));
+    layer.insertAdjacentHTML("beforeend", drawQuestionNode(family, family.question, "problem-leaf-question", family.color, problemQuestionWidth("leaf", geometry.portrait), "leaf"));
   });
   group.appendChild(layer);
 }
@@ -978,7 +1096,8 @@ function paperTetherPath(leaf, point) {
   const dy = point.y - leaf.y;
   const length = Math.hypot(dx, dy) || 1;
   const unit = { x: dx / length, y: dy / length };
-  const leafLayout = questionTextLayout(leaf.question, problemQuestionWidth("leaf"), "leaf", leaf.label);
+  const leafWidth = problemQuestionWidth("leaf", leaf.portrait);
+  const leafLayout = questionTextLayout(leaf.question, leafWidth, "leaf", leaf.label);
   const leafBox = problemQuestionCollision("leaf", leafLayout.boxWidth, leafLayout.h);
   const startDistance = rectEdgeDistance(leafBox, unit) + 5;
   const start = {
@@ -994,6 +1113,34 @@ function paperTetherPath(leaf, point) {
 
 function drawTimelineBackdrop(group, geometry) {
   const layer = atlasAnnotationLayer("timeline-map");
+  if (geometry.orientation === "vertical") {
+    layer.classList.add("is-vertical");
+    const ticks = geometry.monthTicks.map((tick) => {
+      const y = geometry.top + ((tick.value - geometry.domainMin) / Math.max(0.1, geometry.domainMax - geometry.domainMin)) * (geometry.bottom - geometry.top);
+      const side = tick.side === "top" ? -1 : 1;
+      const cls = tick.major ? "timeline-tick is-major" : "timeline-tick";
+      return `
+        <line class="${cls}" x1="${geometry.centerX - (tick.major ? 15 : 10)}" y1="${y}" x2="${geometry.centerX + (tick.major ? 15 : 10)}" y2="${y}"></line>
+        <text class="timeline-date ${tick.major ? "is-major" : ""}" style="fill:${tick.major ? "#35434a" : "#59676e"};font-size:${tick.major ? 13 : 11}px" x="${geometry.centerX + side * 20}" y="${y + 3}" text-anchor="${side < 0 ? "end" : "start"}">${tick.label}</text>
+      `;
+    }).join("");
+    const lines = geometry.connectors.map((item) => {
+      const side = item.side === "left" ? -1 : 1;
+      const elbowX = geometry.centerX + side * 24;
+      const endX = item.nodeX - side * 15;
+      return `
+        <circle class="timeline-bead" cx="${geometry.centerX}" cy="${item.y}" r="4.5" fill="${item.color}"></circle>
+        <path class="timeline-branch" stroke="${item.color}" d="M ${geometry.centerX + side * 5} ${item.y} H ${elbowX} V ${item.nodeY} H ${endX}"></path>
+      `;
+    }).join("");
+    layer.innerHTML = `
+      <rect x="${geometry.centerX - 3}" y="${geometry.top}" width="6" height="${geometry.bottom - geometry.top}" rx="3" fill="rgba(23,32,36,0.3)"></rect>
+      ${ticks}
+      ${lines}
+    `;
+    group.appendChild(layer);
+    return;
+  }
   const ticks = geometry.monthTicks.map((tick) => {
     const x = geometry.left + ((tick.value - geometry.domainMin) / Math.max(0.1, geometry.domainMax - geometry.domainMin)) * (geometry.right - geometry.left);
     const cls = tick.major ? "timeline-tick is-major" : "timeline-tick";
@@ -2376,7 +2523,7 @@ function drawQuestionNode(point, text, cls, color, width, level, eyebrow = "") {
   `;
 }
 
-function problemQuestionWidth(level) {
+function problemQuestionWidth(level, portrait = false) {
   if (level === "root") return 780;
   if (level === "branch") return 470;
   return 178;
@@ -2654,7 +2801,7 @@ function renderAtlas() {
     const color = state.mode === "taxonomy" || state.mode === "timeline" || state.mode === "metrics"
       ? problemColorForModel(model)
       : familyColors[model.family] || "#61717a";
-    const labelSide = state.mode === "taxonomy" || state.mode === "timeline" || state.mode === "metrics" ? "bottom" : target.x > width - 180 ? "left" : "right";
+    const labelSide = target.labelSide || (state.mode === "taxonomy" || state.mode === "timeline" || state.mode === "metrics" ? "bottom" : target.x > width - 180 ? "left" : "right");
     let paperRadius = radius;
     let taxonomyStyle = "";
     if (state.mode === "taxonomy") {
@@ -2671,6 +2818,7 @@ function renderAtlas() {
     const bodyClass = [
       "node-body",
       state.mode === "problem" ? "problem-node-body" : "",
+      target.portrait ? "portrait-problem-node-body" : "",
       state.mode === "taxonomy" ? "taxonomy-node-body" : "",
       state.mode === "timeline" ? "timeline-node-body" : "",
       state.mode === "metrics" ? "metrics-node-body" : ""
@@ -2704,6 +2852,7 @@ function renderAtlas() {
   });
   state.lastAtlasPositions = nextPositions;
   state.lastRenderedMode = state.mode;
+  state.lastAtlasPortrait = isPortraitAtlas(bounds);
   renderTimelineLegend();
 }
 
@@ -3196,15 +3345,35 @@ function defaultZoomForMode(mode) {
   if (mode === "problem") {
     if (!state.models.length) return { k: 0.5, x: width * 0.25, y: 86 };
     const geometry = problemGeometry(state.models, { width, height });
-    const zoom = zoomToFitBox(problemVisibleGeometryBounds(geometry, state.models, { width, height }), { width, height }, {
+    const box = problemVisibleGeometryBounds(geometry, state.models, { width, height });
+    const padding = {
       left: 18,
       right: 18,
       top: 78,
       bottom: 12
-    });
+    };
+    const zoom = zoomToFitBox(box, { width, height }, padding);
+    if (geometry.portrait) {
+      const k = Math.max(zoom.k, 0.27);
+      const availableHeight = height - padding.top - padding.bottom;
+      return {
+        k,
+        x: width / 2 - box.x * k,
+        y: padding.top + availableHeight / 2 - box.y * k
+      };
+    }
     return zoom;
   }
   if (mode === "timeline") {
+    const geometry = timelineGeometry(timelineVisibleModels(), { width, height });
+    if (geometry.orientation === "vertical") {
+      const k = 0.9;
+      return {
+        k,
+        x: (width * (1 - k)) / 2,
+        y: 54 - geometry.top * k
+      };
+    }
     const k = width < 760 ? 0.62 : 0.76;
     const timelineWidth = Math.max(width * 1.72, 1680);
     return {
@@ -3827,7 +3996,14 @@ function bindEvents() {
     if (event.key === "Escape") setMobileMenuOpen(false);
   });
   window.addEventListener("hashchange", routeFromHash);
-  window.addEventListener("resize", () => renderAtlas());
+  window.addEventListener("resize", () => {
+    window.requestAnimationFrame(() => {
+      const svg = $("#atlasSvg");
+      const bounds = { width: svg?.clientWidth || window.innerWidth, height: svg?.clientHeight || window.innerHeight };
+      if (Boolean(state.lastAtlasPortrait) !== isPortraitAtlas(bounds)) setDefaultZoomForMode(state.mode);
+      renderAtlas();
+    });
+  });
 }
 
 function toggleOriginalDiagrams() {

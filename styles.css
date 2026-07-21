@@ -1033,6 +1033,26 @@ p {
   transform: scale(1.09);
 }
 
+.problem-tree.is-portrait {
+  transition: none;
+}
+
+.problem-tree.is-portrait .problem-branch .problem-question {
+  font-size: 40px !important;
+}
+
+.problem-tree.is-portrait .problem-leaf-question .problem-question {
+  font-size: 18px !important;
+}
+
+.problem-tree.is-portrait .problem-eyebrow {
+  font-size: 11px;
+}
+
+.portrait-problem-node-body .node-name {
+  font-size: 17px;
+}
+
 .problem-leaf-question:hover .problem-scale-target {
   transform: scale(1.24);
 }
@@ -1099,6 +1119,29 @@ p {
   fill: #445057;
   font-size: 10px;
   font-weight: 900;
+}
+
+.timeline-map.is-vertical .timeline-date {
+  fill: #5e6a70;
+  font-size: 11px;
+}
+
+.timeline-map.is-vertical {
+  transition: none;
+}
+
+.timeline-map.is-vertical .timeline-date.is-major {
+  font-size: 13px;
+}
+
+.timeline-map.is-vertical .timeline-spine {
+  stroke: rgba(23, 32, 36, 0.3);
+  stroke-width: 6;
+}
+
+.timeline-map.is-vertical .timeline-branch {
+  stroke-width: 2.8;
+  opacity: 0.72;
 }
 
 .timeline-branch {
