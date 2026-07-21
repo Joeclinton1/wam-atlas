@@ -6,7 +6,7 @@
     <title>World Action Model Atlas</title>
     <meta name="description" content="Interactive atlas and generated architecture diagrams for world action models.">
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=wam-atlas-47">
+  <link rel="stylesheet" href="styles.css?v=wam-atlas-48">
   </head>
   <body>
     <header class="topbar">
@@ -20,15 +20,22 @@
         </span>
         <img class="brand-logo" src="assets/logo.svg" alt="" aria-hidden="true">
       </a>
-      <nav class="nav-tabs" aria-label="Primary navigation">
-        <button class="nav-tab is-active" data-route="atlas">Atlas</button>
-        <button class="nav-tab" data-route="learn">Learn</button>
-        <button class="nav-tab" data-route="sources">Sources</button>
-      </nav>
-      <label class="search-wrap">
-        <span>Search</span>
-        <input id="globalSearch" type="search" placeholder="model, family, idea">
-      </label>
+      <button id="mobileMenuToggle" class="mobile-menu-toggle" type="button" aria-label="Open navigation menu" aria-controls="topbarMenuPanel" aria-expanded="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 7h16M4 12h16M4 17h16"></path>
+        </svg>
+      </button>
+      <div id="topbarMenuPanel" class="topbar-menu-panel">
+        <nav class="nav-tabs" aria-label="Primary navigation">
+          <button class="nav-tab is-active" data-route="atlas">Atlas</button>
+          <button class="nav-tab" data-route="learn">Learn</button>
+          <button class="nav-tab" data-route="sources">Sources</button>
+        </nav>
+        <label class="search-wrap">
+          <span>Search</span>
+          <input id="globalSearch" type="search" placeholder="model, family, idea">
+        </label>
+      </div>
     </header>
 
     <button id="originalDiagramToggle" class="icon-toggle original-diagram-toggle" type="button" title="Show original paper diagrams" aria-label="Show original paper diagrams" aria-pressed="false">
@@ -110,8 +117,11 @@
             </label>
           </div>
           <div class="mode-meta">
-            <span id="modeDescription">Why each paper exists.</span>
-            <button id="resetZoom" class="plain-button" type="button">Reset Zoom</button>
+            <button id="resetZoom" class="icon-toggle reset-zoom-button" type="button" title="Reset zoom" aria-label="Reset zoom">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5.5 8.5V4.5m0 0h4M5.5 4.5A8 8 0 1 1 4 14"></path>
+              </svg>
+            </button>
           </div>
           <div id="timelineLegend" class="timeline-floating-legend" hidden></div>
           <aside id="familyHoverCard" class="family-hover-card" hidden></aside>
@@ -232,6 +242,6 @@
       </section>
     </main>
 
-  <script type="module" src="js/app.js?v=wam-atlas-42"></script>
+  <script type="module" src="js/app.js?v=wam-atlas-43"></script>
   </body>
 </html>

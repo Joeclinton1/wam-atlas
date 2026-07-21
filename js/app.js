@@ -106,6 +106,10 @@ function familyOrder() {
   return [...new Set(state.models.map((model) => model.family))];
 }
 
+function isCompactViewport() {
+  return window.matchMedia("(max-width: 620px)").matches;
+}
+
 function problemBranchForFamily(family) {
   return problemBranches.find((branch) => branch.families.includes(family));
 }
@@ -1208,6 +1212,14 @@ function metricTicks(config) {
 }
 
 function metricsBounds(bounds) {
+  if (bounds.width <= 620) {
+    return {
+      left: 70,
+      right: bounds.width - 22,
+      top: 186,
+      bottom: bounds.height - 54
+    };
+  }
   return {
     left: 96,
     right: bounds.width - 92,
@@ -1874,9 +1886,11 @@ function taxonomyFamilyLayouts(bounds) {
   const metrics = taxonomyMetrics(bounds);
   taxonomyContainers(bounds).forEach((container) => {
     const families = container.families.filter((family) => familyOrder().includes(family));
-    const columns = container.id === "enhancement"
-      ? Math.min(2, Math.max(1, families.length))
-      : clamp(Math.ceil(Math.sqrt(families.length * (container.w / Math.max(1, container.h)))), 2, 4);
+    const columns = bounds.width <= 620
+      ? 2
+      : container.id === "enhancement"
+        ? Math.min(2, Math.max(1, families.length))
+        : clamp(Math.ceil(Math.sqrt(families.length * (container.w / Math.max(1, container.h)))), 2, 4);
     const rows = Math.ceil(families.length / columns);
     families.forEach((family, index) => {
       const col = index % columns;
@@ -1937,6 +1951,21 @@ function taxonomyPaperPosition(model, bounds) {
 
 function taxonomyMetrics(bounds) {
   const width = bounds.width || 1200;
+  if (width <= 620) {
+    return {
+      cellGap: 22,
+      diagramSideInset: 6,
+      maxDiagramW: 154,
+      diagramH: 70,
+      paperPitch: 46,
+      paperRowGap: 27,
+      paperRadius: 7,
+      paperLiteralRadius: 9,
+      paperLabelSize: 13,
+      paperLogoRadius: 7,
+      paperTopGap: 24
+    };
+  }
   const large = width >= 1500;
   const xl = width >= 1900;
   const scale = 1.15;
@@ -2152,6 +2181,17 @@ function drawTaxonomyFamilyGlyph(family, layout, color) {
 
 function bindTaxonomyFamilyHover(group) {
   if (state.mode !== "taxonomy") return;
+  if (isCompactViewport()) {
+    group.querySelectorAll(".taxonomy-family").forEach((item) => {
+      item.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        state.taxonomyHoveredFamily = item.dataset.family;
+        showFamilyHoverCard(item.dataset.family);
+      });
+    });
+    return;
+  }
   const setFamilyHover = (family, active, event = null) => {
     state.taxonomyHoveredFamily = active ? family : null;
     if (active && event) showFamilyHoverCard(family, event);
@@ -2215,6 +2255,13 @@ function showFamilyHoverCard(family, event) {
   const insight = familyInsights[family];
   const models = state.models.filter((model) => model.family === family);
   const color = problemColorForFamily(family);
+  const compact = isCompactViewport();
+  const examples = (compact ? models : models.slice(0, 5)).map((model) => {
+    if (!compact) return `<span>${escapeHtml(model.name)}</span>`;
+    const inst = institutionFor(model);
+    const logo = inst.logoUrl || institutionLogoUrl(inst.domain);
+    return `<span class="family-card-example"><img src="${escapeHtml(logo)}" alt="" aria-hidden="true"><span>${escapeHtml(model.name)}</span></span>`;
+  }).join("");
   card.hidden = false;
   card.style.setProperty("--family-card-color", color);
   card.innerHTML = `
@@ -2226,7 +2273,7 @@ function showFamilyHoverCard(family, event) {
       <div><dt>Watch</dt><dd>${escapeHtml(insight?.caution || "Compare claims against runtime path, benchmark scope, and source evidence.")}</dd></div>
       <div><dt>Question</dt><dd>${escapeHtml(insight?.direction || familyProblemQuestions[family] || "")}</dd></div>
     </dl>
-    <div class="family-card-examples">${models.slice(0, 5).map((model) => `<span>${escapeHtml(model.name)}</span>`).join("")}</div>
+    <div class="family-card-examples">${examples}</div>
   `;
   positionFamilyHoverCard(event);
 }
@@ -2237,9 +2284,14 @@ function hideFamilyHoverCard() {
 }
 
 function positionFamilyHoverCard(event) {
-  if (!event) return;
   const card = $("#familyHoverCard");
   if (!card || card.hidden) return;
+  if (isCompactViewport()) {
+    card.style.removeProperty("top");
+    card.style.removeProperty("left");
+    return;
+  }
+  if (!event) return;
   const rect = card.getBoundingClientRect();
   const gap = 16;
   let left = event.clientX + gap;
@@ -2262,6 +2314,25 @@ function taxonomyContainers(bounds) {
   const h = Math.max(390, bounds.height - top - bottom);
   const available = Math.min(bounds.width - margin * 2, 1740);
   const x0 = (bounds.width - available) / 2;
+  if (bounds.width <= 620) {
+    const mobileMargin = 22;
+    const mobileTop = 100;
+    const mobileGap = 44;
+    const mobileWidth = bounds.width - mobileMargin * 2;
+    const heights = { architecture: 520, enhancement: 260 };
+    let y = mobileTop;
+    return taxonomyGroups.map((group) => {
+      const container = {
+        ...group,
+        x: mobileMargin,
+        y,
+        w: mobileWidth,
+        h: heights[group.id] || 400
+      };
+      y += container.h + mobileGap;
+      return container;
+    });
+  }
   const stack = bounds.width < 900;
   if (stack) {
     const half = (h - gap) / 2;
@@ -2550,7 +2621,7 @@ function renderAtlas() {
   const visible = new Set(filteredModels().map((model) => model.id));
   const useProblemIntro = state.mode === "problem" && state.lastRenderedMode !== "problem";
   const introCenter = problemGeo?.root || { x: bounds.width / 2, y: bounds.height * 0.48 + 36 };
-  const renderPaperNodes = !(state.mode === "taxonomy" && state.taxonomyGallery);
+  const renderPaperNodes = !(state.mode === "taxonomy" && (state.taxonomyGallery || isCompactViewport()));
   if (renderPaperNodes) state.models.forEach((model, index) => {
     const target = problemGeo?.positions.get(model.id) || positionModel(model, index, state.models, bounds) || { x: width / 2, y: height / 2 };
     const leaf = problemGeo?.leafAssignments.get(model.id);
@@ -2618,9 +2689,6 @@ function renderAtlas() {
 
   if (state.mode === "taxonomy" && !state.taxonomyGallery) bindTaxonomyFamilyHover(group);
 
-  $("#modeDescription").textContent = state.mode === "taxonomy" && state.taxonomyTree
-    ? "Literature-survey taxonomy tree: broad categories branch into families, then paper leaves."
-    : modeDescriptions[state.mode];
   bindZoom(svg, group);
   requestAnimationFrame(() => {
     group.querySelectorAll(".atlas-annotation.is-entering").forEach((item) => item.classList.remove("is-entering"));
@@ -3044,6 +3112,16 @@ function showPage(name) {
   const originalDiagramToggle = $("#originalDiagramToggle");
   if (originalDiagramToggle) originalDiagramToggle.hidden = name === "model";
   if (name === "model") hideOriginalDiagramHint();
+  setMobileMenuOpen(false);
+}
+
+function setMobileMenuOpen(open) {
+  const toggle = $("#mobileMenuToggle");
+  const panel = $("#topbarMenuPanel");
+  if (!toggle || !panel) return;
+  panel.classList.toggle("is-open", open);
+  toggle.setAttribute("aria-expanded", open ? "true" : "false");
+  toggle.setAttribute("aria-label", open ? "Close navigation menu" : "Open navigation menu");
 }
 
 function syncModeButtons() {
@@ -3100,6 +3178,7 @@ function syncModeButtons() {
 function setAtlasMode(mode, render = true) {
   if (mode === "speed") mode = "metrics";
   state.mode = modeDescriptions[mode] ? mode : "problem";
+  hideFamilyHoverCard();
   setDefaultZoomForMode(state.mode);
   syncModeButtons();
   if (render) renderAtlas();
@@ -3167,6 +3246,19 @@ function defaultZoomForMode(mode) {
       y: 92 - box.y * k
     };
   }
+  if (mode === "taxonomy" && width <= 620) {
+    const containers = taxonomyContainers({ width, height });
+    const minX = Math.min(...containers.map((container) => container.x));
+    const minY = Math.min(...containers.map((container) => container.y));
+    const maxX = Math.max(...containers.map((container) => container.x + container.w));
+    const maxY = Math.max(...containers.map((container) => container.y + container.h));
+    return zoomToFitBox({
+      x: (minX + maxX) / 2,
+      y: (minY + maxY) / 2,
+      w: maxX - minX,
+      h: maxY - minY
+    }, { width, height }, { left: 10, right: 10, top: 52, bottom: 8 });
+  }
   const k = width < 760 ? 0.72 : 0.8;
   return { k, x: (width * (1 - k)) / 2, y: (height * (1 - k)) / 2 - (mode === "taxonomy" ? 24 : 0) };
 }
@@ -3197,7 +3289,8 @@ function taxonomyGallerySceneBounds(bounds) {
 function zoomToFitBox(box, bounds, padding) {
   const availableWidth = Math.max(1, bounds.width - padding.left - padding.right);
   const availableHeight = Math.max(1, bounds.height - padding.top - padding.bottom);
-  const k = clamp(Math.min(availableWidth / Math.max(1, box.w), availableHeight / Math.max(1, box.h)), 0.25, 1.35);
+  const minScale = bounds.width <= 620 ? 0.08 : 0.25;
+  const k = clamp(Math.min(availableWidth / Math.max(1, box.w), availableHeight / Math.max(1, box.h)), minScale, 1.35);
   const targetCenter = {
     x: padding.left + availableWidth / 2,
     y: padding.top + availableHeight / 2
@@ -3642,8 +3735,14 @@ function renderSources() {
 }
 
 function bindEvents() {
+  $("#mobileMenuToggle").addEventListener("click", (event) => {
+    event.stopPropagation();
+    const panel = $("#topbarMenuPanel");
+    setMobileMenuOpen(!panel.classList.contains("is-open"));
+  });
   $$(".nav-tab").forEach((tab) => {
     tab.addEventListener("click", () => {
+      setMobileMenuOpen(false);
       const route = tab.dataset.route;
       location.hash = route === "atlas" ? "atlas" : route;
     });
@@ -3715,6 +3814,17 @@ function bindEvents() {
   });
   $("#backToAtlas").addEventListener("click", () => {
     location.hash = "atlas";
+  });
+  $("#atlasSvg").addEventListener("click", (event) => {
+    if (!isCompactViewport() || event.target.closest(".taxonomy-family, .node")) return;
+    hideFamilyHoverCard();
+  });
+  document.addEventListener("click", (event) => {
+    if (event.target.closest(".topbar")) return;
+    setMobileMenuOpen(false);
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") setMobileMenuOpen(false);
   });
   window.addEventListener("hashchange", routeFromHash);
   window.addEventListener("resize", () => renderAtlas());
